@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-sync-git-history"
+description = "Enables the sync_git_history command without any pre-configured scope."
+commands.allow = ["sync_git_history"]
+
+[[permission]]
+identifier = "deny-sync-git-history"
+description = "Denies the sync_git_history command without any pre-configured scope."
+commands.deny = ["sync_git_history"]

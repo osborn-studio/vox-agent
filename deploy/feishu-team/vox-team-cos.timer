@@ -1,0 +1,8 @@
+[Unit]
+Description=Daily off-host Vox encrypted backup
+[Timer]
+OnCalendar=*-*-* 20:30:00 UTC
+Persistent=true
+RandomizedDelaySec=60
+[Install]
+WantedBy=timers.target

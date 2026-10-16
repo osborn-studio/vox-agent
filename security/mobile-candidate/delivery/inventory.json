@@ -1,0 +1,42 @@
+{
+  "status": "local portable synchronization proposal; not wired into CI or production",
+  "codeFreeze": "ed23d3f",
+  "artifacts": {
+    "metro-file-map-0.84.4-vox.1.tgz": {
+      "sha256": "9e0d3eb52b14e411dba572160a67be323a70f2730931540850e5bc177e679bdd",
+      "integrity": "sha512-6qcZUHtNcv8pWJlzSwlTUWm2nHYRWf/Y6Bo5LP3PH9P3Im7KMty88JDO+YwWXrc1NP+eKjCJJ94abQhBQLAauA==",
+      "bytes": 115716
+    },
+    "metro-file-map-0.84.5-vox.1.tgz": {
+      "sha256": "8ff77909cc753c48c8ba1e5ad56ad498a1eb6596beb62831a06bd3accdedbfbe",
+      "integrity": "sha512-vjIrq68GaQjoU84ihiuYQmYKoOsQUpEe1gX9yID/1Rk3XK3EMhh0R6sz+v3mxE3pdjMzmGvpBQA4QP6On71ZkQ==",
+      "bytes": 115720
+    },
+    "expo-metro-file-map-57.0.3-vox.1.tgz": {
+      "sha256": "996130294459cb4e2f1fb358b138fc3c7e47c3e7f1be0fa29f864019b68d3872",
+      "integrity": "sha512-hanUejQbh9aVARD3grPjq4IbAyzhGDOjYuf53TaTJy1FrkeFQ1gej4oaA5OHtfWn3Py47xaZPV2MVbyJQDiD1A==",
+      "bytes": 79522
+    },
+    "expo-code-signing-certificates-0.0.6-vox.1.tgz": {
+      "sha256": "5e61c9cc5bdd746237e12648148f0fb9efe1cbe6f2a1555ce83aab74118b704e",
+      "integrity": "sha512-4kVAo1HWH4j3tg/NMg7hdIc8bhU7qWLRWMA6jv5wn7fEk1/SkZePPn2IhaL885lsIdx8jesoqqtwrPHQNQdSng==",
+      "bytes": 4459
+    },
+    "expo-cli-57.0.27-vox.1.tgz": {
+      "sha256": "e4c995ec10badd0e89b45fa89cdf77e49235332bb22cf2ca110658fe1a7975e4",
+      "integrity": "sha512-Kltlv8iqS5LSfVNyw837BotZWoeZEkg3LrPDowB5eCYkxNJau/ZGxBSTqym+hhXoEhG/9bSAb0k3zI49TiS+2Q==",
+      "bytes": 1285133
+    }
+  },
+  "runnerSHA256": "c204cafd467f4d3aaf966126e77b4d3f69f2561263b056151036ee5afa7c9722",
+  "targets": {
+    "package.template.json": "mobile/voxagent-companion/package.json",
+    "package-lock.template.json": "mobile/voxagent-companion/package-lock.json"
+  },
+  "requires": [
+    "qualified CI upstream/oracle preparation",
+    "protected workflow review",
+    "branch-specific review and budget-eligible final CI"
+  ],
+  "preparerSHA256": "84ee16387b24771d2e749c44f3e5746ce580bc0321c416ba754e477e9500dbf6"
+}

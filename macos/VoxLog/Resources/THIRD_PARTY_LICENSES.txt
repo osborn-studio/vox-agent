@@ -1,0 +1,50 @@
+Third-Party Software Licenses
+==============================
+
+Type4Me includes the following open-source software:
+
+---
+
+SenseVoice
+Copyright (c) FunAudioLLM, Alibaba Group
+License: MIT
+Source: https://github.com/FunAudioLLM/SenseVoice
+
+---
+
+streaming-sensevoice
+Copyright (c) pengzhendong
+License: Apache License 2.0
+Source: https://github.com/pengzhendong/streaming-sensevoice
+
+---
+
+asr-decoder
+Copyright (c) pengzhendong
+License: Apache License 2.0
+Source: https://github.com/pengzhendong/asr-decoder
+
+---
+
+FunASR
+Copyright (c) Alibaba DAMO Academy
+License: MIT
+Source: https://github.com/modelscope/FunASR
+
+---
+
+sherpa-onnx
+Copyright (c) k2-fsa
+License: Apache License 2.0
+Source: https://github.com/k2-fsa/sherpa-onnx
+
+---
+
+Silero VAD
+Copyright (c) Silero Team
+License: MIT
+Source: https://github.com/snakers4/silero-vad
+
+---
+
+Full license texts are available at the respective source repositories.

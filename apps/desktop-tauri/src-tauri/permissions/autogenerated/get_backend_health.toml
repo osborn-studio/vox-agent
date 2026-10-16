@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-get-backend-health"
+description = "Enables the get_backend_health command without any pre-configured scope."
+commands.allow = ["get_backend_health"]
+
+[[permission]]
+identifier = "deny-get-backend-health"
+description = "Denies the get_backend_health command without any pre-configured scope."
+commands.deny = ["get_backend_health"]

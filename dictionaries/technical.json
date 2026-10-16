@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "corrections": {
+    "open claw": "OpenClaw",
+    "openclaw": "OpenClaw",
+    "os born": "OSBORN",
+    "osborne": "OSBORN",
+    "claw code": "Claude Code",
+    "cloud code": "Claude Code",
+    "tail scale": "Tailscale",
+    "g stack": "gstack",
+    "ji stack": "gstack",
+    "fast api": "FastAPI",
+    "swift ui": "SwiftUI",
+    "vox log": "VoxLog",
+    "Cloudflow Mac": "Claude for Mac"
+  },
+  "preserve": [
+    "OpenClaw", "OSBORN", "Claude Code", "Claude", "gstack",
+    "Tailscale", "Obsidian", "FastAPI", "SwiftUI", "VoxLog",
+    "PRD", "BRD", "SKU", "MVP", "API", "SDK", "CLI",
+    "multi-agent", "vibe coding", "Claude for Mac"
+  ]
+}

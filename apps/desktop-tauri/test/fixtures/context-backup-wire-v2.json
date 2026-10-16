@@ -1,0 +1,983 @@
+{
+  "version": 2,
+  "generated_by": "scripts/context_wire_fixture.py",
+  "source_contract": [
+    "engine.backup_app.create_backup_app",
+    "engine.input_backup.BackupStore",
+    "engine.auth.require_principal"
+  ],
+  "idempotency": {
+    "namespace": [
+      "org",
+      "actor",
+      "eventId"
+    ],
+    "payload_fingerprint": "sha256 of canonical BackupInput (targetId, text, projectId, repoSource, repository)",
+    "same_payload": "202 with the stored receipt",
+    "different_payload": "409 EVENT_PAYLOAD_CONFLICT",
+    "retention": "records are never deleted by service code (ADR 2026-10-08-backup-idempotency-retention-v1)"
+  },
+  "error_envelopes": {
+    "backup_routes": {
+      "detail": "CODE"
+    },
+    "authentication": {
+      "detail": {
+        "code": "CODE",
+        "message": "text"
+      }
+    },
+    "validation": {
+      "detail": "INVALID_BACKUP_INPUT"
+    }
+  },
+  "limits": {
+    "eventId": {
+      "max_chars": 128,
+      "min_chars": 1,
+      "pattern": "^[a-zA-Z0-9_-]+$"
+    },
+    "targetId": {
+      "max_chars": 80,
+      "min_chars": 1
+    },
+    "text": {
+      "max_chars": 8192,
+      "min_chars": 1,
+      "rendered_max_utf8_bytes": 8192,
+      "max_ascii_chars_accepted_for_sender": {
+        "sender": "Synthetic Sender",
+        "chars": 8162
+      }
+    },
+    "projectId": {
+      "max_chars": 80,
+      "min_chars": 1,
+      "pattern": "^[A-Za-z0-9_-]+$"
+    },
+    "repository": {
+      "max_chars": 200,
+      "pattern": "^[a-zA-Z0-9_./-]+$"
+    },
+    "worker_retry_window_seconds": 3000
+  },
+  "visible_statuses": [
+    "pending",
+    "sending",
+    "unknown",
+    "delivered",
+    "blocked",
+    "rejected"
+  ],
+  "http_cases": [
+    {
+      "name": "submit_accepted",
+      "request": {
+        "method": "POST",
+        "path": "/v1/input-backups",
+        "auth": "owner",
+        "json": {
+          "eventId": "event-1",
+          "targetId": "team",
+          "text": "synthetic context"
+        }
+      },
+      "response": {
+        "status": 202,
+        "body": {
+          "eventId": "event-1",
+          "status": "pending",
+          "messageId": null
+        },
+        "cache_control": null
+      }
+    },
+    {
+      "name": "submit_replay_same_payload",
+      "request": {
+        "method": "POST",
+        "path": "/v1/input-backups",
+        "auth": "owner",
+        "json": {
+          "eventId": "event-1",
+          "targetId": "team",
+          "text": "synthetic context"
+        }
+      },
+      "response": {
+        "status": 202,
+        "body": {
+          "eventId": "event-1",
+          "status": "pending",
+          "messageId": null
+        },
+        "cache_control": null
+      },
+      "note": "Same org/actor/eventId and canonical payload returns the stored receipt."
+    },
+    {
+      "name": "submit_conflict_different_payload",
+      "request": {
+        "method": "POST",
+        "path": "/v1/input-backups",
+        "auth": "owner",
+        "json": {
+          "eventId": "event-1",
+          "targetId": "team",
+          "text": "different synthetic context"
+        }
+      },
+      "response": {
+        "status": 409,
+        "body": {
+          "detail": "EVENT_PAYLOAD_CONFLICT"
+        },
+        "cache_control": null
+      }
+    },
+    {
+      "name": "submit_conflict_project_added_same_event",
+      "request": {
+        "method": "POST",
+        "path": "/v1/input-backups",
+        "auth": "owner",
+        "json": {
+          "eventId": "event-1",
+          "targetId": "team",
+          "text": "synthetic context",
+          "projectId": "p1",
+          "repoSource": "manual"
+        }
+      },
+      "response": {
+        "status": 409,
+        "body": {
+          "detail": "EVENT_PAYLOAD_CONFLICT"
+        },
+        "cache_control": null
+      },
+      "note": "Idempotency namespace is (org, actor, eventId); target/project are part of the payload."
+    },
+    {
+      "name": "submit_same_event_other_actor_is_independent",
+      "request": {
+        "method": "POST",
+        "path": "/v1/input-backups",
+        "auth": "other",
+        "json": {
+          "eventId": "event-1",
+          "targetId": "team",
+          "text": "synthetic context"
+        }
+      },
+      "response": {
+        "status": 202,
+        "body": {
+          "eventId": "event-1",
+          "status": "pending",
+          "messageId": null
+        },
+        "cache_control": null
+      }
+    },
+    {
+      "name": "submit_project_attributed",
+      "request": {
+        "method": "POST",
+        "path": "/v1/input-backups",
+        "auth": "owner",
+        "json": {
+          "eventId": "event-p1",
+          "targetId": "team",
+          "text": "synthetic context",
+          "projectId": "p1",
+          "repoSource": "manual"
+        }
+      },
+      "response": {
+        "status": 202,
+        "body": {
+          "eventId": "event-p1",
+          "status": "pending",
+          "messageId": null,
+          "attribution": {
+            "version": 1,
+            "projectId": "p1",
+            "repositoryId": "studio/repo"
+          }
+        },
+        "cache_control": null
+      }
+    },
+    {
+      "name": "submit_project_with_matching_repository",
+      "request": {
+        "method": "POST",
+        "path": "/v1/input-backups",
+        "auth": "owner",
+        "json": {
+          "eventId": "event-p1-repo",
+          "targetId": "team",
+          "text": "synthetic context",
+          "projectId": "p1",
+          "repoSource": "manual",
+          "repository": "studio/repo"
+        }
+      },
+      "response": {
+        "status": 202,
+        "body": {
+          "eventId": "event-p1-repo",
+          "status": "pending",
+          "messageId": null,
+          "attribution": {
+            "version": 1,
+            "projectId": "p1",
+            "repositoryId": "studio/repo"
+          }
+        },
+        "cache_control": null
+      }
+    },
+    {
+      "name": "submit_no_auth",
+      "request": {
+        "method": "POST",
+        "path": "/v1/input-backups",
+        "auth": "none",
+        "json": {
+          "eventId": "event-noauth",
+          "targetId": "team",
+          "text": "synthetic context"
+        }
+      },
+      "response": {
+        "status": 401,
+        "body": {
+          "detail": {
+            "code": "AUTH_REQUIRED",
+            "message": "Bearer credential required"
+          }
+        },
+        "cache_control": null
+      }
+    },
+    {
+      "name": "submit_target_denied",
+      "request": {
+        "method": "POST",
+        "path": "/v1/input-backups",
+        "auth": "owner",
+        "json": {
+          "eventId": "event-t",
+          "targetId": "unknown",
+          "text": "synthetic context"
+        }
+      },
+      "response": {
+        "status": 403,
+        "body": {
+          "detail": "TARGET_DENIED"
+        },
+        "cache_control": null
+      }
+    },
+    {
+      "name": "submit_project_denied_not_member",
+      "request": {
+        "method": "POST",
+        "path": "/v1/input-backups",
+        "auth": "owner",
+        "json": {
+          "eventId": "event-pd",
+          "targetId": "team",
+          "text": "synthetic context",
+          "projectId": "p-other",
+          "repoSource": "manual"
+        }
+      },
+      "response": {
+        "status": 403,
+        "body": {
+          "detail": "PROJECT_DENIED"
+        },
+        "cache_control": null
+      }
+    },
+    {
+      "name": "submit_project_denied_unknown",
+      "request": {
+        "method": "POST",
+        "path": "/v1/input-backups",
+        "auth": "owner",
+        "json": {
+          "eventId": "event-pu",
+          "targetId": "team",
+          "text": "synthetic context",
+          "projectId": "missing",
+          "repoSource": "manual"
+        }
+      },
+      "response": {
+        "status": 403,
+        "body": {
+          "detail": "PROJECT_DENIED"
+        },
+        "cache_control": null
+      }
+    },
+    {
+      "name": "submit_attribution_repo_source_without_project",
+      "request": {
+        "method": "POST",
+        "path": "/v1/input-backups",
+        "auth": "owner",
+        "json": {
+          "eventId": "event-a1",
+          "targetId": "team",
+          "text": "synthetic context",
+          "repoSource": "manual"
+        }
+      },
+      "response": {
+        "status": 422,
+        "body": {
+          "detail": "INVALID_PROJECT_ATTRIBUTION"
+        },
+        "cache_control": null
+      }
+    },
+    {
+      "name": "submit_attribution_project_without_repo_source",
+      "request": {
+        "method": "POST",
+        "path": "/v1/input-backups",
+        "auth": "owner",
+        "json": {
+          "eventId": "event-a2",
+          "targetId": "team",
+          "text": "synthetic context",
+          "projectId": "p1"
+        }
+      },
+      "response": {
+        "status": 422,
+        "body": {
+          "detail": "INVALID_PROJECT_ATTRIBUTION"
+        },
+        "cache_control": null
+      }
+    },
+    {
+      "name": "submit_attribution_repository_mismatch",
+      "request": {
+        "method": "POST",
+        "path": "/v1/input-backups",
+        "auth": "owner",
+        "json": {
+          "eventId": "event-a3",
+          "targetId": "team",
+          "text": "synthetic context",
+          "projectId": "p1",
+          "repoSource": "manual",
+          "repository": "studio/other"
+        }
+      },
+      "response": {
+        "status": 422,
+        "body": {
+          "detail": "INVALID_PROJECT_ATTRIBUTION"
+        },
+        "cache_control": null
+      }
+    },
+    {
+      "name": "submit_schema_unknown_field",
+      "request": {
+        "method": "POST",
+        "path": "/v1/input-backups",
+        "auth": "owner",
+        "json": {
+          "eventId": "event-s1",
+          "targetId": "team",
+          "text": "synthetic context",
+          "actorId": "forged"
+        }
+      },
+      "response": {
+        "status": 422,
+        "body": {
+          "detail": "INVALID_BACKUP_INPUT"
+        },
+        "cache_control": null
+      }
+    },
+    {
+      "name": "submit_schema_bad_event_id",
+      "request": {
+        "method": "POST",
+        "path": "/v1/input-backups",
+        "auth": "owner",
+        "json": {
+          "eventId": "event with spaces",
+          "targetId": "team",
+          "text": "synthetic context"
+        }
+      },
+      "response": {
+        "status": 422,
+        "body": {
+          "detail": "INVALID_BACKUP_INPUT"
+        },
+        "cache_control": null
+      }
+    },
+    {
+      "name": "submit_schema_text_over_8192_chars",
+      "request": {
+        "method": "POST",
+        "path": "/v1/input-backups",
+        "auth": "owner",
+        "json": {
+          "eventId": "event-s2",
+          "targetId": "team",
+          "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      },
+      "response": {
+        "status": 422,
+        "body": {
+          "detail": "INVALID_BACKUP_INPUT"
+        },
+        "cache_control": null
+      }
+    },
+    {
+      "name": "submit_rendered_too_large_cjk",
+      "request": {
+        "method": "POST",
+        "path": "/v1/input-backups",
+        "auth": "owner",
+        "json": {
+          "eventId": "event-big",
+          "targetId": "team",
+          "text": "字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字字"
+        }
+      },
+      "response": {
+        "status": 413,
+        "body": {
+          "detail": "RENDERED_MESSAGE_TOO_LARGE"
+        },
+        "cache_control": null
+      },
+      "note": "Passes the 8192-character schema limit but the rendered UTF-8 message exceeds 8192 bytes."
+    },
+    {
+      "name": "submit_backup_disabled",
+      "request": {
+        "method": "POST",
+        "path": "/v1/input-backups",
+        "auth": "owner",
+        "json": {
+          "eventId": "event-off",
+          "targetId": "team",
+          "text": "synthetic context"
+        }
+      },
+      "response": {
+        "status": 503,
+        "body": {
+          "detail": "BACKUP_DISABLED"
+        },
+        "cache_control": null
+      }
+    },
+    {
+      "name": "submit_account_disabled",
+      "request": {
+        "method": "POST",
+        "path": "/v1/input-backups",
+        "auth": "other",
+        "json": {
+          "eventId": "event-dis",
+          "targetId": "team",
+          "text": "synthetic context"
+        }
+      },
+      "response": {
+        "status": 401,
+        "body": {
+          "detail": {
+            "code": "INVALID_CREDENTIAL",
+            "message": "Invalid bearer credential"
+          }
+        },
+        "cache_control": null
+      },
+      "note": "A disabled account is rejected by authentication (401), before the route's 403 ACCOUNT_DISABLED check, which is only reachable if the account is disabled mid-request."
+    },
+    {
+      "name": "status_owner",
+      "request": {
+        "method": "GET",
+        "path": "/v1/input-backups/event-1",
+        "auth": "owner"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "eventId": "event-1",
+          "status": "pending",
+          "messageId": null
+        },
+        "cache_control": null
+      }
+    },
+    {
+      "name": "status_project_attributed",
+      "request": {
+        "method": "GET",
+        "path": "/v1/input-backups/event-p1",
+        "auth": "owner"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "eventId": "event-p1",
+          "status": "pending",
+          "messageId": null,
+          "attribution": {
+            "version": 1,
+            "projectId": "p1",
+            "repositoryId": "studio/repo"
+          }
+        },
+        "cache_control": null
+      }
+    },
+    {
+      "name": "status_unknown_event",
+      "request": {
+        "method": "GET",
+        "path": "/v1/input-backups/never-submitted",
+        "auth": "owner"
+      },
+      "response": {
+        "status": 404,
+        "body": {
+          "detail": "BACKUP_NOT_FOUND"
+        },
+        "cache_control": null
+      }
+    },
+    {
+      "name": "status_no_auth",
+      "request": {
+        "method": "GET",
+        "path": "/v1/input-backups/event-1",
+        "auth": "none"
+      },
+      "response": {
+        "status": 401,
+        "body": {
+          "detail": {
+            "code": "AUTH_REQUIRED",
+            "message": "Bearer credential required"
+          }
+        },
+        "cache_control": null
+      }
+    },
+    {
+      "name": "projects_catalog",
+      "request": {
+        "method": "GET",
+        "path": "/v1/context-projects",
+        "auth": "owner"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "version": 1,
+          "projects": [
+            {
+              "id": "p1",
+              "name": "Project One",
+              "repositoryId": "studio/repo"
+            }
+          ]
+        },
+        "cache_control": "no-store"
+      }
+    },
+    {
+      "name": "projects_no_auth",
+      "request": {
+        "method": "GET",
+        "path": "/v1/context-projects",
+        "auth": "none"
+      },
+      "response": {
+        "status": 401,
+        "body": {
+          "detail": {
+            "code": "AUTH_REQUIRED",
+            "message": "Bearer credential required"
+          }
+        },
+        "cache_control": null
+      }
+    }
+  ],
+  "status_sequences": [
+    {
+      "name": "delivered",
+      "note": "Only a delivered receipt carries a messageId.",
+      "steps": [
+        {
+          "action": "submit",
+          "receipt": {
+            "eventId": "seq-delivered",
+            "status": "pending",
+            "messageId": null
+          }
+        },
+        {
+          "action": "worker_claim",
+          "claimed": true,
+          "receipt": {
+            "eventId": "seq-delivered",
+            "status": "sending",
+            "messageId": null
+          }
+        },
+        {
+          "action": "worker_finish_delivered",
+          "receipt": {
+            "eventId": "seq-delivered",
+            "status": "delivered",
+            "messageId": "om_synthetic"
+          }
+        }
+      ]
+    },
+    {
+      "name": "crash_while_sending_becomes_unknown",
+      "note": "A worker restart turns an in-flight send into unknown; it is retried inside the window.",
+      "steps": [
+        {
+          "action": "submit",
+          "receipt": {
+            "eventId": "seq-crash",
+            "status": "pending",
+            "messageId": null
+          }
+        },
+        {
+          "action": "worker_claim",
+          "claimed": true,
+          "receipt": {
+            "eventId": "seq-crash",
+            "status": "sending",
+            "messageId": null
+          }
+        },
+        {
+          "action": "worker_restart_recover",
+          "receipt": {
+            "eventId": "seq-crash",
+            "status": "unknown",
+            "messageId": null
+          }
+        }
+      ]
+    },
+    {
+      "name": "unknown_retried_inside_window",
+      "note": "unknown is reclaimed while fewer than the window's seconds have passed since the first attempt.",
+      "steps": [
+        {
+          "action": "submit",
+          "receipt": {
+            "eventId": "seq-retry",
+            "status": "pending",
+            "messageId": null
+          }
+        },
+        {
+          "action": "worker_claim",
+          "claimed": true,
+          "receipt": {
+            "eventId": "seq-retry",
+            "status": "sending",
+            "messageId": null
+          }
+        },
+        {
+          "action": "worker_finish_unknown",
+          "receipt": {
+            "eventId": "seq-retry",
+            "status": "unknown",
+            "messageId": null
+          }
+        },
+        {
+          "action": "worker_claim+2999s",
+          "claimed": true,
+          "receipt": {
+            "eventId": "seq-retry",
+            "status": "sending",
+            "messageId": null
+          }
+        }
+      ]
+    },
+    {
+      "name": "unknown_not_retried_at_window",
+      "note": "From the window boundary on, the server never retries; GET keeps returning unknown.",
+      "steps": [
+        {
+          "action": "submit",
+          "receipt": {
+            "eventId": "seq-window",
+            "status": "pending",
+            "messageId": null
+          }
+        },
+        {
+          "action": "worker_claim",
+          "claimed": true,
+          "receipt": {
+            "eventId": "seq-window",
+            "status": "sending",
+            "messageId": null
+          }
+        },
+        {
+          "action": "worker_finish_unknown",
+          "receipt": {
+            "eventId": "seq-window",
+            "status": "unknown",
+            "messageId": null
+          }
+        },
+        {
+          "action": "worker_claim+3000s",
+          "claimed": false,
+          "receipt": {
+            "eventId": "seq-window",
+            "status": "unknown",
+            "messageId": null
+          }
+        }
+      ]
+    },
+    {
+      "name": "blocked_is_terminal_for_the_worker",
+      "note": "blocked is never reclaimed automatically; recovery needs an operator path (T03d).",
+      "steps": [
+        {
+          "action": "submit",
+          "receipt": {
+            "eventId": "seq-blocked",
+            "status": "pending",
+            "messageId": null
+          }
+        },
+        {
+          "action": "worker_claim",
+          "claimed": true,
+          "receipt": {
+            "eventId": "seq-blocked",
+            "status": "sending",
+            "messageId": null
+          }
+        },
+        {
+          "action": "worker_finish_blocked",
+          "receipt": {
+            "eventId": "seq-blocked",
+            "status": "blocked",
+            "messageId": null
+          }
+        },
+        {
+          "action": "worker_claim+61s",
+          "claimed": false,
+          "receipt": {
+            "eventId": "seq-blocked",
+            "status": "blocked",
+            "messageId": null
+          }
+        }
+      ]
+    },
+    {
+      "name": "rejected",
+      "note": "rejected is terminal.",
+      "steps": [
+        {
+          "action": "submit",
+          "receipt": {
+            "eventId": "seq-rejected",
+            "status": "pending",
+            "messageId": null
+          }
+        },
+        {
+          "action": "worker_claim",
+          "claimed": true,
+          "receipt": {
+            "eventId": "seq-rejected",
+            "status": "sending",
+            "messageId": null
+          }
+        },
+        {
+          "action": "worker_finish_rejected",
+          "receipt": {
+            "eventId": "seq-rejected",
+            "status": "rejected",
+            "messageId": null
+          }
+        }
+      ]
+    },
+    {
+      "name": "deferred_without_send_returns_to_pending",
+      "note": "No POST was attempted, so the record goes back to pending, not unknown.",
+      "steps": [
+        {
+          "action": "submit",
+          "receipt": {
+            "eventId": "seq-defer",
+            "status": "pending",
+            "messageId": null
+          }
+        },
+        {
+          "action": "worker_claim",
+          "claimed": true,
+          "receipt": {
+            "eventId": "seq-defer",
+            "status": "sending",
+            "messageId": null
+          }
+        },
+        {
+          "action": "worker_defer_without_send",
+          "receipt": {
+            "eventId": "seq-defer",
+            "status": "pending",
+            "messageId": null
+          }
+        }
+      ]
+    },
+    {
+      "name": "blocked_requeued_by_operator",
+      "note": "An operator can requeue blocked (never sent) after fixing access; clients must keep blocked readable and re-check it, not treat it as final.",
+      "steps": [
+        {
+          "action": "submit",
+          "receipt": {
+            "eventId": "seq-op-blocked",
+            "status": "pending",
+            "messageId": null
+          }
+        },
+        {
+          "action": "worker_claim",
+          "claimed": true,
+          "receipt": {
+            "eventId": "seq-op-blocked",
+            "status": "sending",
+            "messageId": null
+          }
+        },
+        {
+          "action": "worker_finish_blocked",
+          "receipt": {
+            "eventId": "seq-op-blocked",
+            "status": "blocked",
+            "messageId": null
+          }
+        },
+        {
+          "action": "operator_requeue",
+          "receipt": {
+            "eventId": "seq-op-blocked",
+            "status": "pending",
+            "messageId": null
+          }
+        },
+        {
+          "action": "worker_claim+3002s",
+          "claimed": true,
+          "receipt": {
+            "eventId": "seq-op-blocked",
+            "status": "sending",
+            "messageId": null
+          }
+        },
+        {
+          "action": "worker_finish_delivered",
+          "receipt": {
+            "eventId": "seq-op-blocked",
+            "status": "delivered",
+            "messageId": "om_synthetic_recovered"
+          }
+        }
+      ]
+    },
+    {
+      "name": "unknown_requeued_after_attestation",
+      "note": "Past the window an operator may requeue unknown only after attesting the message is absent from the group (docs/decisions/2026-10-08-backup-delivery-recovery-v1.md).",
+      "steps": [
+        {
+          "action": "submit",
+          "receipt": {
+            "eventId": "seq-op-unknown",
+            "status": "pending",
+            "messageId": null
+          }
+        },
+        {
+          "action": "worker_claim",
+          "claimed": true,
+          "receipt": {
+            "eventId": "seq-op-unknown",
+            "status": "sending",
+            "messageId": null
+          }
+        },
+        {
+          "action": "worker_finish_unknown",
+          "receipt": {
+            "eventId": "seq-op-unknown",
+            "status": "unknown",
+            "messageId": null
+          }
+        },
+        {
+          "action": "operator_requeue_attested",
+          "receipt": {
+            "eventId": "seq-op-unknown",
+            "status": "pending",
+            "messageId": null
+          }
+        },
+        {
+          "action": "worker_claim+3002s",
+          "claimed": true,
+          "receipt": {
+            "eventId": "seq-op-unknown",
+            "status": "sending",
+            "messageId": null
+          }
+        }
+      ]
+    }
+  ]
+}

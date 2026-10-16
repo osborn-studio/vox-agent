@@ -1,0 +1,54 @@
+{
+  "name": "voxagent-companion",
+  "version": "0.1.0",
+  "private": true,
+  "main": "node_modules/expo/AppEntry.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web",
+    "fixtures:check": "node ../../scripts/mobile_contract_fixtures.mjs --check",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run security:provenance && vitest run && node ../../scripts/verify_mobile_asset_parser.cjs",
+    "postinstall": "node ../../scripts/verify_mobile_delivery_install.cjs --contract vox-canonical-signature-v1",
+    "security:provenance": "node ../../scripts/verify_mobile_delivery_install.cjs --contract vox-canonical-signature-v1"
+  },
+  "dependencies": {
+    "expo": "57.0.25",
+    "expo-asset": "57.0.18",
+    "expo-audio": "57.0.3",
+    "expo-camera": "57.0.3",
+    "expo-constants": "57.0.19",
+    "expo-linking": "57.0.4",
+    "expo-secure-store": "57.0.1",
+    "expo-status-bar": "57.0.1",
+    "react": "19.2.3",
+    "react-native": "0.86.0",
+    "react-native-qrcode-svg": "6.3.21",
+    "react-native-svg": "15.15.4"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.17",
+    "test-renderer": "1.2.0",
+    "typescript": "6.0.3",
+    "vitest": "4.1.11"
+  },
+  "overrides": {
+    "metro": {
+      "image-size": "2.0.4",
+      ".": "0.84.4"
+    },
+    "xcode": {
+      "uuid": "11.1.1"
+    },
+    "metro-file-map@0.84.4": "file:../../security/mobile-candidate/delivery/artifacts/metro-file-map-0.84.4-vox.1.tgz",
+    "metro-file-map@0.84.5": "file:../../security/mobile-candidate/delivery/artifacts/metro-file-map-0.84.5-vox.1.tgz",
+    "@expo/metro-file-map": "file:../../security/mobile-candidate/delivery/artifacts/expo-metro-file-map-57.0.3-vox.1.tgz",
+    "@expo/code-signing-certificates": "file:../../security/mobile-candidate/delivery/artifacts/expo-code-signing-certificates-0.0.6-vox.1.tgz",
+    "@expo/cli": "file:../../security/mobile-candidate/delivery/artifacts/expo-cli-57.0.27-vox.1.tgz",
+    "@expo/metro": {
+      ".": "56.0.2"
+    }
+  }
+}

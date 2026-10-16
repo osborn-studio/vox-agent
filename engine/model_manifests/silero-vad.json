@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "id": "silero-vad",
+  "provider": "silero",
+  "architecture": "any",
+  "revision": "asr-models-2026-10",
+  "license": "MIT",
+  "source": {
+    "kind": "files",
+    "baseUrl": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/"
+  },
+  "files": [
+    {
+      "path": "silero_vad.onnx",
+      "size": 643854,
+      "sha256": "9e2449e1087496d8d4caba907f23e0bd3f78d91fa552479bb9c23ac09cbb1fd6"
+    }
+  ],
+  "digest": "42abcd531542f8c593469c75e7b0ffe604779957ed5de2b6489fae489320f530"
+}

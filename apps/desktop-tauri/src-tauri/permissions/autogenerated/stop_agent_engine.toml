@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-stop-agent-engine"
+description = "Enables the stop_agent_engine command without any pre-configured scope."
+commands.allow = ["stop_agent_engine"]
+
+[[permission]]
+identifier = "deny-stop-agent-engine"
+description = "Denies the stop_agent_engine command without any pre-configured scope."
+commands.deny = ["stop_agent_engine"]

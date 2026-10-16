@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-get-agent-engine-process"
+description = "Enables the get_agent_engine_process command without any pre-configured scope."
+commands.allow = ["get_agent_engine_process"]
+
+[[permission]]
+identifier = "deny-get-agent-engine-process"
+description = "Denies the get_agent_engine_process command without any pre-configured scope."
+commands.deny = ["get_agent_engine_process"]

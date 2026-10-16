@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-context-quota"
+description = "Enables the context_quota command without any pre-configured scope."
+commands.allow = ["context_quota"]
+
+[[permission]]
+identifier = "deny-context-quota"
+description = "Denies the context_quota command without any pre-configured scope."
+commands.deny = ["context_quota"]

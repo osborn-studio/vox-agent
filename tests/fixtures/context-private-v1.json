@@ -1,0 +1,37 @@
+{
+  "source": {
+    "version": 1,
+    "id": "00000000-0000-4000-8000-000000000001",
+    "eventId": "personal-1",
+    "revision": 1,
+    "visibility": "private",
+    "evidenceKind": "user-statement",
+    "withdrawn": false,
+    "createdAt": "2026-10-06T00:00:00+00:00",
+    "text": "需要修复 parser",
+    "tags": [
+      "question"
+    ],
+    "projectId": null,
+    "repositoryId": null,
+    "revisionChangedAt": "2026-10-06T00:00:00+00:00"
+  },
+  "withdrawn": {
+    "version": 1,
+    "id": "00000000-0000-4000-8000-000000000001",
+    "eventId": "personal-1",
+    "revision": 2,
+    "visibility": "private",
+    "evidenceKind": "user-statement",
+    "withdrawn": true,
+    "createdAt": "2026-10-06T00:00:00+00:00",
+    "revisionChangedAt": "2026-10-06T00:00:00+00:00"
+  },
+  "references": {
+    "version": 1,
+    "valid": false,
+    "requiresUserReview": true,
+    "meaning": "current-authorized-private-revisions-only",
+    "evidenceKind": "user-statement"
+  }
+}

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-context-list-records"
+description = "Enables the context_list_records command without any pre-configured scope."
+commands.allow = ["context_list_records"]
+
+[[permission]]
+identifier = "deny-context-list-records"
+description = "Denies the context_list_records command without any pre-configured scope."
+commands.deny = ["context_list_records"]

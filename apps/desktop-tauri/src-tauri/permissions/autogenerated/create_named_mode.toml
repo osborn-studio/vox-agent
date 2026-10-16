@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-create-named-mode"
+description = "Enables the create_named_mode command without any pre-configured scope."
+commands.allow = ["create_named_mode"]
+
+[[permission]]
+identifier = "deny-create-named-mode"
+description = "Denies the create_named_mode command without any pre-configured scope."
+commands.deny = ["create_named_mode"]

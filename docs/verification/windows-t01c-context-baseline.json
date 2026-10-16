@@ -1,0 +1,207 @@
+{
+  "sourceCommit": "5c9f3a74d3bf438373bac50fb4e0d3dc3d3f5975",
+  "sourceRef": "v4.2.8.1",
+  "scope": "T01c subset: Context API paths, sidebar selections and sidebar labels; not the full baseline (T01)",
+  "contextApiPaths": [
+    "v1/auth/feishu/begin",
+    "v1/auth/feishu/browser",
+    "v1/auth/feishu/link-previous",
+    "v1/auth/feishu/logout",
+    "v1/auth/feishu/me",
+    "v1/auth/feishu/poll",
+    "v1/auth/feishu/redeem",
+    "v1/auth/feishu/renew",
+    "v1/context-private",
+    "v1/context-private-authorization",
+    "v1/context-private-events",
+    "v1/context-private-reference-check",
+    "v1/context-private-search",
+    "v1/context-projects",
+    "v1/context-weekly-draft",
+    "v1/conversations",
+    "v1/input-backups"
+  ],
+  "engineApiPathsOutOfScope": [
+    "v1/agents",
+    "v1/message",
+    "v1/permissions/pending",
+    "v1/tasks"
+  ],
+  "dynamicPathSegments": [
+    "messages",
+    "receipts",
+    "requests",
+    "withdraw"
+  ],
+  "sidebarSelections": [
+    "agent(String)",
+    "backupGroup",
+    "feishu(String)"
+  ],
+  "sidebarLabels": [
+    {
+      "zh": "团队 Context 记录",
+      "en": "Team context capture"
+    },
+    {
+      "zh": "收起侧边栏",
+      "en": "Collapse sidebar"
+    },
+    {
+      "zh": "从 ~/.osborn/ 刷新 Agent",
+      "en": "Refresh agents from ~/.osborn/"
+    },
+    {
+      "zh": "刷新本机 Agents",
+      "en": "Refresh local agents"
+    },
+    {
+      "zh": "工作区",
+      "en": "Workspace"
+    },
+    {
+      "zh": "群组",
+      "en": "Groups"
+    },
+    {
+      "zh": "可选 Agents",
+      "en": "Optional Agents"
+    },
+    {
+      "zh": "刷新会话",
+      "en": "Refresh conversations"
+    },
+    {
+      "zh": "其他飞书会话",
+      "en": "Other Feishu conversations"
+    },
+    {
+      "zh": "设置",
+      "en": "Settings"
+    },
+    {
+      "zh": "打开设置",
+      "en": "Open settings"
+    },
+    {
+      "zh": "词典管理",
+      "en": "Vocabulary"
+    },
+    {
+      "zh": "打开词典管理",
+      "en": "Open vocabulary"
+    },
+    {
+      "zh": "同步（Notion 优先，未启用时使用 Git）",
+      "en": "Sync (Notion first, Git when disabled)"
+    },
+    {
+      "zh": "同步本机记录",
+      "en": "Sync local records"
+    },
+    {
+      "zh": "正在同步",
+      "en": "Syncing"
+    },
+    {
+      "zh": "使用 Notion 或 Git 同步，不是飞书输入备份按钮。",
+      "en": "Syncs through Notion or Git; this is not the Feishu input backup control."
+    },
+    {
+      "zh": "在线更新",
+      "en": "Online update"
+    },
+    {
+      "zh": "有可用更新",
+      "en": "Update available"
+    },
+    {
+      "zh": "飞书群 · 本机输入记录",
+      "en": "Feishu group · Local submissions"
+    },
+    {
+      "zh": "飞书群的本机输入记录；发送后按备份设置同步。",
+      "en": "Local submissions for the Feishu group; sending follows your backup settings."
+    },
+    {
+      "zh": "已选择",
+      "en": "Selected"
+    },
+    {
+      "zh": "会话已过期，请重新登录。",
+      "en": "Session expired. Sign in again."
+    },
+    {
+      "zh": "权限不足或已撤销。",
+      "en": "Permission missing or revoked."
+    },
+    {
+      "zh": "此服务版本不支持会话发现。",
+      "en": "This server version does not support conversation discovery."
+    },
+    {
+      "zh": "完整飞书会话发现尚未启用。",
+      "en": "Full Feishu discovery is not enabled."
+    },
+    {
+      "zh": "服务不可达或响应无效，请重试。",
+      "en": "Service unavailable or invalid response. Retry."
+    },
+    {
+      "zh": "请先登录飞书。",
+      "en": "Sign in with Feishu first."
+    },
+    {
+      "zh": "部分群组权限已撤销。其他会话不受影响。",
+      "en": "Some group access was revoked. Other conversations are unaffected."
+    },
+    {
+      "zh": "正在发现会话…",
+      "en": "Discovering conversations…"
+    },
+    {
+      "zh": "暂无共同群组。",
+      "en": "No shared groups."
+    },
+    {
+      "zh": "仅会话发现，尚不支持消息。",
+      "en": "Discovery only. Messaging is not enabled."
+    },
+    {
+      "zh": "个人频道镜像 · 不提供回答",
+      "en": "Personal channel mirror · No replies"
+    },
+    {
+      "zh": "仅会话发现",
+      "en": "Discovery only"
+    },
+    {
+      "zh": "未绑定机器人",
+      "en": "Bot not configured"
+    },
+    {
+      "zh": "\\(count) 条消息",
+      "en": "\\(count) msgs"
+    },
+    {
+      "zh": "已绑定",
+      "en": "Bound"
+    },
+    {
+      "zh": "删除 \\(agent.name)",
+      "en": "Delete \\(agent.name)"
+    },
+    {
+      "zh": "\\(summary.awaitingApprovalCount) 项等待批准",
+      "en": "\\(summary.awaitingApprovalCount) awaiting approval"
+    },
+    {
+      "zh": "\\(summary.failedCount) 项失败",
+      "en": "\\(summary.failedCount) failed"
+    },
+    {
+      "zh": "\\(summary.queuedCount) 项排队中",
+      "en": "\\(summary.queuedCount) queued"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+build/
+.venv/
+.env
+*.db
+*.sqlite
+.DS_Store
+node_modules/
+target/
+OpenClaw Control.html
+OpenClaw Control_files/
+macos/build/
+macos/.build/
+macos/DerivedData/
+macos/*.xcuserdata/
+macos/.swiftpm/xcode/**/xcuserdata/
+*.xcuserstate
+~/.voxlog/
+build/
+.voxagent-demo/

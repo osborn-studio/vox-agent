@@ -1,0 +1,11 @@
+[Unit]
+Description=Check Vox HTTPS and disk headroom
+After=network-online.target
+[Service]
+Type=oneshot
+User=vox-team
+ExecStart=/usr/bin/python3 /opt/vox-agent/current/deploy/feishu-team/check-health.py
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true

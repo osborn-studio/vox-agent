@@ -1,0 +1,291 @@
+name: Verify
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Cancel superseded runs on the same ref to save CI minutes.
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  python-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install ruff
+        run: python -m pip install ruff==0.15.22
+
+      - name: Ruff lint
+        run: python -m ruff check .
+
+  python-test:
+    # Activate only after the dedicated dispatcher and exact workflow hash are approved.
+    # Turning this off affects NEW jobs; cancel/rerun queued jobs for hosted fallback.
+    runs-on: ${{ vars.OSVOX_LINUX_ISOLATED_RUNNERS == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' && fromJSON(format('["self-hosted","Linux","X64","osvox-linux-python","osvox-run-{0}","osvox-attempt-{1}","osvox-python-{2}"]', github.run_id, github.run_attempt, matrix.python-version)) || 'ubuntu-latest' }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install package and dev dependencies
+        run: python -m pip install -e ".[dev,mcp]"
+
+      - name: Run Python tests
+        # The Claude CLI end-to-end test requires an authenticated external service.
+        # Every deterministic unit, contract, org-collab, voice-memory, and retry
+        # test runs here.
+        run: >-
+          python -m pytest tests
+          --ignore=tests/test_engine_e2e_claude.py
+          -W error::DeprecationWarning
+          -q --tb=short
+
+      - name: Verify standalone model archive and small App boundaries
+        run: python -m pytest scripts/test_package_model_media.py scripts/test_small_app_bundle.py scripts/test_app_equivalence.py scripts/test_split_model_media.py scripts/test_render_split_media_dmg.py scripts/test_write_app_model_catalog.py scripts/test_prepare_common_asr_app.py -q --tb=short
+
+  typescript-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install workspace dependencies
+        run: npm ci
+
+      - name: Reject high-severity JavaScript advisories
+        run: npm audit --audit-level=high
+
+      - name: Build contracts
+        run: npm run build --workspace packages/contracts
+
+      - name: Check and test API
+        run: |
+          npm run check --workspace services/api-ts
+          npm run test --workspace services/api-ts
+
+      - name: Check desktop cockpit contracts
+        run: npm test --workspace apps/desktop-tauri
+
+      - name: Check, test, and build web console
+        run: |
+          npm run typecheck --workspace apps/web-console
+          npm run test --workspace apps/web-console
+          npm run build --workspace apps/web-console
+
+  mobile-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile/voxagent-companion
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "26.5.0"
+          cache: npm
+          cache-dependency-path: mobile/voxagent-companion/package-lock.json
+
+      - name: Set up deterministic candidate builder Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.14.5"
+
+      - name: Verify reviewed verification entry points before execution
+        working-directory: .
+        run: |
+          sha256sum --check <<'PINS'
+          30e090a3b656c05ab42028bffd941532fe3b811c145e3afd6fa84a2a5a5ae7de  scripts/prepare_mobile_ci_inputs.py
+          84ee16387b24771d2e749c44f3e5746ce580bc0321c416ba754e477e9500dbf6  scripts/prepare_mobile_delivery_fixture.py
+          05fdbf710d235143229ec4afabaa912d5580fcd5ca0c27a89f1cc3d30a692a3a  scripts/verify_mobile_canonical_ci.py
+          aef9e911b35d601b473abc494861ad63d316aba5d251adcb865e79003ed08e94  scripts/verify_mobile_delivery_install.cjs
+          e3e0e6cdecbbc3e9e4b56d5f910e7867cea56f629f895772aa8370952e24438a  security/mobile-candidate/provenance.cjs
+          8c1267ce8bc55d27b42ee7fd29fb68c929f0807cc670a32a93f67399b1d7340f  security/mobile-candidate/safety-verifiers.json
+          PINS
+
+      - name: Test canonical report acceptance and refusal
+        working-directory: .
+        run: |
+          python3 scripts/test_mobile_canonical_ci.py
+          python3 scripts/test_mobile_archive_compression.py
+
+      - name: Pin candidate builder npm
+        run: npm install --global npm@11.17.0 --ignore-scripts
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify pinned dependency defenses
+        run: npm run security:provenance
+
+      - name: Reject high-severity JavaScript advisories
+        run: npm audit --audit-level=high
+
+      - name: Typecheck and test mobile companion
+        run: |
+          npm run fixtures:check
+          npm run typecheck
+          npm test
+
+      - name: Prepare pinned offline canonical verification inputs
+        working-directory: .
+        run: >-
+          python3 scripts/prepare_mobile_ci_inputs.py
+          --table-sha256 8c1267ce8bc55d27b42ee7fd29fb68c929f0807cc670a32a93f67399b1d7340f
+          --output build/qualified-mobile-inputs
+
+      - name: Prepare exact committed target-layout fixture
+        working-directory: .
+        run: >-
+          python3 scripts/prepare_mobile_delivery_fixture.py
+          --output build/qualified-mobile-delivery
+          --legacy-dir build/qualified-mobile-inputs/legacy
+
+      - name: Verify normal target-layout install lifecycle
+        working-directory: build/qualified-mobile-delivery/mobile/voxagent-companion
+        run: npm ci
+
+      - name: Verify complete explicit canonical contract
+        working-directory: .
+        run: >-
+          python3 scripts/verify_mobile_canonical_ci.py
+          --runner-sha256 c204cafd467f4d3aaf966126e77b4d3f69f2561263b056151036ee5afa7c9722
+          --node-bin "$(command -v node)"
+          --app-root build/qualified-mobile-delivery/mobile/voxagent-companion
+          --upstream-dir build/qualified-mobile-inputs
+          --oracle-root build/qualified-mobile-inputs/oracle/mobile/voxagent-companion
+
+  windows-tauri-test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Verify SQLite WAL and Windows file locking
+        run: python scripts/verify_windows_sqlite.py --require-windows
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - name: Check canonical Tauri shell
+        run: |
+          cargo fmt --manifest-path apps/desktop-tauri/src-tauri/Cargo.toml --all -- --check
+          cargo test --manifest-path apps/desktop-tauri/src-tauri/Cargo.toml --locked
+
+  rust-advisory-audit:
+    name: RustSec advisory audit (pinned)
+    runs-on: ubuntu-24.04
+    env:
+      CARGO_AUDIT_URL: https://github.com/rustsec/rustsec/releases/download/cargo-audit/v0.22.2/cargo-audit-x86_64-unknown-linux-gnu-v0.22.2.tgz
+      CARGO_AUDIT_SHA256: ab28a1bdb54db4d5d8ad5981cf1f959410370b3d28250dbd35f6a44248620e39
+      RUSTSEC_ADVISORY_DB_COMMIT: ef03605143a913024f864d2edf476adad5720c93
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install checksum-pinned cargo-audit
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/cargo-audit-bin"
+          curl --fail --location --retry 3 \
+            --output "$RUNNER_TEMP/cargo-audit.tgz" \
+            "$CARGO_AUDIT_URL"
+          echo "$CARGO_AUDIT_SHA256  $RUNNER_TEMP/cargo-audit.tgz" | sha256sum --check
+          tar -xzf "$RUNNER_TEMP/cargo-audit.tgz" \
+            --strip-components=1 \
+            -C "$RUNNER_TEMP/cargo-audit-bin"
+          echo "$RUNNER_TEMP/cargo-audit-bin" >> "$GITHUB_PATH"
+
+      - name: Checkout pinned RustSec advisory database
+        shell: bash
+        run: |
+          git init "$RUNNER_TEMP/rustsec-advisory-db"
+          git -C "$RUNNER_TEMP/rustsec-advisory-db" remote add origin \
+            https://github.com/RustSec/advisory-db.git
+          git -C "$RUNNER_TEMP/rustsec-advisory-db" fetch --depth 1 origin \
+            "$RUSTSEC_ADVISORY_DB_COMMIT"
+          git -C "$RUNNER_TEMP/rustsec-advisory-db" checkout --detach FETCH_HEAD
+
+      - name: Audit canonical Rust lockfiles
+        run: >-
+          python scripts/rust_audit_gate.py
+          --database "$RUNNER_TEMP/rustsec-advisory-db"
+          --repo-root "$GITHUB_WORKSPACE"
+
+  swift-build:
+    # Default-off: enable only after the exact main workflow and dispatcher qualify.
+    # PRs keep hosted macOS; a flag change does not retarget already queued jobs.
+    runs-on: ${{ vars.OSVOX_MACOS_ISOLATED_RUNNERS == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' && fromJSON(format('["self-hosted","macOS","ARM64","osvox-macos-swift","osvox-run-{0}","osvox-attempt-{1}"]', github.run_id, github.run_attempt)) || 'macos-latest' }}
+    timeout-minutes: ${{ vars.OSVOX_MACOS_ISOLATED_RUNNERS == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' && 20 || 360 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Select supported Python from pinned isolated image
+        if: runner.environment == 'self-hosted'
+        run: |
+          /opt/homebrew/bin/python3 -c 'import hashlib, sys; print(sys.executable, sys.version); sys.exit(0 if sys.version_info[:3] == (3, 14, 7) and callable(getattr(hashlib, "file_digest", None)) else 1)'
+          echo '/opt/homebrew/bin' >> "$GITHUB_PATH"
+
+      - name: Build Swift
+        working-directory: macos
+        run: |
+          swift test -Xswiftc -warnings-as-errors
+          swift build -c release -Xswiftc -warnings-as-errors
+
+      - name: Verify model manifest and file boundaries
+        run: python3 scripts/verify_model_manifest.py --sdk "$(xcrun --sdk macosx --show-sdk-path)"
+      - name: Verify bounded ASR stdout reader
+        run: python3 scripts/verify_asr_port_reader.py --sdk "$(xcrun --sdk macosx --show-sdk-path)"
+      - name: Verify Debug and Release ASR runtime and model selection
+        run: python3 scripts/verify_asr_exit.py --launch-policy --sdk "$(xcrun --sdk macosx --show-sdk-path)"
+      - name: Verify ASR actor exit generations
+        run: python3 scripts/verify_asr_exit.py --sdk "$(xcrun --sdk macosx --show-sdk-path)"
+      - name: Verify offline model media and import bridge
+        run: |
+          python3 scripts/build_model_import_cli.py --sdk "$(xcrun --sdk macosx --show-sdk-path)"
+          python3 scripts/verify_model_import_cli.py --sdk "$(xcrun --sdk macosx --show-sdk-path)"
+          python3 scripts/verify_offline_model_import.py --sdk "$(xcrun --sdk macosx --show-sdk-path)"
+          python3 scripts/verify_pinned_model_download.py --sdk "$(xcrun --sdk macosx --show-sdk-path)"
+
+      - name: Verify input backup receipt recovery and identity isolation
+        run: python3 scripts/verify_input_backup_client.py --sdk "$(xcrun --show-sdk-path)"
+      - name: Verify private Context consumer and revision invalidation
+        run: python3 scripts/verify_context_private_inbox.py --sdk "$(xcrun --show-sdk-path)"
+
+      - name: Verify read-only context Git and worktree inspection
+        run: python3 scripts/verify_context_repository.py --sdk "$(xcrun --show-sdk-path)"

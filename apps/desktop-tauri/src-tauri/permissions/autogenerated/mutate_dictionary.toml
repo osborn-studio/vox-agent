@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-mutate-dictionary"
+description = "Enables the mutate_dictionary command without any pre-configured scope."
+commands.allow = ["mutate_dictionary"]
+
+[[permission]]
+identifier = "deny-mutate-dictionary"
+description = "Denies the mutate_dictionary command without any pre-configured scope."
+commands.deny = ["mutate_dictionary"]

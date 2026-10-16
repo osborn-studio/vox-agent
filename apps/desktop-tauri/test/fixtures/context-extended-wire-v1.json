@@ -1,0 +1,1180 @@
+{
+  "version": 1,
+  "generated_by": "scripts/context_extended_fixture.py",
+  "placeholders": {
+    "<id-N>": "server-generated identifier, stable within this fixture",
+    "<timestamp>": "server wall-clock ISO-8601 time",
+    "<cursor>": "opaque pagination cursor; pass back unchanged",
+    "<epoch-ms>": "server time in epoch milliseconds, as a decimal string",
+    "<revision>": "opaque authorization revision of a history traversal",
+    "<week-monday>": "Monday of the requested Asia/Shanghai week (YYYY-MM-DD)"
+  },
+  "private": {
+    "source_contract": "engine.context_private (PrivateContextJournal routes)",
+    "http_cases": [
+      {
+        "name": "authorization",
+        "request": {
+          "method": "GET",
+          "path": "/v1/context-private-authorization",
+          "auth": "owner"
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "version": 1,
+            "allowed": true,
+            "meaning": "current-private-intake-authorization"
+          },
+          "cache_control": "no-store"
+        }
+      },
+      {
+        "name": "create",
+        "request": {
+          "method": "POST",
+          "path": "/v1/context-private",
+          "auth": "owner",
+          "json": {
+            "eventId": "personal-1",
+            "text": "synthetic note",
+            "tags": [
+              "question"
+            ]
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "version": 1,
+            "id": "<id-1>",
+            "eventId": "personal-1",
+            "revision": 1,
+            "visibility": "private",
+            "evidenceKind": "user-statement",
+            "withdrawn": false,
+            "createdAt": "<timestamp>",
+            "revisionChangedAt": "<timestamp>",
+            "text": "synthetic note",
+            "tags": [
+              "question"
+            ],
+            "projectId": null,
+            "repositoryId": null
+          },
+          "cache_control": "no-store"
+        }
+      },
+      {
+        "name": "create_replay",
+        "request": {
+          "method": "POST",
+          "path": "/v1/context-private",
+          "auth": "owner",
+          "json": {
+            "eventId": "personal-1",
+            "text": "synthetic note",
+            "tags": [
+              "question"
+            ]
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "version": 1,
+            "id": "<id-1>",
+            "eventId": "personal-1",
+            "revision": 1,
+            "visibility": "private",
+            "evidenceKind": "user-statement",
+            "withdrawn": false,
+            "createdAt": "<timestamp>",
+            "revisionChangedAt": "<timestamp>",
+            "text": "synthetic note",
+            "tags": [
+              "question"
+            ],
+            "projectId": null,
+            "repositoryId": null
+          },
+          "cache_control": "no-store"
+        },
+        "note": "Same eventId and payload returns the stored record."
+      },
+      {
+        "name": "create_conflict",
+        "request": {
+          "method": "POST",
+          "path": "/v1/context-private",
+          "auth": "owner",
+          "json": {
+            "eventId": "personal-1",
+            "text": "synthetic note",
+            "tags": []
+          }
+        },
+        "response": {
+          "status": 409,
+          "body": {
+            "detail": "PRIVATE_CONTEXT_CONFLICT"
+          },
+          "cache_control": "no-store"
+        }
+      },
+      {
+        "name": "validation_unknown_field",
+        "request": {
+          "method": "POST",
+          "path": "/v1/context-private",
+          "auth": "owner",
+          "json": {
+            "eventId": "personal-2",
+            "text": "x",
+            "visibility": "team"
+          }
+        },
+        "response": {
+          "status": 422,
+          "body": {
+            "detail": "INVALID_PRIVATE_CONTEXT_INPUT"
+          },
+          "cache_control": "no-store"
+        }
+      },
+      {
+        "name": "validation_snapshot_without_project",
+        "request": {
+          "method": "POST",
+          "path": "/v1/context-private",
+          "auth": "owner",
+          "json": {
+            "eventId": "personal-3",
+            "text": "x",
+            "expectedRepositoryId": "studio/repo"
+          }
+        },
+        "response": {
+          "status": 422,
+          "body": {
+            "detail": "INVALID_PRIVATE_CONTEXT_INPUT"
+          },
+          "cache_control": "no-store"
+        }
+      },
+      {
+        "name": "no_auth",
+        "request": {
+          "method": "POST",
+          "path": "/v1/context-private",
+          "auth": "none",
+          "json": {
+            "eventId": "personal-4",
+            "text": "x"
+          }
+        },
+        "response": {
+          "status": 401,
+          "body": {
+            "detail": {
+              "code": "AUTH_REQUIRED",
+              "message": "Bearer credential required"
+            }
+          },
+          "cache_control": "no-store"
+        }
+      },
+      {
+        "name": "list",
+        "request": {
+          "method": "GET",
+          "path": "/v1/context-private",
+          "auth": "owner",
+          "query": {
+            "start": "<window-start>",
+            "end": "<window-end>"
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "version": 1,
+            "scope": "own-private-context",
+            "items": [
+              {
+                "version": 1,
+                "id": "<id-1>",
+                "eventId": "personal-1",
+                "revision": 1,
+                "visibility": "private",
+                "evidenceKind": "user-statement",
+                "withdrawn": false,
+                "createdAt": "<timestamp>",
+                "revisionChangedAt": "<timestamp>",
+                "text": "synthetic note",
+                "tags": [
+                  "question"
+                ],
+                "projectId": null,
+                "repositoryId": null
+              }
+            ],
+            "hasMore": false,
+            "nextCursor": null,
+            "omittedRecords": false,
+            "evidenceKind": "user-statement"
+          },
+          "cache_control": "no-store"
+        }
+      },
+      {
+        "name": "get",
+        "request": {
+          "method": "GET",
+          "path": "/v1/context-private/<id-1>",
+          "auth": "owner"
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "version": 1,
+            "id": "<id-1>",
+            "eventId": "personal-1",
+            "revision": 1,
+            "visibility": "private",
+            "evidenceKind": "user-statement",
+            "withdrawn": false,
+            "createdAt": "<timestamp>",
+            "revisionChangedAt": "<timestamp>",
+            "text": "synthetic note",
+            "tags": [
+              "question"
+            ],
+            "projectId": null,
+            "repositoryId": null
+          },
+          "cache_control": "no-store"
+        }
+      },
+      {
+        "name": "get_other_owner",
+        "request": {
+          "method": "GET",
+          "path": "/v1/context-private/<id-1>",
+          "auth": "other"
+        },
+        "response": {
+          "status": 404,
+          "body": {
+            "detail": "PRIVATE_CONTEXT_NOT_FOUND"
+          },
+          "cache_control": "no-store"
+        }
+      },
+      {
+        "name": "event_readback",
+        "request": {
+          "method": "GET",
+          "path": "/v1/context-private-events/personal-1",
+          "auth": "owner"
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "version": 1,
+            "meaning": "point-in-time-only-not-absence-proof",
+            "status": "observed",
+            "source": {
+              "version": 1,
+              "id": "<id-1>",
+              "eventId": "personal-1",
+              "revision": 1,
+              "visibility": "private",
+              "evidenceKind": "user-statement",
+              "withdrawn": false,
+              "createdAt": "<timestamp>",
+              "revisionChangedAt": "<timestamp>",
+              "text": "synthetic note",
+              "tags": [
+                "question"
+              ],
+              "projectId": null,
+              "repositoryId": null
+            },
+            "mutationId": null
+          },
+          "cache_control": "no-store"
+        }
+      },
+      {
+        "name": "event_readback_not_observed",
+        "request": {
+          "method": "GET",
+          "path": "/v1/context-private-events/never-created",
+          "auth": "owner"
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "version": 1,
+            "meaning": "point-in-time-only-not-absence-proof",
+            "status": "not-observed",
+            "source": null,
+            "mutationId": null
+          },
+          "cache_control": "no-store"
+        },
+        "note": "200 not-observed is a point-in-time answer, never proof the create did not happen."
+      },
+      {
+        "name": "edit",
+        "request": {
+          "method": "PUT",
+          "path": "/v1/context-private/<id-1>",
+          "auth": "owner",
+          "json": {
+            "requestId": "edit-1",
+            "expectedRevision": 1,
+            "text": "synthetic edit",
+            "tags": []
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "version": 1,
+            "id": "<id-1>",
+            "eventId": "personal-1",
+            "revision": 2,
+            "visibility": "private",
+            "evidenceKind": "user-statement",
+            "withdrawn": false,
+            "createdAt": "<timestamp>",
+            "revisionChangedAt": "<timestamp>",
+            "text": "synthetic edit",
+            "tags": [],
+            "projectId": null,
+            "repositoryId": null
+          },
+          "cache_control": "no-store"
+        }
+      },
+      {
+        "name": "edit_replay_request",
+        "request": {
+          "method": "PUT",
+          "path": "/v1/context-private/<id-1>",
+          "auth": "owner",
+          "json": {
+            "requestId": "edit-1",
+            "expectedRevision": 1,
+            "text": "synthetic edit",
+            "tags": []
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "version": 1,
+            "id": "<id-1>",
+            "eventId": "personal-1",
+            "revision": 2,
+            "visibility": "private",
+            "evidenceKind": "user-statement",
+            "withdrawn": false,
+            "createdAt": "<timestamp>",
+            "revisionChangedAt": "<timestamp>",
+            "text": "synthetic edit",
+            "tags": [],
+            "projectId": null,
+            "repositoryId": null
+          },
+          "cache_control": "no-store"
+        }
+      },
+      {
+        "name": "edit_stale_revision",
+        "request": {
+          "method": "PUT",
+          "path": "/v1/context-private/<id-1>",
+          "auth": "owner",
+          "json": {
+            "requestId": "edit-2",
+            "expectedRevision": 1,
+            "text": "another edit",
+            "tags": []
+          }
+        },
+        "response": {
+          "status": 409,
+          "body": {
+            "detail": "PRIVATE_CONTEXT_REVISION_CONFLICT"
+          },
+          "cache_control": "no-store"
+        }
+      },
+      {
+        "name": "request_readback",
+        "request": {
+          "method": "GET",
+          "path": "/v1/context-private-events/personal-1/requests/edit-1",
+          "auth": "owner"
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "version": 1,
+            "meaning": "point-in-time-only-not-absence-proof",
+            "status": "observed",
+            "source": {
+              "version": 1,
+              "id": "<id-1>",
+              "eventId": "personal-1",
+              "revision": 2,
+              "visibility": "private",
+              "evidenceKind": "user-statement",
+              "withdrawn": false,
+              "createdAt": "<timestamp>",
+              "revisionChangedAt": "<timestamp>",
+              "text": "synthetic edit",
+              "tags": [],
+              "projectId": null,
+              "repositoryId": null
+            },
+            "mutationId": "edit-1"
+          },
+          "cache_control": "no-store"
+        },
+        "note": "Reconstructs the revision accepted by that request, not the current record."
+      },
+      {
+        "name": "reference_check_stale",
+        "request": {
+          "method": "POST",
+          "path": "/v1/context-private-reference-check",
+          "auth": "owner",
+          "json": {
+            "sources": [
+              {
+                "id": "<id-1>",
+                "revision": 1
+              }
+            ]
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "version": 1,
+            "valid": false,
+            "requiresUserReview": true,
+            "meaning": "current-authorized-private-revisions-only",
+            "evidenceKind": "user-statement"
+          },
+          "cache_control": "no-store"
+        }
+      },
+      {
+        "name": "reference_check_current",
+        "request": {
+          "method": "POST",
+          "path": "/v1/context-private-reference-check",
+          "auth": "owner",
+          "json": {
+            "sources": [
+              {
+                "id": "<id-1>",
+                "revision": 2
+              }
+            ]
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "version": 1,
+            "valid": true,
+            "requiresUserReview": true,
+            "meaning": "current-authorized-private-revisions-only",
+            "evidenceKind": "user-statement"
+          },
+          "cache_control": "no-store"
+        }
+      },
+      {
+        "name": "search",
+        "request": {
+          "method": "POST",
+          "path": "/v1/context-private-search",
+          "auth": "owner",
+          "json": {
+            "start": "<timestamp>",
+            "end": "<timestamp>",
+            "q": "edit"
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "version": 1,
+            "scope": "own-private-context",
+            "items": [
+              {
+                "version": 1,
+                "id": "<id-1>",
+                "eventId": "personal-1",
+                "revision": 2,
+                "visibility": "private",
+                "evidenceKind": "user-statement",
+                "withdrawn": false,
+                "createdAt": "<timestamp>",
+                "revisionChangedAt": "<timestamp>",
+                "text": "synthetic edit",
+                "tags": [],
+                "projectId": null,
+                "repositoryId": null
+              }
+            ],
+            "hasMore": false,
+            "nextCursor": null,
+            "omittedRecords": false,
+            "evidenceKind": "user-statement"
+          },
+          "cache_control": "no-store"
+        }
+      },
+      {
+        "name": "withdraw",
+        "request": {
+          "method": "POST",
+          "path": "/v1/context-private/<id-1>/withdraw",
+          "auth": "owner",
+          "json": {
+            "requestId": "withdraw-1",
+            "expectedRevision": 2
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "version": 1,
+            "id": "<id-1>",
+            "eventId": "personal-1",
+            "revision": 3,
+            "visibility": "private",
+            "evidenceKind": "user-statement",
+            "withdrawn": true,
+            "createdAt": "<timestamp>",
+            "revisionChangedAt": "<timestamp>"
+          },
+          "cache_control": "no-store"
+        }
+      },
+      {
+        "name": "get_after_withdraw",
+        "request": {
+          "method": "GET",
+          "path": "/v1/context-private/<id-1>",
+          "auth": "owner"
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "version": 1,
+            "id": "<id-1>",
+            "eventId": "personal-1",
+            "revision": 3,
+            "visibility": "private",
+            "evidenceKind": "user-statement",
+            "withdrawn": true,
+            "createdAt": "<timestamp>",
+            "revisionChangedAt": "<timestamp>"
+          },
+          "cache_control": "no-store"
+        }
+      }
+    ]
+  },
+  "inputs_weekly": {
+    "source_contract": "engine.context_inputs",
+    "timezone": "Asia/Shanghai",
+    "http_cases": [
+      {
+        "name": "inputs_page_1",
+        "request": {
+          "method": "GET",
+          "path": "/v1/context-inputs",
+          "auth": "owner",
+          "query": {
+            "start": "<window-start>",
+            "end": "<window-end>",
+            "limit": "2"
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "version": 1,
+            "scope": "own-submitted-backup-inputs",
+            "items": [
+              {
+                "eventId": "team-2",
+                "text": "team note 2",
+                "submittedAt": "<timestamp>",
+                "targetId": "team",
+                "shareIntent": "backup-destination",
+                "deliveryStatus": "pending",
+                "attribution": null,
+                "evidenceKind": "user-statement"
+              },
+              {
+                "eventId": "team-1",
+                "text": "team note 1",
+                "submittedAt": "<timestamp>",
+                "targetId": "team",
+                "shareIntent": "backup-destination",
+                "deliveryStatus": "pending",
+                "attribution": null,
+                "evidenceKind": "user-statement"
+              }
+            ],
+            "nextCursor": "<cursor>",
+            "hasMore": true,
+            "omittedRecords": false,
+            "coverage": "currently-authorized-accepted-backups",
+            "notices": [
+              "Only currently authorized accepted backups are covered; original destination determines visibility.",
+              "Omission flags cover hidden targets in the window and project/corrupt records on this page. Combine flags across pages.",
+              "Follow nextCursor while hasMore is true, even for short or empty pages. This is not a private inbox or complete work record."
+            ]
+          },
+          "cache_control": "no-store"
+        }
+      },
+      {
+        "name": "inputs_page_2",
+        "request": {
+          "method": "GET",
+          "path": "/v1/context-inputs",
+          "auth": "owner",
+          "query": {
+            "start": "<window-start>",
+            "end": "<window-end>",
+            "limit": "2",
+            "cursor": "<cursor>"
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "version": 1,
+            "scope": "own-submitted-backup-inputs",
+            "items": [
+              {
+                "eventId": "team-0",
+                "text": "team note 0",
+                "submittedAt": "<timestamp>",
+                "targetId": "team",
+                "shareIntent": "backup-destination",
+                "deliveryStatus": "pending",
+                "attribution": null,
+                "evidenceKind": "user-statement"
+              }
+            ],
+            "nextCursor": null,
+            "hasMore": false,
+            "omittedRecords": false,
+            "coverage": "currently-authorized-accepted-backups",
+            "notices": [
+              "Only currently authorized accepted backups are covered; original destination determines visibility.",
+              "Omission flags cover hidden targets in the window and project/corrupt records on this page. Combine flags across pages.",
+              "Follow nextCursor while hasMore is true, even for short or empty pages. This is not a private inbox or complete work record."
+            ]
+          },
+          "cache_control": "no-store"
+        }
+      },
+      {
+        "name": "inputs_bad_limit",
+        "request": {
+          "method": "GET",
+          "path": "/v1/context-inputs",
+          "auth": "owner",
+          "query": {
+            "start": "<window-start>",
+            "end": "<window-end>",
+            "limit": "51"
+          }
+        },
+        "response": {
+          "status": 422,
+          "body": {
+            "detail": "INVALID_CONTEXT_LIMIT"
+          },
+          "cache_control": "no-store"
+        }
+      },
+      {
+        "name": "inputs_unknown_parameter",
+        "request": {
+          "method": "GET",
+          "path": "/v1/context-inputs",
+          "auth": "owner",
+          "query": {
+            "start": "<window-start>",
+            "end": "<window-end>",
+            "q": "x"
+          }
+        },
+        "response": {
+          "status": 422,
+          "body": {
+            "detail": "INVALID_CONTEXT_QUERY"
+          },
+          "cache_control": "no-store"
+        }
+      },
+      {
+        "name": "weekly_draft",
+        "request": {
+          "method": "GET",
+          "path": "/v1/context-weekly-draft",
+          "auth": "owner",
+          "query": {
+            "week": "<week-monday>"
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "version": 1,
+            "week": "<week-monday>",
+            "timezone": "Asia/Shanghai",
+            "kind": "source-review-draft",
+            "requiresUserReview": true,
+            "coverage": "currently-authorized-accepted-backups",
+            "hasMore": false,
+            "omittedRecords": false,
+            "nextCursor": null,
+            "notices": [
+              "Only currently authorized accepted backup inputs are included; local/private inputs are not covered. Original destination determines visibility.",
+              "User statements do not prove completed or verified work. Missing data does not mean no work.",
+              "Only currently authorized accepted backups are covered; original destination determines visibility.",
+              "Omission flags cover hidden targets in the window and project/corrupt records on this page. Combine flags across pages.",
+              "Follow nextCursor while hasMore is true, even for short or empty pages. This is not a private inbox or complete work record."
+            ],
+            "sources": [
+              {
+                "eventId": "team-2",
+                "text": "team note 2",
+                "submittedAt": "<timestamp>",
+                "targetId": "team",
+                "shareIntent": "backup-destination",
+                "deliveryStatus": "pending",
+                "attribution": null,
+                "evidenceKind": "user-statement"
+              },
+              {
+                "eventId": "team-1",
+                "text": "team note 1",
+                "submittedAt": "<timestamp>",
+                "targetId": "team",
+                "shareIntent": "backup-destination",
+                "deliveryStatus": "pending",
+                "attribution": null,
+                "evidenceKind": "user-statement"
+              },
+              {
+                "eventId": "team-0",
+                "text": "team note 0",
+                "submittedAt": "<timestamp>",
+                "targetId": "team",
+                "shareIntent": "backup-destination",
+                "deliveryStatus": "pending",
+                "attribution": null,
+                "evidenceKind": "user-statement"
+              }
+            ]
+          },
+          "cache_control": "no-store"
+        },
+        "note": "Week is the Monday of the current Asia/Shanghai week; private records are excluded."
+      },
+      {
+        "name": "weekly_not_monday",
+        "request": {
+          "method": "GET",
+          "path": "/v1/context-weekly-draft",
+          "auth": "owner",
+          "query": {
+            "week": "2026-10-06"
+          }
+        },
+        "response": {
+          "status": 422,
+          "body": {
+            "detail": "INVALID_CONTEXT_WEEK"
+          },
+          "cache_control": "no-store"
+        }
+      },
+      {
+        "name": "weekly_missing_week",
+        "request": {
+          "method": "GET",
+          "path": "/v1/context-weekly-draft",
+          "auth": "owner"
+        },
+        "response": {
+          "status": 422,
+          "body": {
+            "detail": "INVALID_CONTEXT_WEEK"
+          },
+          "cache_control": "no-store"
+        }
+      }
+    ]
+  },
+  "conversations": {
+    "source_contract": "engine.feishu_conversations / feishu_conversation_store",
+    "note": "Conversation receipts use their own status vocabulary (e.g. sent), distinct from team backup receipts (delivered).",
+    "http_cases": [
+      {
+        "name": "list",
+        "request": {
+          "method": "GET",
+          "path": "/v1/conversations",
+          "auth": "owner"
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "identity": {
+              "appId": "cli_test",
+              "tenantKey": "team",
+              "userId": "<id-2>"
+            },
+            "conversations": [
+              {
+                "id": "<id-3>",
+                "kind": "personal",
+                "name": "Feishu CLI",
+                "capability": "text_send",
+                "readCapability": "authorized_text",
+                "translationCapability": "explicit_per_item"
+              },
+              {
+                "id": "<id-4>",
+                "kind": "group",
+                "name": "oc_one",
+                "capability": "text_send",
+                "readCapability": "authorized_text",
+                "translationCapability": "explicit_per_item"
+              }
+            ]
+          },
+          "cache_control": "no-store"
+        }
+      },
+      {
+        "name": "list_no_auth",
+        "request": {
+          "method": "GET",
+          "path": "/v1/conversations",
+          "auth": "none"
+        },
+        "response": {
+          "status": 401,
+          "body": {
+            "detail": {
+              "code": "AUTH_REQUIRED",
+              "message": "Bearer credential required"
+            }
+          },
+          "cache_control": "no-store"
+        }
+      },
+      {
+        "name": "send_accepted",
+        "request": {
+          "method": "POST",
+          "path": "/v1/conversations/<id-3>/messages",
+          "auth": "owner",
+          "json": {
+            "eventId": "conv-1",
+            "text": "synthetic message"
+          }
+        },
+        "response": {
+          "status": 202,
+          "body": {
+            "eventId": "conv-1",
+            "conversationId": "<id-3>",
+            "status": "pending",
+            "reason": "QUEUED",
+            "final": false
+          },
+          "cache_control": "no-store"
+        }
+      },
+      {
+        "name": "send_replay",
+        "request": {
+          "method": "POST",
+          "path": "/v1/conversations/<id-3>/messages",
+          "auth": "owner",
+          "json": {
+            "eventId": "conv-1",
+            "text": "synthetic message"
+          }
+        },
+        "response": {
+          "status": 202,
+          "body": {
+            "eventId": "conv-1",
+            "conversationId": "<id-3>",
+            "status": "pending",
+            "reason": "QUEUED",
+            "final": false
+          },
+          "cache_control": "no-store"
+        }
+      },
+      {
+        "name": "send_conflict_other_conversation",
+        "request": {
+          "method": "POST",
+          "path": "/v1/conversations/<id-4>/messages",
+          "auth": "owner",
+          "json": {
+            "eventId": "conv-1",
+            "text": "synthetic message"
+          }
+        },
+        "response": {
+          "status": 409,
+          "body": {
+            "detail": "EVENT_PAYLOAD_CONFLICT"
+          },
+          "cache_control": "no-store"
+        },
+        "note": "The eventId is bound to its first conversation."
+      },
+      {
+        "name": "send_conflict_text",
+        "request": {
+          "method": "POST",
+          "path": "/v1/conversations/<id-3>/messages",
+          "auth": "owner",
+          "json": {
+            "eventId": "conv-1",
+            "text": "changed"
+          }
+        },
+        "response": {
+          "status": 409,
+          "body": {
+            "detail": "EVENT_PAYLOAD_CONFLICT"
+          },
+          "cache_control": "no-store"
+        }
+      },
+      {
+        "name": "send_forged_conversation",
+        "request": {
+          "method": "POST",
+          "path": "/v1/conversations/fc_forged/messages",
+          "auth": "owner",
+          "json": {
+            "eventId": "conv-1",
+            "text": "synthetic message"
+          }
+        },
+        "response": {
+          "status": 403,
+          "body": {
+            "detail": "CONVERSATION_DENIED"
+          },
+          "cache_control": "no-store"
+        }
+      },
+      {
+        "name": "send_unknown_field",
+        "request": {
+          "method": "POST",
+          "path": "/v1/conversations/<id-3>/messages",
+          "auth": "owner",
+          "json": {
+            "eventId": "conv-1",
+            "text": "synthetic message",
+            "target": "oc_one"
+          }
+        },
+        "response": {
+          "status": 422,
+          "body": {
+            "detail": "INVALID_CONVERSATION_INPUT"
+          },
+          "cache_control": "no-store"
+        }
+      },
+      {
+        "name": "receipt_other_conversation",
+        "request": {
+          "method": "GET",
+          "path": "/v1/conversations/<id-4>/receipts/conv-1",
+          "auth": "owner"
+        },
+        "response": {
+          "status": 404,
+          "body": {
+            "detail": "RECEIPT_NOT_FOUND"
+          },
+          "cache_control": "no-store"
+        }
+      },
+      {
+        "name": "history_own_first_page",
+        "request": {
+          "method": "GET",
+          "path": "/v1/conversations/<id-4>/messages",
+          "auth": "owner",
+          "query": {
+            "pageSize": "1"
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "translationCapability": "explicit_per_item",
+            "conversationId": "<id-4>",
+            "mode": "own_submissions",
+            "policyRevision": "<revision>",
+            "items": [
+              {
+                "messageId": null,
+                "eventId": "conv-3",
+                "source": "submission",
+                "text": "synthetic conv-3",
+                "createdAt": "<epoch-ms>",
+                "updatedAt": "<epoch-ms>",
+                "deleted": false,
+                "updated": false,
+                "placeholder": false,
+                "authorKind": "vox",
+                "authorId": "<id-2>",
+                "authorName": "Alice",
+                "status": "pending",
+                "modelTranslationAllowed": true
+              }
+            ],
+            "nextCursor": "<cursor>",
+            "hasMore": true
+          },
+          "cache_control": "no-store"
+        },
+        "note": "Group without a shared-read policy: own submissions only, not group history."
+      },
+      {
+        "name": "history_own_next_page",
+        "request": {
+          "method": "GET",
+          "path": "/v1/conversations/<id-4>/messages",
+          "auth": "owner",
+          "query": {
+            "pageSize": "1",
+            "cursor": "<cursor>"
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "translationCapability": "explicit_per_item",
+            "conversationId": "<id-4>",
+            "mode": "own_submissions",
+            "policyRevision": "<revision>",
+            "items": [
+              {
+                "messageId": null,
+                "eventId": "conv-2",
+                "source": "submission",
+                "text": "synthetic conv-2",
+                "createdAt": "<epoch-ms>",
+                "updatedAt": "<epoch-ms>",
+                "deleted": false,
+                "updated": false,
+                "placeholder": false,
+                "authorKind": "vox",
+                "authorId": "<id-2>",
+                "authorName": "Alice",
+                "status": "pending",
+                "modelTranslationAllowed": true
+              }
+            ],
+            "nextCursor": null,
+            "hasMore": false
+          },
+          "cache_control": "no-store"
+        }
+      },
+      {
+        "name": "history_cursor_consumed",
+        "request": {
+          "method": "GET",
+          "path": "/v1/conversations/<id-4>/messages",
+          "auth": "owner",
+          "query": {
+            "pageSize": "1",
+            "cursor": "<cursor>"
+          }
+        },
+        "response": {
+          "status": 409,
+          "body": {
+            "detail": "INVALID_CURSOR"
+          },
+          "cache_control": "no-store"
+        },
+        "note": "A cursor is single use; the client restarts from the first page."
+      },
+      {
+        "name": "history_forged_conversation",
+        "request": {
+          "method": "GET",
+          "path": "/v1/conversations/fc_forged/messages",
+          "auth": "owner"
+        },
+        "response": {
+          "status": 403,
+          "body": {
+            "detail": "CONVERSATION_DENIED"
+          },
+          "cache_control": "no-store"
+        }
+      }
+    ],
+    "status_sequence": [
+      {
+        "action": "submit",
+        "receipt": {
+          "eventId": "conv-1",
+          "conversationId": "<id-3>",
+          "status": "pending",
+          "reason": "QUEUED",
+          "final": false
+        }
+      },
+      {
+        "action": "worker_send",
+        "receipt": {
+          "eventId": "conv-1",
+          "conversationId": "<id-3>",
+          "status": "sent",
+          "reason": "DELIVERED",
+          "final": true,
+          "messageId": "om_sent"
+        }
+      }
+    ]
+  }
+}

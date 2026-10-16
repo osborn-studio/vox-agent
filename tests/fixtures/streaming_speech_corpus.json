@@ -1,0 +1,37 @@
+{
+  "schema": "voxagent.streaming-speech.corpus",
+  "schemaVersion": 1,
+  "description": "Declared multilingual text corpus for the speech event transport benchmark. It measures protocol delivery, not ASR accuracy.",
+  "samples": [
+    {
+      "language": "zh-Hans",
+      "speaker": { "id": "speaker-zh-1", "label": "中文发言者" },
+      "text": "请把今天的产品决策整理成可执行任务。"
+    },
+    {
+      "language": "zh-Hans",
+      "speaker": { "id": "speaker-zh-2", "label": "中文协作者" },
+      "text": "发布之前需要验证权限、恢复流程和审计记录。"
+    },
+    {
+      "language": "ja",
+      "speaker": { "id": "speaker-ja-1", "label": "日本語話者" },
+      "text": "会議の決定事項を担当者ごとのタスクにまとめてください。"
+    },
+    {
+      "language": "ja",
+      "speaker": { "id": "speaker-ja-2", "label": "共同編集者" },
+      "text": "接続が切れた後も同じ位置から再開できることを確認します。"
+    },
+    {
+      "language": "en",
+      "speaker": { "id": "speaker-en-1", "label": "English speaker" },
+      "text": "Turn the product decision into an auditable execution plan."
+    },
+    {
+      "language": "en",
+      "speaker": { "id": "speaker-en-2", "label": "Collaborator" },
+      "text": "Reconnect from the last acknowledged event without losing a segment."
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+# Activate HTTPS block only after certificate issuance. No query/body access logs.
+limit_req_zone $binary_remote_addr zone=vox_team_per_ip:10m rate=10r/s;
+server {
+    listen 80;
+    listen [::]:80;
+    server_name api.osbornvox.com;
+    access_log off;
+    error_log /dev/null;
+    location ^~ /.well-known/acme-challenge/ { root /var/www/vox-acme; }
+    location / { return 301 https://api.osbornvox.com$request_uri; }
+}
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name api.osbornvox.com;
+    ssl_certificate /etc/letsencrypt/live/api.osbornvox.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/api.osbornvox.com/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    access_log off;
+    error_log /dev/null;
+    client_max_body_size 1m;
+    client_body_buffer_size 1m;
+    proxy_max_temp_file_size 0;
+    limit_req zone=vox_team_per_ip burst=40 nodelay;
+    limit_req_status 429;
+    add_header Referrer-Policy no-referrer always;
+    add_header X-Content-Type-Options nosniff always;
+    add_header Strict-Transport-Security "max-age=31536000" always;
+    location / {
+        proxy_pass http://127.0.0.1:8766;
+        proxy_set_header Host api.osbornvox.com;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-For "";
+        proxy_connect_timeout 5s;
+        proxy_read_timeout 35s;
+    }
+}

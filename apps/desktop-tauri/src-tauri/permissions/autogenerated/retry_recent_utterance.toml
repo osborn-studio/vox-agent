@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-retry-recent-utterance"
+description = "Enables the retry_recent_utterance command without any pre-configured scope."
+commands.allow = ["retry_recent_utterance"]
+
+[[permission]]
+identifier = "deny-retry-recent-utterance"
+description = "Denies the retry_recent_utterance command without any pre-configured scope."
+commands.deny = ["retry_recent_utterance"]

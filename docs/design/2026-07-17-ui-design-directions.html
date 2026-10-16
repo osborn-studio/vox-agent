@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vox Agent — 三个 UI 设计方向 · 高保真对比</title>
+<style>
+/* ============ 评审页外壳（editorial dark） ============ */
+:root{
+  --ink:#0e0f11; --paper:#141518; --card:#1b1d21; --line:#2a2d33;
+  --txt:#e8e6e1; --txt2:#9a9891; --amber:#d97b29; --teal:#5ba3a5;
+  --serif: ui-serif, "New York", "Songti SC", Georgia, serif;
+  --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Helvetica Neue", sans-serif;
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--ink);color:var(--txt);font-family:var(--sans);font-size:15px;line-height:1.7;-webkit-font-smoothing:antialiased}
+
+/* header */
+.hero{max-width:1280px;margin:0 auto;padding:72px 40px 40px}
+.hero .kicker{font-family:var(--mono);font-size:12px;letter-spacing:.22em;color:var(--amber);text-transform:uppercase}
+.hero h1{font-family:var(--serif);font-size:clamp(34px,5vw,58px);font-weight:600;line-height:1.15;margin:14px 0 10px;letter-spacing:-.01em}
+.hero h1 em{font-style:italic;color:var(--teal)}
+.hero p{color:var(--txt2);max-width:640px}
+.hero .meta{display:flex;gap:24px;margin-top:26px;font-family:var(--mono);font-size:12px;color:var(--txt2)}
+.hero .meta b{color:var(--txt);font-weight:500}
+
+/* sticky nav */
+.nav{position:sticky;top:0;z-index:50;background:rgba(14,15,17,.86);backdrop-filter:blur(14px);border-block:1px solid var(--line)}
+.nav-in{max-width:1280px;margin:0 auto;padding:0 40px;display:flex;gap:4px;align-items:center;height:52px;overflow-x:auto}
+.nav a{color:var(--txt2);text-decoration:none;font-size:13px;padding:6px 14px;border-radius:99px;white-space:nowrap}
+.nav a:hover{color:var(--txt);background:var(--card)}
+.nav a .n{font-family:var(--mono);font-size:11px;color:var(--amber);margin-right:6px}
+.nav .spacer{flex:1}
+.nav .tag{font-family:var(--mono);font-size:11px;color:var(--txt2);white-space:nowrap}
+
+/* section frame */
+.sec{max-width:1280px;margin:0 auto;padding:88px 40px 30px}
+.sec-head{display:grid;grid-template-columns:auto 1fr;gap:28px;align-items:baseline;margin-bottom:8px}
+.sec-num{font-family:var(--serif);font-style:italic;font-size:56px;color:var(--line);line-height:1}
+.sec-title{font-family:var(--serif);font-size:clamp(26px,3.4vw,38px);font-weight:600;letter-spacing:-.01em}
+.sec-sub{color:var(--txt2);font-size:14px;margin-top:4px}
+.thesis{margin:18px 0 34px;padding:18px 22px;border-left:2px solid var(--amber);background:var(--card);border-radius:0 10px 10px 0;color:var(--txt);max-width:820px}
+.thesis b{color:var(--amber);font-weight:600}
+
+/* stage that holds a mac window */
+.stage{border:1px solid var(--line);border-radius:18px;padding:clamp(16px,3.4vw,44px);overflow:hidden;position:relative}
+.stage.light{background:
+  radial-gradient(1100px 500px at 12% -10%, #cfd8e6 0%, transparent 60%),
+  radial-gradient(900px 520px at 95% 10%, #e6d8c8 0%, transparent 55%),
+  linear-gradient(160deg,#b9c3d1 0%,#c8c4bd 52%,#a9b4c2 100%)}
+.stage.dark{background:
+  radial-gradient(1000px 460px at 10% -10%, #20242e 0%, transparent 60%),
+  radial-gradient(800px 480px at 95% 8%, #2a2320 0%, transparent 55%),
+  linear-gradient(160deg,#15171c 0%,#1a1c22 60%,#131418 100%)}
+.fit{position:relative;width:100%}
+.fit>.mac{transform-origin:top left}
+
+/* annotations */
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin-top:26px}
+.note{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.note .dot{display:inline-flex;width:22px;height:22px;border-radius:50%;background:var(--amber);color:#141518;font-family:var(--mono);font-size:12px;font-weight:700;align-items:center;justify-content:center;margin-bottom:10px}
+.note h4{font-size:13.5px;font-weight:600;margin-bottom:4px}
+.note p{font-size:13px;color:var(--txt2);line-height:1.65}
+.pin{position:absolute;width:24px;height:24px;border-radius:50%;background:var(--amber);color:#141518;font-family:var(--mono);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,.4), 0 0 0 4px rgba(217,123,41,.25);z-index:9}
+
+/* verdict */
+.verdict{max-width:1280px;margin:0 auto;padding:80px 40px 120px}
+.verdict h2{font-family:var(--serif);font-size:clamp(26px,3.4vw,36px);font-weight:600;margin-bottom:18px}
+.verdict .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:26px}
+.vcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px}
+.vcard .step{font-family:var(--mono);font-size:11px;color:var(--teal);letter-spacing:.18em}
+.vcard h3{font-size:16px;margin:8px 0 6px}
+.vcard p{font-size:13px;color:var(--txt2)}
+.formula{font-family:var(--serif);font-size:clamp(18px,2.4vw,24px);line-height:1.6;padding:26px 30px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(180deg,var(--card),transparent)}
+.formula i{color:var(--teal)}
+.formula b{color:var(--amber);font-weight:600}
+
+/* ================= macOS window 通用 ================= */
+.mac{width:1180px;border-radius:11px;overflow:hidden;font-family:var(--sans);
+  box-shadow:0 30px 70px rgba(0,0,0,.45), 0 2px 8px rgba(0,0,0,.3), 0 0 0 .5px rgba(0,0,0,.35)}
+.mac,.mac *{line-height:1.45}
+.lights{display:flex;gap:8px}
+.lights i{width:12px;height:12px;border-radius:50%;display:block}
+.lights i:nth-child(1){background:#ff5f57}.lights i:nth-child(2){background:#febc2e}.lights i:nth-child(3){background:#28c840}
+.icon{font-size:12px;opacity:.75}
+
+/* ================= D1 · Calm Native Cockpit ================= */
+.d1{--bg:#ffffff;--side:rgba(243,242,240,.82);--tx:#1d1d1f;--tx2:#7b7a78;--tx3:#a8a7a4;
+    --sep:rgba(0,0,0,.08);--accent:#3e7f81;--run:#28a745;--warn:#e8940a;--err:#e5484d;--idle:#b6b5b2;
+    color:var(--tx);font-size:13px;background:var(--bg)}
+.d1 .titlebar{display:flex;align-items:center;gap:16px;height:50px;padding:0 16px;background:rgba(248,247,245,.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--sep)}
+.d1 .tb-btn{display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:6px;color:var(--tx2);font-size:12.5px}
+.d1 .tb-btn:hover{background:rgba(0,0,0,.05)}
+.d1 .ws-switch{display:flex;align-items:center;gap:7px;font-weight:600;font-size:13px;padding:5px 12px;border-radius:7px}
+.d1 .ws-switch:hover{background:rgba(0,0,0,.05)}
+.d1 .search{margin-left:auto;display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.05);border-radius:7px;padding:5px 12px;width:220px;color:var(--tx3);font-size:12.5px}
+.d1 .search kbd{margin-left:auto;font-family:var(--mono);font-size:10.5px;background:#fff;border:1px solid var(--sep);border-radius:4px;padding:1px 5px;color:var(--tx2)}
+.d1 .body{display:grid;grid-template-columns:260px 1fr 300px;height:640px}
+.d1 .sidebar{background:var(--side);backdrop-filter:blur(24px);border-right:1px solid var(--sep);padding:14px 10px;display:flex;flex-direction:column}
+.d1 .group{font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--tx3);text-transform:uppercase;padding:8px 10px 4px;display:flex;align-items:center;gap:6px}
+.d1 .group .chev{font-size:9px}
+.d1 .agent{display:flex;align-items:center;gap:9px;padding:6px 10px;border-radius:7px;cursor:default}
+.d1 .agent:hover{background:rgba(0,0,0,.05)}
+.d1 .agent.sel{background:rgba(62,127,129,.14)}
+.d1 .agent .st{width:8px;height:8px;border-radius:50%;flex:none}
+.d1 .agent .nm{font-size:13px;font-weight:500}
+.d1 .agent .sub{font-size:11px;color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px}
+.d1 .agent .badge{margin-left:auto;background:var(--warn);color:#fff;font-size:10.5px;font-weight:700;border-radius:9px;padding:1px 6px}
+.d1 .side-foot{margin-top:auto;padding:10px;border-top:1px solid var(--sep);color:var(--tx2);font-size:12.5px;display:flex;align-items:center;gap:8px}
+.d1 .chat{display:flex;flex-direction:column;background:var(--bg)}
+.d1 .flow{flex:1;overflow:hidden;padding:26px 34px 10px;display:flex;flex-direction:column;gap:20px}
+.d1 .turn-u{border-left:2px solid var(--accent);padding:2px 0 2px 14px;display:flex;align-items:center;gap:10px}
+.d1 .turn-u .wave{display:flex;align-items:center;gap:2px;color:var(--accent)}
+.d1 .turn-u .wave i{width:2.5px;border-radius:2px;background:currentColor;display:block}
+.d1 .turn-u .t{font-size:13.5px}
+.d1 .turn-u .dur{font-family:var(--mono);font-size:10.5px;color:var(--tx3)}
+.d1 .turn-a{position:relative;padding-right:40px}
+.d1 .turn-a .who{font-size:11px;font-weight:600;color:var(--accent);margin-bottom:5px;display:flex;gap:8px;align-items:center}
+.d1 .turn-a .who .tm{font-family:var(--mono);font-weight:400;color:var(--tx3);font-size:10.5px}
+.d1 .turn-a .txt{font-size:13.5px;color:var(--tx);max-width:640px}
+.d1 .tool{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11.5px;color:var(--tx2);background:rgba(0,0,0,.035);border:1px solid var(--sep);border-radius:7px;padding:6px 12px;margin:8px 0;width:fit-content}
+.d1 .tool .ok{color:var(--run)}
+.d1 .hoveracts{position:absolute;top:-4px;right:0;display:flex;gap:2px;background:#fff;border:1px solid var(--sep);border-radius:8px;padding:3px;box-shadow:0 4px 14px rgba(0,0,0,.1)}
+.d1 .hoveracts span{padding:4px 8px;border-radius:5px;font-size:11.5px;color:var(--tx2);cursor:default}
+.d1 .hoveracts span:hover{background:rgba(0,0,0,.06);color:var(--tx)}
+.d1 .divider{height:1px;background:var(--sep);margin:0 -6px}
+.d1 .inputbar{height:52px;border-top:1px solid var(--sep);display:flex;align-items:center;gap:12px;padding:0 16px;background:rgba(250,249,247,.9)}
+.d1 .mic{width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.05);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--tx2)}
+.d1 .field{flex:1;font-size:13.5px}
+.d1 .field .done{color:var(--tx)}
+.d1 .field .raw{color:var(--tx3)}
+.d1 .ib-btn{color:var(--tx2);font-size:15px}
+.d1 .send{width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px}
+.d1 .inspector{border-left:1px solid var(--sep);background:rgba(250,249,247,.75);backdrop-filter:blur(20px);padding:14px;display:flex;flex-direction:column;gap:14px}
+.d1 .segs{display:flex;background:rgba(0,0,0,.06);border-radius:8px;padding:2px}
+.d1 .segs span{flex:1;text-align:center;font-size:11.5px;padding:4px 0;border-radius:6px;color:var(--tx2)}
+.d1 .segs .on{background:#fff;color:var(--tx);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.d1 .taskcard{background:#fff;border:1px solid var(--sep);border-radius:10px;padding:14px}
+.d1 .taskcard h5{font-size:12.5px;font-weight:600;margin-bottom:3px}
+.d1 .taskcard .tid{font-family:var(--mono);font-size:10px;color:var(--tx3)}
+.d1 .prog{height:3px;background:rgba(0,0,0,.08);border-radius:2px;margin:10px 0 12px;overflow:hidden}
+.d1 .prog i{display:block;height:100%;background:var(--accent);border-radius:2px}
+.d1 .step{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--tx2);padding:3px 0}
+.d1 .step .c{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--sep);flex:none;display:flex;align-items:center;justify-content:center;font-size:9px}
+.d1 .step.done .c{background:var(--accent);border-color:var(--accent);color:#fff}
+.d1 .step.done{color:var(--tx)}
+.d1 .step.now .c{border-color:var(--accent)}
+.d1 .step.now{color:var(--tx);font-weight:500}
+.d1 .step.now .c i{width:6px;height:6px;border-radius:50%;background:var(--accent);display:block;animation:pulse1 1.4s ease-in-out infinite}
+@keyframes pulse1{0%,100%{opacity:.35}50%{opacity:1}}
+
+/* ================= D2 · Agent Operations Desk ================= */
+.d2{--bg:#1a1b1e;--bg2:#202226;--bg3:#26282d;--tx:#e7e7ea;--tx2:#96969c;--tx3:#5f6066;
+    --sep:rgba(255,255,255,.075);--run:#4c8dff;--warn:#e8940a;--err:#e5484d;--ok:#2fbf62;--idle:#5f6066;
+    color:var(--tx);font-size:12.5px;background:var(--bg)}
+.d2 .titlebar{display:flex;align-items:center;gap:16px;height:46px;padding:0 16px;background:var(--bg2);border-bottom:1px solid var(--sep)}
+.d2 .title{font-weight:600;font-size:13px}
+.d2 .strip{display:flex;align-items:center;gap:0;height:30px;background:var(--bg2);border-bottom:1px solid var(--sep);padding:0 12px;font-family:var(--mono);font-size:11px}
+.d2 .strip .seg{display:flex;align-items:center;gap:7px;padding:3px 12px;border-radius:5px;color:var(--tx2);cursor:default}
+.d2 .strip .seg:hover{background:rgba(255,255,255,.05)}
+.d2 .strip .seg.on{background:rgba(76,141,255,.13);color:var(--tx)}
+.d2 .strip .seg b{font-weight:600;color:var(--tx)}
+.d2 .strip .pip{width:7px;height:7px;border-radius:50%}
+.d2 .strip .r{margin-left:auto;color:var(--tx3);display:flex;gap:14px}
+.d2 .body{display:grid;grid-template-columns:240px 1fr 360px;height:634px}
+.d2 .roster{background:var(--bg2);border-right:1px solid var(--sep);padding:12px 8px;overflow:hidden}
+.d2 .rgroup{font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--tx3);text-transform:uppercase;padding:10px 10px 5px}
+.d2 .rag{position:relative;padding:8px 10px 8px 14px;border-radius:6px;margin-bottom:2px;cursor:default}
+.d2 .rag:hover{background:rgba(255,255,255,.04)}
+.d2 .rag.sel{background:rgba(76,141,255,.1)}
+.d2 .rag::before{content:"";position:absolute;left:4px;top:7px;bottom:7px;width:2px;border-radius:2px;background:var(--edge,transparent)}
+.d2 .rag .l1{display:flex;align-items:center;gap:7px}
+.d2 .rag .nm{font-size:12.5px;font-weight:600}
+.d2 .rag .role{font-family:var(--mono);font-size:9.5px;color:var(--tx2);background:rgba(255,255,255,.06);border-radius:4px;padding:1px 6px}
+.d2 .rag .l2{display:flex;align-items:center;gap:8px;margin-top:4px;font-size:11px;color:var(--tx2)}
+.d2 .rag .mprog{flex:none;width:44px;height:2.5px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden}
+.d2 .rag .mprog i{display:block;height:100%;background:var(--run)}
+.d2 .rag .eta{font-family:var(--mono);font-size:10px;color:var(--tx3);margin-left:auto}
+.d2 .timeline{display:flex;flex-direction:column;background:var(--bg);overflow:hidden}
+.d2 .sess-head{display:flex;align-items:center;gap:8px;padding:12px 22px;border-bottom:1px solid var(--sep)}
+.d2 .sess-head .t{font-weight:600;font-size:13px;margin-right:6px}
+.d2 .chip{font-family:var(--mono);font-size:10px;padding:2.5px 9px;border-radius:99px;border:1px solid var(--sep);color:var(--tx2)}
+.d2 .chip.b{border-color:rgba(76,141,255,.4);color:var(--run)}
+.d2 .tl{flex:1;padding:18px 22px;display:flex;flex-direction:column;gap:13px;overflow:hidden}
+.d2 .ev{position:relative;border:1px solid var(--sep);border-radius:9px;background:var(--bg2);padding:11px 14px}
+.d2 .ev::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;border-radius:2px 0 0 2px;background:var(--edge,transparent)}
+.d2 .ev .h{display:flex;align-items:center;gap:9px;font-size:12px}
+.d2 .ev .h .k{font-family:var(--mono);font-size:10px;color:var(--tx3);margin-left:auto}
+.d2 .ev .h b{font-weight:600}
+.d2 .msg-u{display:flex;gap:10px;align-items:baseline;padding:2px 2px}
+.d2 .msg-u .me{font-size:10.5px;font-weight:700;color:var(--tx3);font-family:var(--mono)}
+.d2 .msg-u .t{font-size:13px}
+.d2 .msg-u .wv{color:var(--run);font-size:11px}
+.d2 .msg-a{padding:2px 2px;max-width:660px}
+.d2 .msg-a .who{font-size:10.5px;font-weight:700;color:var(--run);font-family:var(--mono);margin-bottom:3px}
+.d2 .msg-a .t{font-size:13px;color:var(--tx)}
+.d2 .perm .h .ic{color:var(--warn)}
+.d2 .perm .desc{font-size:12px;color:var(--tx2);margin:7px 0 10px}
+.d2 .perm .desc code{font-family:var(--mono);font-size:11px;color:var(--tx);background:rgba(255,255,255,.07);padding:1px 6px;border-radius:4px}
+.d2 .btns{display:flex;gap:8px}
+.d2 .btn{font-size:11.5px;font-weight:600;padding:4.5px 14px;border-radius:6px;cursor:default}
+.d2 .btn.ok{background:var(--ok);color:#0b0c0e}
+.d2 .btn.no{background:rgba(255,255,255,.07);color:var(--tx2)}
+.d2 .steplog{font-family:var(--mono);font-size:10.5px;color:var(--tx2);background:var(--bg);border:1px solid var(--sep);border-radius:6px;padding:8px 12px;margin-top:9px;line-height:1.8}
+.d2 .steplog .g{color:var(--ok)}.d2 .steplog .b{color:var(--run)}
+.d2 .ops{background:var(--bg2);border-left:1px solid var(--sep);display:flex;flex-direction:column;overflow:hidden}
+.d2 .ops h6{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--tx3);padding:12px 16px 8px;display:flex;align-items:center;gap:8px;border-top:1px solid var(--sep)}
+.d2 .ops section:first-child h6{border-top:none}
+.d2 .ops h6 .cnt{font-family:var(--mono);color:var(--tx2)}
+.d2 .ops h6 .fold{margin-left:auto;font-size:9px;color:var(--tx3)}
+.d2 .trow{display:flex;align-items:center;gap:9px;padding:7px 16px;font-size:12px}
+.d2 .trow:hover{background:rgba(255,255,255,.03)}
+.d2 .trow .pip{width:7px;height:7px;border-radius:50%;flex:none}
+.d2 .trow .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.d2 .trow .who{font-family:var(--mono);font-size:9.5px;color:var(--tx3)}
+.d2 .trow .acts{margin-left:auto;display:flex;gap:7px;color:var(--tx3);font-size:11px;flex:none}
+.d2 .trow .acts span:hover{color:var(--tx)}
+.d2 .trow .stepnow{font-family:var(--mono);font-size:10px;color:var(--run)}
+.d2 .qrow{display:flex;align-items:center;gap:9px;padding:6.5px 16px;font-size:12px;color:var(--tx2)}
+.d2 .qrow .grip{color:var(--tx3);font-size:10px;letter-spacing:1px}
+.d2 .qrow .cron{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--tx3)}
+.d2 .hrow{display:flex;align-items:center;gap:9px;padding:6px 16px;font-size:11.5px;color:var(--tx2)}
+.d2 .hrow .tm{font-family:var(--mono);font-size:10px;color:var(--tx3);flex:none;width:56px}
+.d2 .hrow .ic{flex:none}
+.d2 .live{animation:pulse1 1.6s ease-in-out infinite}
+
+/* ================= D3 · Voice Command Center ================= */
+.d3{--bg:#fbfaf8;--side:#f4f2ee;--tx:#232220;--tx2:#8a8781;--tx3:#b5b2ab;
+    --sep:rgba(35,34,32,.09);--amber:#d97b29;--amberbg:rgba(217,123,41,.09);--err:#e5484d;--ok:#3d9960;
+    color:var(--tx);font-size:13px;background:var(--bg)}
+.d3 .titlebar{display:flex;align-items:center;gap:16px;height:48px;padding:0 16px;background:rgba(250,249,246,.92);border-bottom:1px solid var(--sep)}
+.d3 .title{font-weight:600;font-size:13px}
+.d3 .ptt{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--tx2)}
+.d3 .ptt kbd{font-family:var(--mono);font-size:10px;background:#fff;border:1px solid var(--sep);border-bottom-width:2px;border-radius:5px;padding:2px 7px;color:var(--tx)}
+.d3 .body{display:grid;grid-template-columns:250px 1fr 310px;height:648px}
+.d3 .sidebar{background:var(--side);border-right:1px solid var(--sep);padding:14px 10px}
+.d3 .group{font-size:10.5px;font-weight:700;letter-spacing:.08em;color:var(--tx3);text-transform:uppercase;padding:6px 10px}
+.d3 .vag{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:9px;margin-bottom:2px;position:relative}
+.d3 .vag .num{font-family:var(--mono);font-size:10px;color:var(--tx3);width:10px}
+.d3 .vag .nm{font-weight:500}
+.d3 .vag .vs{margin-left:auto;font-size:10.5px;color:var(--tx3)}
+.d3 .vag.target{background:#fff;box-shadow:inset 0 0 0 1.5px var(--amber), 0 1px 4px rgba(0,0,0,.05)}
+.d3 .vag.target .vs{color:var(--amber);font-weight:600}
+.d3 .vag.speaking .vs{color:var(--ok)}
+.d3 .chat{display:flex;flex-direction:column;background:var(--bg)}
+.d3 .flow{flex:1;padding:24px 32px 8px;display:flex;flex-direction:column;gap:18px;overflow:hidden}
+.d3 .vmsg{display:flex;flex-direction:column;gap:6px;max-width:660px}
+.d3 .vmsg .row{display:flex;align-items:center;gap:10px}
+.d3 .vmsg .play{width:26px;height:26px;border-radius:50%;background:var(--amberbg);color:var(--amber);display:flex;align-items:center;justify-content:center;font-size:10px;flex:none}
+.d3 .vmsg .wv{display:flex;align-items:center;gap:2px;color:var(--amber);opacity:.8}
+.d3 .vmsg .wv i{width:2.5px;border-radius:2px;background:currentColor;display:block}
+.d3 .vmsg .dur{font-family:var(--mono);font-size:10px;color:var(--tx3)}
+.d3 .vmsg .final{font-size:13.5px}
+.d3 .vmsg .final .fix{border-bottom:1.5px dotted var(--amber);cursor:default}
+.d3 .vmsg .final .tok{color:var(--amber);font-weight:600;background:var(--amberbg);border-radius:5px;padding:0 5px}
+.d3 .vmsg .raw{font-size:11.5px;color:var(--tx3);background:rgba(35,34,32,.03);border-radius:7px;padding:6px 10px;width:fit-content}
+.d3 .vmsg .raw b{font-weight:400;color:var(--err);text-decoration:line-through}
+.d3 .amsg .who{font-size:11px;font-weight:700;color:var(--tx2);margin-bottom:4px}
+.d3 .amsg .t{font-size:13.5px;max-width:640px}
+.d3 .resp{display:inline-flex;align-items:center;gap:9px;font-size:12px;color:var(--tx2);background:rgba(35,34,32,.04);border-radius:99px;padding:5px 14px;width:fit-content}
+.d3 .resp .bar{width:34px;height:3px;border-radius:2px;background:rgba(35,34,32,.12);overflow:hidden;position:relative}
+.d3 .resp .bar i{position:absolute;inset:0;width:40%;background:var(--tx2);border-radius:2px;animation:slide3 1.3s ease-in-out infinite}
+@keyframes slide3{0%{left:-40%}100%{left:100%}}
+/* voice stage */
+.d3 .stagebar{border-top:1px solid var(--sep);background:#fff;transition:all .25s ease;padding:10px 16px;position:relative}
+.d3 .stagebar.listening{box-shadow:inset 0 0 0 1.5px rgba(217,123,41,.55);animation:breathe 2.2s ease-in-out infinite}
+@keyframes breathe{0%,100%{box-shadow:inset 0 0 0 1.5px rgba(217,123,41,.55)}50%{box-shadow:inset 0 0 0 1.5px rgba(217,123,41,.18)}}
+.d3 .vs-in{display:flex;align-items:center;gap:14px;min-height:44px}
+.d3 .micwrap{position:relative;width:44px;height:44px;flex:none}
+.d3 .micbtn{position:absolute;inset:4px;border-radius:50%;background:rgba(35,34,32,.05);display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--tx2);transition:all .2s}
+.d3 .listening .micbtn{background:var(--amber);color:#fff}
+.d3 .processing .micbtn{background:rgba(35,34,32,.08);color:var(--tx3)}
+.d3 .ring{position:absolute;inset:0;transform:rotate(-90deg)}
+.d3 .ring circle{fill:none;stroke:var(--amber);stroke-width:2.5;stroke-linecap:round;stroke-dasharray:126;stroke-dashoffset:126;opacity:0}
+.d3 .counting .ring circle{opacity:1;animation:ringrun 1.5s linear forwards}
+@keyframes ringrun{from{stroke-dashoffset:126}to{stroke-dashoffset:0}}
+.d3 .vwave{display:flex;align-items:center;gap:2.5px;height:34px;flex:none;width:120px}
+.d3 .vwave i{flex:1;border-radius:2px;background:var(--tx3);height:14%;transition:background .3s}
+.d3 .listening .vwave i{background:var(--amber);animation:vw .9s ease-in-out infinite}
+.d3 .processing .vwave i{background:var(--tx3);animation:none}
+@keyframes vw{0%,100%{height:14%}50%{height:var(--h,60%)}}
+.d3 .transcript{flex:1;font-size:15px;min-height:24px}
+.d3 .transcript .w{opacity:0;animation:win .18s ease forwards;color:var(--tx3)}
+@keyframes win{to{opacity:1}}
+.d3 .transcript.finaled{font-size:13.5px}
+.d3 .transcript .polished{color:var(--tx);animation:win .3s ease forwards;opacity:0}
+.d3 .transcript .polished .tok{color:var(--amber);font-weight:600;background:var(--amberbg);border-radius:5px;padding:0 5px}
+.d3 .transcript .polished .fix{border-bottom:1.5px dotted var(--amber)}
+.d3 .transcript .hint{color:var(--tx3);font-size:13px}
+.d3 .vstat{flex:none;font-family:var(--mono);font-size:10px;color:var(--tx3);text-align:right;line-height:1.6;width:110px}
+.d3 .vstat b{color:var(--amber);font-weight:600}
+.d3 .spin{display:inline-block;width:11px;height:11px;border:1.5px solid var(--tx3);border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.d3 .inspector{background:var(--side);border-left:1px solid var(--sep);padding:14px;display:flex;flex-direction:column;gap:12px;overflow:hidden}
+.d3 .panel{background:#fff;border:1px solid var(--sep);border-radius:10px;padding:13px 14px}
+.d3 .panel h5{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:9px;display:flex;align-items:center;gap:7px}
+.d3 .kv{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;color:var(--tx2)}
+.d3 .kv b{font-family:var(--mono);font-size:11px;font-weight:500;color:var(--tx)}
+.d3 .kv .g{color:var(--ok)}
+.d3 .diff{font-size:12px;line-height:1.8}
+.d3 .diff .lbl{font-family:var(--mono);font-size:9.5px;color:var(--tx3);display:block;margin-top:6px}
+.d3 .diff .old{color:var(--tx3)}
+.d3 .diff .old b{font-weight:400;color:var(--err);background:rgba(229,72,77,.08);border-radius:3px;padding:0 3px}
+.d3 .diff .new b{font-weight:500;color:var(--ok);background:rgba(61,153,96,.1);border-radius:3px;padding:0 3px}
+.d3 .adddict{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--amber);background:var(--amberbg);border-radius:7px;padding:7px 11px;margin-top:9px;font-weight:500}
+/* HUD */
+.hudwrap{display:flex;gap:30px;align-items:flex-start;flex-wrap:wrap;margin-top:22px}
+.hud{width:340px;border-radius:14px;background:rgba(28,27,25,.92);backdrop-filter:blur(24px);padding:14px 16px;color:#eee;font-family:var(--sans);box-shadow:0 18px 50px rgba(0,0,0,.5), 0 0 0 .5px rgba(255,255,255,.12)}
+.hud .top{display:flex;align-items:center;gap:9px;font-size:11px;color:#b9b6b0;margin-bottom:9px}
+.hud .top .rec{width:8px;height:8px;border-radius:50%;background:#d97b29;animation:pulse1 1.2s infinite}
+.hud .top .tgt{margin-left:auto;font-family:var(--mono);font-size:10px;color:#d97b29}
+.hud .mid{display:flex;align-items:center;gap:10px}
+.hud .hwave{display:flex;gap:2px;align-items:center;height:26px}
+.hud .hwave i{width:2.5px;border-radius:2px;background:#d97b29;animation:vw .8s ease-in-out infinite}
+.hud .ht{font-size:13px;color:#f2f0ec}
+.hud .foot{font-family:var(--mono);font-size:9.5px;color:#79766f;margin-top:9px}
+.hudnote{flex:1;min-width:240px;font-size:13px;color:var(--txt2);line-height:1.75;padding-top:6px}
+.hudnote b{color:var(--txt)}
+
+/* demo controls */
+.democtl{display:flex;gap:8px;align-items:center;margin:0 0 14px;flex-wrap:wrap}
+.democtl .lbl{font-family:var(--mono);font-size:11px;color:var(--txt2);letter-spacing:.1em;margin-right:4px}
+.democtl button{font-family:var(--sans);font-size:12.5px;padding:6px 16px;border-radius:99px;border:1px solid var(--line);background:var(--card);color:var(--txt2);cursor:pointer}
+.democtl button:hover{color:var(--txt);border-color:#3a3e46}
+.democtl button.on{background:var(--amber);border-color:var(--amber);color:#141518;font-weight:600}
+.democtl button.play{background:var(--teal);border-color:var(--teal);color:#0e0f11;font-weight:600}
+
+footer{border-top:1px solid var(--line);padding:34px 40px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--txt3,#5c5b56)}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="kicker">Vox Agent · Design Direction Review</div>
+  <h1>原生 macOS 语音 Agent 工作台<br>—— <em>三个高保真方向</em></h1>
+  <p>不是聊天软件，不是 web console。三个方向共用同一副三栏骨架（ChatWindow / ChatInputBar / Inspector），分别押注：可信、能力表达、输入方式的独占性。</p>
+  <div class="meta">
+    <span>方向 <b>01 — 03</b></span>
+    <span>目标 <b>macOS 14+ · SwiftUI</b></span>
+    <span>基线 <b>vox-agents/macos</b></span>
+  </div>
+</header>
+
+<nav class="nav">
+  <div class="nav-in">
+    <a href="#d1"><span class="n">01</span>Calm Native Cockpit</a>
+    <a href="#d2"><span class="n">02</span>Agent Operations Desk</a>
+    <a href="#d3"><span class="n">03</span>Voice Command Center</a>
+    <a href="#verdict"><span class="n">→</span>结论与落地顺序</a>
+    <div class="spacer"></div>
+    <span class="tag">mockup 内为 SF 系统字体 · 忠实 HIG</span>
+  </div>
+</nav>
+
+<!-- ================================================== 01 -->
+<section class="sec" id="d1">
+  <div class="sec-head">
+    <div class="sec-num">01</div>
+    <div>
+      <div class="sec-title">Calm Native Cockpit</div>
+      <div class="sec-sub">安静 · 专业 · 像 Apple 自己会做的 agent 工具</div>
+    </div>
+  </div>
+  <p class="thesis"><b>押注可信。</b>界面在你不需要它时消失。零装饰色、零 toast、零 modal——层级全部由字重与灰度承担，语音是输入手段而非表演。</p>
+
+  <div class="stage light">
+    <div class="fit"><div class="mac d1">
+      <div class="titlebar">
+        <div class="lights"><i></i><i></i><i></i></div>
+        <span class="tb-btn">◫</span>
+        <span class="ws-switch">▾ Personal Workspace</span>
+        <div class="search">⌕ Search agents &amp; tasks<kbd>⌘K</kbd></div>
+        <span class="tb-btn">☰</span>
+      </div>
+      <div class="body">
+        <aside class="sidebar">
+          <div class="group"><span class="chev">▾</span> Personal</div>
+          <div class="agent sel"><span class="st" style="background:#28a745"></span><div><div class="nm">Researcher</div><div class="sub">Summarizing arXiv digest…</div></div></div>
+          <div class="agent"><span class="st" style="background:#e8940a"></span><div><div class="nm">Coder</div><div class="sub">Awaiting approval</div></div><span class="badge">2</span></div>
+          <div class="agent"><span class="st" style="background:#b6b5b2"></span><div><div class="nm">Writer</div><div class="sub">Idle</div></div></div>
+          <div class="group" style="margin-top:10px"><span class="chev">▾</span> Ops</div>
+          <div class="agent"><span class="st" style="background:#28a745"></span><div><div class="nm">Deploy Bot</div><div class="sub">Watching CI · main</div></div></div>
+          <div class="agent"><span class="st" style="background:#e5484d"></span><div><div class="nm">Scraper</div><div class="sub">Failed · 02:14</div></div></div>
+          <div class="side-foot">＋ New Agent</div>
+        </aside>
+        <main class="chat">
+          <div class="flow">
+            <div class="turn-u">
+              <span class="wave"><i style="height:6px"></i><i style="height:11px"></i><i style="height:8px"></i><i style="height:13px"></i><i style="height:5px"></i></span>
+              <span class="t">把昨晚 scraper 的失败日志整理成一份报告</span>
+              <span class="dur">0:07</span>
+            </div>
+            <div class="turn-a">
+              <div class="who">Researcher<span class="tm">09:42</span></div>
+              <div class="tool">⚙︎ read_task_history · scraper · <span class="ok">142 events · 0.8s</span></div>
+              <div class="txt">昨晚共 3 次失败，全部集中在 02:10–02:20。根因是目标站点更换了分页参数，重试策略在第 4 次后放弃。我已按时间线整理成报告草稿，包含每次失败的请求参数与响应摘要。</div>
+              <div class="hoveracts"><span>复制</span><span>转发 ▾</span><span>建任务</span><span>撤回</span></div>
+            </div>
+            <div class="divider"></div>
+            <div class="turn-u">
+              <span class="wave"><i style="height:9px"></i><i style="height:5px"></i><i style="height:12px"></i><i style="height:7px"></i><i style="height:10px"></i></span>
+              <span class="t">好，把报告转给 Coder，让他修分页逻辑</span>
+              <span class="dur">0:05</span>
+            </div>
+            <div class="turn-a">
+              <div class="who">Researcher<span class="tm">09:43</span></div>
+              <div class="tool">⚙︎ forward_to · @Coder · <span class="ok">task created · #T-0219</span></div>
+              <div class="txt">已转发。Coder 请求两项权限（写入 <span style="font-family:var(--mono);font-size:12px">scraper/pagination.py</span>、运行测试），在侧栏等你批准。</div>
+            </div>
+          </div>
+          <div class="inputbar">
+            <div class="mic">🎙</div>
+            <div class="field"><span class="done">顺便让 Deploy Bot 今晚</span><span class="raw"> 盯一下发布……</span></div>
+            <span class="ib-btn" title="字典">📖</span>
+            <div class="send">↑</div>
+          </div>
+        </main>
+        <aside class="inspector">
+          <div class="segs"><span class="on">Task</span><span>Memory</span><span>Permissions</span><span>Log</span></div>
+          <div class="taskcard">
+            <h5>Fix scraper pagination</h5>
+            <div class="tid">#T-0219 · assigned to Coder</div>
+            <div class="prog"><i style="width:40%"></i></div>
+            <div class="step done"><span class="c">✓</span>Read failure report</div>
+            <div class="step done"><span class="c">✓</span>Locate pagination logic</div>
+            <div class="step now"><span class="c"><i></i></span>Awaiting write permission</div>
+            <div class="step"><span class="c"></span>Patch &amp; run tests</div>
+            <div class="step"><span class="c"></span>Report back</div>
+          </div>
+          <div class="taskcard">
+            <h5>Nightly digest</h5>
+            <div class="tid">#T-0217 · Researcher · scheduled</div>
+            <div class="prog"><i style="width:100%;background:#28a745"></i></div>
+            <div class="step done"><span class="c">✓</span>Completed 08:00 · 12 papers</div>
+          </div>
+        </aside>
+      </div>
+      <div class="pin" style="top:150px;left:246px">1</div>
+      <div class="pin" style="top:246px;left:600px">2</div>
+      <div class="pin" style="top:576px;left:420px">3</div>
+      <div class="pin" style="top:200px;right:288px">4</div>
+    </div></div>
+  </div>
+
+  <div class="notes">
+    <div class="note"><span class="dot">1</span><h4>状态点是唯一的功能色</h4><p>绿=运行 / 橙=待批准 / 红=错误 / 灰=空闲。侧栏用 .sidebar 材质透出桌面，badge 只出现在需要人介入的地方。</p></div>
+    <div class="note"><span class="dot">2</span><h4>回合制，不是气泡</h4><p>用户输入 = 2pt 竖线 + 波形图标 + 转写文本；agent 响应 = 无底色正文块。工具调用折叠成一行 mono disclosure。悬停才浮现操作按钮。</p></div>
+    <div class="note"><span class="dot">3</span><h4>润色状态写进文字本身</h4><p>输入栏里灰色 = raw ASR，黑色 = 已润色定稿。不用图标不用弹层，文字颜色就是管线状态。</p></div>
+    <div class="note"><span class="dot">4</span><h4>Inspector 四段式</h4><p>Task / Memory / Permissions / Log。Permissions 是信任卖点：agent 拿到什么权限、用了几次、何时过期，随时可查。</p></div>
+  </div>
+</section>
+
+<!-- ================================================== 02 -->
+<section class="sec" id="d2">
+  <div class="sec-head">
+    <div class="sec-num">02</div>
+    <div>
+      <div class="sec-title">Agent Operations Desk</div>
+      <div class="sec-sub">任务调度 · 队友协作 · 状态监控 —— mission control</div>
+    </div>
+  </div>
+  <p class="thesis"><b>押注能力表达。</b>Agent 是队友不是聊天对象，对话只是任务的载体。scheduler、permissions、task history、WebSocket events 全部升为一等公民——结构上就不可能被误认为聊天软件。</p>
+
+  <div class="stage dark">
+    <div class="fit"><div class="mac d2">
+      <div class="titlebar">
+        <div class="lights"><i></i><i></i><i></i></div>
+        <span class="title">Vox Agent — Operations</span>
+        <div class="search" style="margin-left:auto;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.06);border-radius:6px;padding:4px 12px;width:200px;color:var(--tx3);font-size:12px">⌕ Search<span style="margin-left:auto;font-family:var(--mono);font-size:10px">⌘K</span></div>
+      </div>
+      <div class="strip">
+        <span class="seg on"><span class="pip" style="background:var(--run)"></span><b>3</b> running</span>
+        <span class="seg"><span class="pip" style="background:var(--tx3)"></span><b>2</b> queued</span>
+        <span class="seg"><span class="pip" style="background:var(--warn)"></span><b>1</b> awaiting approval</span>
+        <span class="seg"><span class="pip" style="background:var(--err)"></span><b>0</b> failed</span>
+        <span class="r"><span>engine ws://…:8321 ●</span><span>next cron 21:00</span></span>
+      </div>
+      <div class="body">
+        <aside class="roster">
+          <div class="rgroup">Active</div>
+          <div class="rag sel" style="--edge:var(--run)">
+            <div class="l1"><span class="nm">Researcher</span><span class="role">research</span></div>
+            <div class="l2"><span class="mprog"><i style="width:62%"></i></span>arXiv digest<span class="eta">2m</span></div>
+          </div>
+          <div class="rag" style="--edge:var(--run)">
+            <div class="l1"><span class="nm">Deploy Bot</span><span class="role">ops</span></div>
+            <div class="l2"><span class="mprog"><i style="width:31%"></i></span>watch CI · main<span class="eta">—</span></div>
+          </div>
+          <div class="rag" style="--edge:var(--warn)">
+            <div class="l1"><span class="nm">Coder</span><span class="role">code</span></div>
+            <div class="l2">⏸ awaiting approval<span class="eta">4m</span></div>
+          </div>
+          <div class="rag" style="--edge:var(--run)">
+            <div class="l1"><span class="nm">Indexer</span><span class="role">memory</span></div>
+            <div class="l2"><span class="mprog"><i style="width:88%"></i></span>re-embed vault<span class="eta">40s</span></div>
+          </div>
+          <div class="rgroup">Scheduled</div>
+          <div class="rag" style="--edge:transparent">
+            <div class="l1"><span class="nm">Night Scraper</span><span class="role">cron</span></div>
+            <div class="l2">next run in 2h 10m</div>
+          </div>
+          <div class="rag" style="--edge:transparent">
+            <div class="l1"><span class="nm">Digest Mailer</span><span class="role">cron</span></div>
+            <div class="l2">daily · 08:00</div>
+          </div>
+          <div class="rgroup">Archived · 6</div>
+        </aside>
+        <main class="timeline">
+          <div class="sess-head">
+            <span class="t">scraper 事故处理</span>
+            <span class="chip b">#T-0219 fix pagination</span>
+            <span class="chip">#T-0217 digest</span>
+            <span class="chip">+2</span>
+          </div>
+          <div class="tl">
+            <div class="msg-u"><span class="me">YOU</span><span class="wv">▶ ılıl</span><span class="t">把昨晚 scraper 的失败日志整理成报告，转给 Coder 修分页逻辑</span></div>
+            <div class="ev" style="--edge:var(--run)">
+              <div class="h">⚙︎ <b>Task created</b> — Fix scraper pagination<span class="chip b" style="margin-left:6px">#T-0219</span><span class="k">09:43:12</span></div>
+              <div class="steplog"><span class="g">✓</span> read failure report (142 events)<br><span class="g">✓</span> locate pagination logic → scraper/pagination.py:88<br><span class="b">▸</span> request write permission…</div>
+            </div>
+            <div class="ev perm" style="--edge:var(--warn)">
+              <div class="h"><span class="ic">◈</span><b>Coder requests permission</b><span class="k">09:44:03 · expires 10m</span></div>
+              <div class="desc">Write access to <code>scraper/pagination.py</code> + run <code>pytest tests/scraper/</code> · scope: this task only</div>
+              <div class="btns"><span class="btn ok">Approve</span><span class="btn no">Deny</span><span class="btn no">Always for this file…</span></div>
+            </div>
+            <div class="msg-a"><div class="who">RESEARCHER</div><div class="t">报告已完成并转交。附注：三次失败均为目标站点分页参数变更（page → cursor），建议 Coder 顺带加上 schema 变更告警。</div></div>
+            <div class="ev" style="--edge:var(--ok)">
+              <div class="h">✓ <b>Step done</b> — Nightly digest · 12 papers summarized<span class="k">08:00:41</span></div>
+            </div>
+          </div>
+        </main>
+        <aside class="ops">
+          <section>
+            <h6>Now Running <span class="cnt">3</span><span class="fold">▾</span></h6>
+            <div class="trow"><span class="pip live" style="background:var(--run)"></span><span class="nm">arXiv digest</span><span class="who">researcher</span><span class="stepnow">step 3/5</span><span class="acts"><span>⏸</span><span>✕</span></span></div>
+            <div class="trow"><span class="pip live" style="background:var(--run)"></span><span class="nm">watch CI · main</span><span class="who">deploy</span><span class="stepnow">idle-poll</span><span class="acts"><span>⏸</span><span>✕</span></span></div>
+            <div class="trow"><span class="pip live" style="background:var(--run)"></span><span class="nm">re-embed vault</span><span class="who">indexer</span><span class="stepnow">88%</span><span class="acts"><span>⏸</span><span>✕</span></span></div>
+            <div class="trow" style="opacity:.85"><span class="pip" style="background:var(--warn)"></span><span class="nm">fix pagination</span><span class="who">coder</span><span class="stepnow" style="color:var(--warn)">awaiting ✋</span><span class="acts"><span>✕</span></span></div>
+          </section>
+          <section>
+            <h6>Queue / Schedule <span class="cnt">4</span><span class="fold">▾</span></h6>
+            <div class="qrow"><span class="grip">⠿</span>night scraper run<span class="cron">0 2 * * * · in 2h</span></div>
+            <div class="qrow"><span class="grip">⠿</span>digest mailer<span class="cron">0 8 * * * · daily</span></div>
+            <div class="qrow"><span class="grip">⠿</span>weekly retro notes<span class="cron">Sun 20:00</span></div>
+            <div class="qrow"><span class="grip">⠿</span>backup memory db<span class="cron">manual · queued</span></div>
+          </section>
+          <section>
+            <h6>History / Audit <span class="cnt">today</span><span class="fold">▾</span></h6>
+            <div class="hrow"><span class="tm">09:44</span><span class="ic" style="color:var(--warn)">◈</span>permission requested — coder → pagination.py</div>
+            <div class="hrow"><span class="tm">08:00</span><span class="ic" style="color:var(--ok)">✓</span>nightly digest completed · 12 papers</div>
+            <div class="hrow"><span class="tm">02:20</span><span class="ic" style="color:var(--err)">✕</span>scraper failed ×3 — pagination schema</div>
+            <div class="hrow"><span class="tm">02:10</span><span class="ic" style="color:var(--run)">▸</span>night scraper started (cron)</div>
+          </section>
+        </aside>
+      </div>
+      <div class="pin" style="top:66px;left:130px">1</div>
+      <div class="pin" style="top:130px;left:14px">2</div>
+      <div class="pin" style="top:308px;left:560px">3</div>
+      <div class="pin" style="top:130px;right:346px">4</div>
+    </div></div>
+  </div>
+
+  <div class="notes">
+    <div class="note"><span class="dot">1</span><h4>全局 status strip</h4><p>running / queued / awaiting / failed 四段常驻，点击即过滤中心时间线。整个方向的灵魂控件，MenuBarExtra 显示同一组数字。</p></div>
+    <div class="note"><span class="dot">2</span><h4>Roster 左缘色条</h4><p>2pt 色条比圆点扫视更快：蓝=运行 / 橙=待批准 / 红=错误。第二层是当前任务 + 微型进度条。消息可直接拖到 agent 上转发。</p></div>
+    <div class="note"><span class="dot">3</span><h4>权限 inline 审批</h4><p>权限请求是时间线里的可操作卡：具体权限、作用域、过期时间、Approve/Deny 就地一击。这是 web console 给不了的 1 秒操作。</p></div>
+    <div class="note"><span class="dot">4</span><h4>Operations 三区常驻</h4><p>Now Running（WebSocket 直推）/ Queue &amp; Schedule（可拖拽重排）/ History &amp; Audit。不用 tab——作战台不藏信息。</p></div>
+  </div>
+</section>
+
+<!-- ================================================== 03 -->
+<section class="sec" id="d3">
+  <div class="sec-head">
+    <div class="sec-num">03</div>
+    <div>
+      <div class="sec-title">Voice Command Center</div>
+      <div class="sec-sub">语音是主输入设备 · 界面为说话让路</div>
+    </div>
+  </div>
+  <p class="thesis"><b>押注输入方式的独占性。</b>像专业音频软件对待声音那样对待语音：三态精确可辨、润色倒计时可见、误识别两秒入典。全局 push-to-talk + 浮动 HUD 是 web 永远做不到的场景。</p>
+
+  <div class="democtl">
+    <span class="lbl">VOICE STAGE DEMO</span>
+    <button class="play" id="d3play">▶ 播放完整流程</button>
+    <button data-vs="idle" class="on">Idle</button>
+    <button data-vs="listening">Listening</button>
+    <button data-vs="processing">Processing</button>
+    <button data-vs="done">定稿</button>
+  </div>
+
+  <div class="stage light">
+    <div class="fit"><div class="mac d3">
+      <div class="titlebar">
+        <div class="lights"><i></i><i></i><i></i></div>
+        <span class="title">Vox Agent</span>
+        <div class="ptt">Push-to-talk <kbd>右⌘ 长按</kbd> · 全局</div>
+      </div>
+      <div class="body">
+        <aside class="sidebar">
+          <div class="group">Agents · 按 1–9 切换语音目标</div>
+          <div class="vag target"><span class="num">1</span><span class="nm">Researcher</span><span class="vs">● 聆听中</span></div>
+          <div class="vag speaking"><span class="num">2</span><span class="nm">Coder</span><span class="vs">▸ 响应中</span></div>
+          <div class="vag"><span class="num">3</span><span class="nm">Writer</span><span class="vs">静默</span></div>
+          <div class="vag"><span class="num">4</span><span class="nm">Deploy Bot</span><span class="vs">静默</span></div>
+          <div class="vag"><span class="num">5</span><span class="nm">Indexer</span><span class="vs">静默</span></div>
+        </aside>
+        <main class="chat">
+          <div class="flow">
+            <div class="vmsg">
+              <div class="row">
+                <span class="play">▶</span>
+                <span class="wv"><i style="height:7px"></i><i style="height:13px"></i><i style="height:9px"></i><i style="height:15px"></i><i style="height:6px"></i><i style="height:11px"></i><i style="height:8px"></i></span>
+                <span class="dur">0:07 · Soniox</span>
+              </div>
+              <div class="final">把昨晚 <span class="fix">scraper</span> 的失败日志整理成报告，转发给 <span class="tok">@Coder</span>。</div>
+              <div class="raw">raw：把昨晚 <b>四快跑</b> 的失败日志整理成报告，转发给扣的</div>
+            </div>
+            <div class="amsg">
+              <div class="who">RESEARCHER · 09:42</div>
+              <div class="t">收到。昨晚 3 次失败集中在 02:10–02:20，根因是分页参数变更。报告草稿已生成，正在转交 Coder。</div>
+            </div>
+            <div class="resp"><span class="bar"><i></i></span>Coder 响应中 · 4s</div>
+          </div>
+          <div class="stagebar" id="vstage">
+            <div class="vs-in">
+              <div class="micwrap">
+                <svg class="ring" viewBox="0 0 44 44"><circle cx="22" cy="22" r="20"/></svg>
+                <div class="micbtn" id="micIcon">🎙</div>
+              </div>
+              <div class="vwave" id="vwave"></div>
+              <div class="transcript" id="vtranscript"><span class="hint">按住 右⌘ 说话，或点击输入文字…</span></div>
+              <div class="vstat" id="vstat">SONIOX · 280ms<br>dict 3 hits</div>
+            </div>
+          </div>
+        </main>
+        <aside class="inspector">
+          <div class="panel">
+            <h5>◉ Voice Session</h5>
+            <div class="kv">Provider<b>Soniox · zh-en</b></div>
+            <div class="kv">延迟<b class="g">280 ms</b></div>
+            <div class="kv">Failover<b>Deepgram 待命</b></div>
+            <div class="kv">字典命中<b>3 / 今日 27</b></div>
+          </div>
+          <div class="panel">
+            <h5>⇄ 润色 Diff</h5>
+            <div class="diff">
+              <span class="lbl">RAW</span>
+              <div class="old">把昨晚 <b>四快跑</b> 的失败日志整理成报告转发给<b>扣的</b></div>
+              <span class="lbl">POLISHED</span>
+              <div class="new">把昨晚 <b>scraper</b> 的失败日志整理成报告，转发给 <b>@Coder</b>。</div>
+            </div>
+            <div class="adddict">＋ 把「四快跑 → scraper」加入字典</div>
+          </div>
+          <div class="panel">
+            <h5>☑ Task</h5>
+            <div class="kv">#T-0219 fix pagination<b>step 3/5</b></div>
+            <div class="kv">#T-0217 digest<b class="g">done</b></div>
+          </div>
+        </aside>
+      </div>
+      <div class="pin" style="top:118px;left:236px">1</div>
+      <div class="pin" style="top:262px;left:330px">2</div>
+      <div class="pin" style="bottom:26px;left:300px">3</div>
+      <div class="pin" style="top:236px;right:296px">4</div>
+    </div></div>
+  </div>
+
+  <div class="notes">
+    <div class="note"><span class="dot">1</span><h4>话筒对着谁，永远无歧义</h4><p>当前语音目标带 amber 描边，数字键 1–9 直接切换。「聆听中 / 响应中 / 静默」是 agent 的语音关系状态。</p></div>
+    <div class="note"><span class="dot">2</span><h4>语音消息带信任锚点</h4><p>波形可回放原音频；raw 转写可展开对照；字典修正词带点状下划线。润色错了，随时回去听原话。</p></div>
+    <div class="note"><span class="dot">3</span><h4>三态 voice stage（上方按钮可试）</h4><p>Idle 完全安静 → Listening 真实振幅波形 + amber 呼吸描边 + 逐词转写 → 停顿 1.5s 倒计时环 → Processing 波形冻结、灰字定稿为黑字。</p></div>
+    <div class="note"><span class="dot">4</span><h4>误识别 2 秒入典</h4><p>Inspector 的 Voice 面板显示 provider 延迟、failover 状态、润色 diff。「四快跑 → scraper」一键写入 dictionaries——把 ASR 弱点变成信任特性。</p></div>
+  </div>
+
+  <div class="hudwrap">
+    <div class="hud">
+      <div class="top"><span class="rec"></span>正在聆听 · 松开发送<span class="tgt">→ RESEARCHER</span></div>
+      <div class="mid">
+        <span class="hwave"><i style="--h:80%;animation-delay:0s"></i><i style="--h:45%;animation-delay:.1s"></i><i style="--h:95%;animation-delay:.2s"></i><i style="--h:60%;animation-delay:.05s"></i><i style="--h:85%;animation-delay:.15s"></i><i style="--h:40%;animation-delay:.25s"></i><i style="--h:70%;animation-delay:.12s"></i></span>
+        <span class="ht">帮我查一下今天 CI 有没有红…</span>
+      </div>
+      <div class="foot">esc 取消 · tab 切换目标 · app 未激活也可用</div>
+    </div>
+    <div class="hudnote"><b>全局浮动 HUD（push-to-talk）。</b>app 不在前台时长按热键唤出：波形 + 实时转写 + 目标 agent，松键即发送，HUD 淡出。戴着 AirPods 在房间里走动指挥 agent——这是原生 app 的独占场景，也是 30 秒 demo 视频的开场镜头。采音状态四重冗余提示（菜单栏、HUD、描边、系统橙点），绝不静默录音。</div>
+  </div>
+</section>
+
+<!-- ================================================== verdict -->
+<section class="verdict" id="verdict">
+  <h2>结论：三选一是假命题</h2>
+  <div class="formula">以 <i>01 Calm Native</i> 为底盘（可信入场券），取 <b>02 Operations</b> 的右栏与状态语法为深度（回答"为什么不用 web console"），取 <b>03 Voice</b> 的输入栏与全局 push-to-talk 为招牌时刻（回答"为什么叫 Vox"）。</div>
+  <div class="grid">
+    <div class="vcard"><div class="step">STEP 1 · 性价比最高</div><h3>状态色语法统一</h3><p>左栏色条 + 顶部 status strip + MenuBarExtra 聚合状态。改造量小，后端能力表达提升最大。</p></div>
+    <div class="vcard"><div class="step">STEP 2 · 纯 UI 活</div><h3>权限请求 inline 卡</h3><p>permissions 后端已有。把审批从"去别处找"变成时间线里的 1 秒一击，顺带产出审计记录。</p></div>
+    <div class="vcard"><div class="step">STEP 3 · 招牌时刻</div><h3>Voice stage 三态 + 倒计时环</h3><p>ChatInputBar 已有雏形。把 ASR → 停顿检测 → 润色 → 字典这条已有管线变成看得见的信任感。</p></div>
+  </div>
+  <p style="color:var(--txt2);font-size:13.5px;margin-top:22px">02 的完整 operations 右栏与 03 的全局 HUD 放第二梯队——第一梯队上线后，用你自己的真实输入比例（语音 vs 打字）决定押哪边。</p>
+</section>
+
+<footer>VOX AGENT · DESIGN DIRECTION REVIEW · 2026-07 · mockups rendered with system SF fonts, faithful to macOS HIG</footer>
+
+<script>
+/* ---------- scale mac windows to fit ---------- */
+function fitAll(){
+  document.querySelectorAll('.fit').forEach(function(w){
+    var inner=w.firstElementChild; if(!inner) return;
+    inner.style.transform='none'; w.style.height='auto';
+    var W=1180, avail=w.clientWidth, s=Math.min(1,avail/W);
+    var h=inner.offsetHeight;
+    inner.style.transform='scale('+s+')';
+    w.style.height=(h*s)+'px';
+  });
+}
+window.addEventListener('resize',fitAll);
+window.addEventListener('load',fitAll);
+setTimeout(fitAll,60);
+
+/* ---------- D3 voice stage demo ---------- */
+var stage=document.getElementById('vstage'),
+    wave=document.getElementById('vwave'),
+    tr=document.getElementById('vtranscript'),
+    stat=document.getElementById('vstat'),
+    mic=document.getElementById('micIcon');
+
+/* build waveform bars */
+for(var i=0;i<26;i++){
+  var b=document.createElement('i');
+  b.style.setProperty('--h',(30+Math.round(Math.sin(i*1.7)*25+Math.random()*35))+'%');
+  b.style.animationDelay=(Math.random()*0.9).toFixed(2)+'s';
+  wave.appendChild(b);
+}
+
+var WORDS=['把昨晚','四快跑','的','失败日志','整理成','一份','报告，','转发给','扣的'];
+var POLISHED='把昨晚 <span class="fix">scraper</span> 的失败日志整理成一份报告，转发给 <span class="tok">@Coder</span>。';
+var timers=[];
+function clearTimers(){timers.forEach(clearTimeout);timers=[]}
+function setBtns(state){
+  document.querySelectorAll('[data-vs]').forEach(function(b){
+    b.classList.toggle('on',b.getAttribute('data-vs')===state);
+  });
+}
+function setState(state,opts){
+  opts=opts||{};
+  clearTimers();
+  stage.className='stagebar '+(state==='done'?'':state);
+  setBtns(state);
+  if(state==='idle'){
+    mic.textContent='🎙';
+    tr.className='transcript';
+    tr.innerHTML='<span class="hint">按住 右⌘ 说话，或点击输入文字…</span>';
+    stat.innerHTML='SONIOX · 280ms<br>dict 3 hits';
+  }
+  if(state==='listening'){
+    mic.textContent='●';
+    tr.className='transcript';
+    tr.innerHTML='';
+    stat.innerHTML='<b>● LISTENING</b><br>SONIOX · 280ms';
+    WORDS.forEach(function(w,i){
+      timers.push(setTimeout(function(){
+        var s=document.createElement('span');
+        s.className='w';s.textContent=w+' ';
+        tr.appendChild(s);
+        if(i===WORDS.length-1 && opts.auto){
+          /* pause detected → countdown ring */
+          timers.push(setTimeout(function(){
+            stage.classList.add('counting');
+            stat.innerHTML='<b>停顿检测</b><br>1.5s 后润色…';
+            timers.push(setTimeout(function(){setState('processing',{auto:true})},1500));
+          },350));
+        }
+      },260*i));
+    });
+  }
+  if(state==='processing'){
+    mic.textContent='🎙';
+    stat.innerHTML='<span class="spin"></span> 润色中<br>dict lookup…';
+    if(!tr.querySelector('.w')){
+      tr.innerHTML='';
+      WORDS.forEach(function(w){var s=document.createElement('span');s.className='w';s.style.animation='none';s.style.opacity=1;s.textContent=w+' ';tr.appendChild(s)});
+    }
+    tr.style.opacity=.45;
+    if(opts.auto){timers.push(setTimeout(function(){setState('done')},1300))}
+  }
+  if(state==='done'){
+    tr.style.opacity=1;
+    tr.className='transcript finaled';
+    tr.innerHTML='<span class="polished">'+POLISHED+'</span>';
+    mic.textContent='🎙';
+    stat.innerHTML='<b>定稿</b> · 已修正 2 词<br>↩ 发送 · esc 重录';
+  }
+  if(state!=='done'){tr.style.opacity=1}
+}
+document.querySelectorAll('[data-vs]').forEach(function(b){
+  b.addEventListener('click',function(){setState(b.getAttribute('data-vs'))});
+});
+document.getElementById('d3play').addEventListener('click',function(){
+  setState('idle');
+  timers.push(setTimeout(function(){setState('listening',{auto:true})},600));
+});
+setState('idle');
+</script>
+</body>
+</html>

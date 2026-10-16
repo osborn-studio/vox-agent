@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-preview-output-policy"
+description = "Enables the preview_output_policy command without any pre-configured scope."
+commands.allow = ["preview_output_policy"]
+
+[[permission]]
+identifier = "deny-preview-output-policy"
+description = "Denies the preview_output_policy command without any pre-configured scope."
+commands.deny = ["preview_output_policy"]

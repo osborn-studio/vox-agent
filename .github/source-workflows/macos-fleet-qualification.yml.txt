@@ -1,0 +1,48 @@
+name: Mac fleet service qualification
+
+on:
+  push:
+    branches: [codex/macos-fleet-qualification]
+
+permissions:
+  contents: read
+
+# Exactly one isolated job. This workflow never contains Windows/release siblings
+# and never changes the production Verify routing variable.
+jobs:
+  swift-build:
+    runs-on: ${{ fromJSON(format('["self-hosted","macOS","ARM64","osvox-macos-qualification","osvox-run-{0}","osvox-attempt-{1}","osvox-host-{2}"]', github.run_id, github.run_attempt, vars.OSVOX_MACOS_QUALIFICATION_HOST)) }}
+    timeout-minutes: 12
+    env:
+      QUALIFICATION_HOST: ${{ vars.OSVOX_MACOS_QUALIFICATION_HOST }}
+      QUALIFICATION_CASE: ${{ vars.OSVOX_MACOS_QUALIFICATION_CASE }}
+    steps:
+      - name: Verify isolated SDK and host selector
+        shell: bash
+        run: |
+          /opt/homebrew/bin/python3 - <<'PY'
+          import os, sys
+          assert os.environ['QUALIFICATION_HOST'] in {'mini', 'studio'}
+          assert sys.version_info[:3] == (3, 14, 7)
+          assert not os.path.exists('/Users/osborn')
+          assert not os.path.exists('/Volumes/AIMATE_WORK')
+          PY
+          xcodebuild -version
+          swift --version
+          printf '%s\n' 'import Foundation' 'print("ISOLATED_SWIFT_SDK_OK")' > /tmp/osvox-qualification.swift
+          swiftc -warnings-as-errors /tmp/osvox-qualification.swift -o /tmp/osvox-qualification
+          /tmp/osvox-qualification
+
+      - name: Qualification payload
+        shell: bash
+        run: |
+          /opt/homebrew/bin/python3 -u - <<'PY'
+          import os, sys, time
+          case = os.environ['QUALIFICATION_CASE']
+          assert case in {'success', 'failure', 'cancel', 'crash', 'registration-loss', 'api-outage'}
+          print('QUALIFICATION_ENTERED ' + case, flush=True)
+          if case == 'failure':
+              sys.exit(37)
+          if case in {'cancel', 'crash'}:
+              time.sleep(300)
+          PY

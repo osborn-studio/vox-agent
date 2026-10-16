@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-sync-obsidian-archive"
+description = "Enables the sync_obsidian_archive command without any pre-configured scope."
+commands.allow = ["sync_obsidian_archive"]
+
+[[permission]]
+identifier = "deny-sync-obsidian-archive"
+description = "Denies the sync_obsidian_archive command without any pre-configured scope."
+commands.deny = ["sync_obsidian_archive"]

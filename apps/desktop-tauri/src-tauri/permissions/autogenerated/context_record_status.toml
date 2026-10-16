@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-context-record-status"
+description = "Enables the context_record_status command without any pre-configured scope."
+commands.allow = ["context_record_status"]
+
+[[permission]]
+identifier = "deny-context-record-status"
+description = "Denies the context_record_status command without any pre-configured scope."
+commands.deny = ["context_record_status"]

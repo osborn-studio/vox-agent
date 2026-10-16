@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "Vox Agent",
+    "slug": "voxagent-companion",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "voxagent",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.voxagent.companion",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "VOXAGENT records audio to capture meetings and notes."
+      }
+    },
+    "android": {
+      "package": "com.voxagent.companion",
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "VOXAGENT records audio to capture meetings and notes."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Vox Agent uses the camera only to scan a one-time conversation invite.",
+          "recordAudioAndroid": false,
+          "barcodeScannerEnabled": true
+        }
+      ],
+      "expo-secure-store",
+      "expo-status-bar",
+      "expo-asset"
+    ]
+  }
+}

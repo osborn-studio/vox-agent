@@ -1,0 +1,12 @@
+# Unwired proposal; target lock/provenance and fixture preparation must qualify first.
+# Require reviewed immutable checkout and setup-node exact toolchain before this step.
+# The setup-node PATH is trusted; Node injection variables are cleared by the adapter.
+# This literal belongs in the reviewed workflow, never recomputed from the runner.
+- name: Verify explicit canonical contract and retained historical break
+  run: >-
+    python3 scripts/verify_mobile_canonical_ci.py
+    --runner-sha256 c204cafd467f4d3aaf966126e77b4d3f69f2561263b056151036ee5afa7c9722
+    --node-bin "$(command -v node)"
+    --app-root build/qualified-mobile-delivery/mobile/voxagent-companion
+    --upstream-dir build/qualified-upstream-materials
+    --oracle-root build/qualified-matcher-oracle/mobile/voxagent-companion

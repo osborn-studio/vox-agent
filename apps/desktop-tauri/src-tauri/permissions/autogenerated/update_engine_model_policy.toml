@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-update-engine-model-policy"
+description = "Enables the update_engine_model_policy command without any pre-configured scope."
+commands.allow = ["update_engine_model_policy"]
+
+[[permission]]
+identifier = "deny-update-engine-model-policy"
+description = "Denies the update_engine_model_policy command without any pre-configured scope."
+commands.deny = ["update_engine_model_policy"]

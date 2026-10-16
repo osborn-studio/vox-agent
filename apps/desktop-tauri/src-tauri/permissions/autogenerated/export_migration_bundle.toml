@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-export-migration-bundle"
+description = "Enables the export_migration_bundle command without any pre-configured scope."
+commands.allow = ["export_migration_bundle"]
+
+[[permission]]
+identifier = "deny-export-migration-bundle"
+description = "Denies the export_migration_bundle command without any pre-configured scope."
+commands.deny = ["export_migration_bundle"]

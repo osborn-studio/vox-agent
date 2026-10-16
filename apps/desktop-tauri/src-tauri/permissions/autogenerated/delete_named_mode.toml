@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-delete-named-mode"
+description = "Enables the delete_named_mode command without any pre-configured scope."
+commands.allow = ["delete_named_mode"]
+
+[[permission]]
+identifier = "deny-delete-named-mode"
+description = "Denies the delete_named_mode command without any pre-configured scope."
+commands.deny = ["delete_named_mode"]

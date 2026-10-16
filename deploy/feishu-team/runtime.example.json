@@ -1,0 +1,17 @@
+{
+  "data_dir": "/var/lib/vox-team",
+  "app_id": "cli_REPLACE",
+  "app_secret_ref": "feishu-app",
+  "bootstrap_secret_ref": "vox-bootstrap",
+  "enabled": false,
+  "conversations_enabled": false,
+  "targets": [],
+  "feishu_login": {
+    "public_base_url": "https://REPLACE.example",
+    "tenant_orgs": {
+      "REPLACE_TENANT": "default-org"
+    },
+    "backup_target_ids": []
+  },
+  "projects": []
+}

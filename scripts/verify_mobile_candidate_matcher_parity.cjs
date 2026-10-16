@@ -1,0 +1,8 @@
+'use strict';
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),{createRequire}=require('node:module');
+function root(flag){const i=process.argv.indexOf(flag);if(i<0)throw Error('Explicit '+flag+' required');return fs.realpathSync(process.argv[i+1]);}
+const app=root('--app-root'),oracle=root('--oracle-root'),req=createRequire(path.join(oracle,'package.json')),mm=req('micromatch');assert.equal(req('micromatch/package.json').version,'4.0.8');
+const cases=[['{a,b}.js','a.js',false],['{a,b}.js','c.js',false],['{1..3}.js','2.js',false],['{1..10}.js','10.js',false],['{01..03}.js','02.js',false],['!(x).js','y.js',false],['!(x).js','x.js',false],['*.js','.a.js',false],['*.js','.a.js',true],['!x.js','y.js',false],['!x.js','x.js',false],[['*.js','!x.js'],'x.js',false],[['*.js','!x.js'],'a.txt',false],['**/*.ts',['src/a.txt','src/b.ts'],false]];
+let checks=0;const mismatches=[];
+for(const rel of require('../security/mobile-candidate/frozen-manifest.json').parents.filter(p=>p.path.endsWith('metro-file-map')).map(p=>p.path.replace(/^node_modules\//,'')+(p.path.endsWith('/@expo/metro-file-map')?'/build':'/src'))){const common=require(path.join(app,'node_modules',rel,'watchers/common.js'));for(const [pattern,file,dot]of cases){const patterns=[].concat(pattern),expected=mm.some(file,patterns,{dot}),actual=common.includedByGlob('f',patterns,dot,file);checks++;if(expected!==actual)mismatches.push({rel,patterns,file,dot,expected,actual});}}
+console.log(JSON.stringify({checks,mismatches,scope:'real micromatch 4.0.8 oracle; bounded semantic cases only; no attack input sent to legacy oracle'}));assert.equal(mismatches.length,0,'Matcher parity mismatch');

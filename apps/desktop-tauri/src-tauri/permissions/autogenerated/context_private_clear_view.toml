@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-context-private-clear-view"
+description = "Enables the context_private_clear_view command without any pre-configured scope."
+commands.allow = ["context_private_clear_view"]
+
+[[permission]]
+identifier = "deny-context-private-clear-view"
+description = "Denies the context_private_clear_view command without any pre-configured scope."
+commands.deny = ["context_private_clear_view"]

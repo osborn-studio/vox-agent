@@ -1,0 +1,23 @@
+import Foundation
+
+/// Revision-pinned upstream bytes compiled into the App, never loaded from a server manifest.
+/// Distribution trust still requires signing the App; this is not a signed update mechanism.
+enum QwenModelCatalog {
+    static let modelID = "qwen3-asr-0.6b"
+    static let revision = "5eb144179a02acc5e5ba31e748d22b0cf3e303b0"
+    static let digest = "fa38dbb84faec2dc363a2761fbc628d1380ef0b5088e4d5836bc1be03984a0dc"
+
+    static func manifest() throws -> ModelManifest {
+        try ModelManifest(files: [
+            .init(path: "README.md", size: 57456, sha256: "5058416891bc47a2051557765997e8c42f8eb78a0e33c3e775bd17d4b0ba4d50"),
+            .init(path: "chat_template.json", size: 1161, sha256: "75a8cfca24f00de72d796fbfed6858fc9614ef3dabd8696684cc3bc03a9c58ff"),
+            .init(path: "config.json", size: 6193, sha256: "76d3ae4601ce939830b2517f4a6cadb86cc51316c3900af6b020b051c21a478c"),
+            .init(path: "generation_config.json", size: 142, sha256: "1da527824d81e07118facff437e03f2e24a23311e3bdeb2368973fe77e5f275c"),
+            .init(path: "merges.txt", size: 1671853, sha256: "8831e4f1a044471340f7c0a83d7bd71306a5b867e95fd870f74d0c5308a904d5"),
+            .init(path: "model.safetensors", size: 1876091704, sha256: "79d6cbd4c98c7bbffe9db2edac07f56cd6637d0d5944b27f6c2b8353840323ea"),
+            .init(path: "preprocessor_config.json", size: 330, sha256: "45e120a4eda2c20c5d7f2ea9354e63536bf35e27aa573fb7cdf78017b378770d"),
+            .init(path: "tokenizer_config.json", size: 12487, sha256: "4942d005604266809309cabc9f4e9cb89ce855d59b14681fdc0e1cc62ea26c4c"),
+            .init(path: "vocab.json", size: 2776833, sha256: "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"),
+        ], expectedDigest: digest)
+    }
+}

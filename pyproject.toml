@@ -1,0 +1,83 @@
+[project]
+name = "vox-agents"
+version = "4.2.9"
+description = "Vox Agent — voice-first agent cockpit and execution control plane"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn>=0.32.0",
+    "websockets>=14.0,<17",
+    "pydantic>=2.0",
+    "aiosqlite>=0.20.0",
+    "httpx>=0.27.0",
+    "openai>=1.50.0",
+    "dashscope>=1.20.0",
+    "structlog>=24.0.0",
+    "python-dotenv>=1.0.0",
+    "python-multipart>=0.0.12",
+]
+
+[project.optional-dependencies]
+backup = [
+    "keyring>=25.0,<26",
+]
+local = [
+    "pywhispercpp>=1.4.0",
+    "faster-whisper>=1.0.0",
+    "ollama>=0.3.0",
+]
+asr = [
+    "sherpa-onnx>=1.13.4,<1.14",
+    "sherpa-onnx-bin>=1.13.4,<1.14",
+    "sherpa-onnx-core>=1.13.4,<1.14",
+]
+mcp = [
+    "mcp>=1.0,<2",
+]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24.0",
+    "pytest-httpx>=0.30.0",
+    "httpx2>=2.7.0",
+    "ruff==0.15.22",
+]
+
+[project.scripts]
+vox-engine = "engine.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["engine", "runtime", "memory", "apps", "dictionaries", "integrations"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+markers = [
+    "e2e: end-to-end tests requiring external services (claude CLI, network)",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+# Vendored third-party ASR model servers — not our code, don't lint.
+extend-exclude = [
+    "macos/sensevoice-server",
+    "macos/qwen3-asr-server",
+    "scripts",
+    "legacy-python",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# __init__.py re-export the package's public surface intentionally.
+"**/__init__.py" = ["F401", "F403"]
+# Tests routinely bind a result for clarity/side-effects without asserting it,
+# and the legacy v1/v2 voice-log servers predate this lint config.
+"tests/**" = ["F841"]
+"apps/desktop/server.py" = ["E402"]
+"apps/gateway/server.py" = ["F841"]

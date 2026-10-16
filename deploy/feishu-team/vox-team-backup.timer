@@ -1,0 +1,7 @@
+[Unit]
+Description=Daily Vox backup at 04:00 Singapore time
+[Timer]
+OnCalendar=*-*-* 20:00:00 UTC
+Persistent=true
+[Install]
+WantedBy=timers.target

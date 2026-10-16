@@ -1,0 +1,47 @@
+--- a/build/watchers/common.js
++++ b/build/watchers/common.js
+@@ -15,7 +15,8 @@
+ exports.posixPathMatchesPattern = exports.ALL_EVENT = exports.RECRAWL_EVENT = exports.TOUCH_EVENT = exports.DELETE_EVENT = void 0;
+ exports.includedByGlob = includedByGlob;
+ exports.typeFromStat = typeFromStat;
+-const micromatch_1 = __importDefault(require("micromatch"));
++const picomatch = require("picomatch");
++const micromatch_1 = { default: { some: (list, patterns, options) => [].concat(patterns).some(pattern => { const match = picomatch(String(pattern), options); return [].concat(list).some(item => match(item)); }) } };
+ const path_1 = __importDefault(require("path"));
+ exports.DELETE_EVENT = 'delete';
+ exports.TOUCH_EVENT = 'touch';
+--- a/package.json
++++ b/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "@expo/metro-file-map",
+-  "version": "57.0.3",
++  "version": "57.0.3-vox.1",
+   "description": "A metro-file-map fork for Expo used with the Metro bundler",
+   "main": "build/index.js",
+   "types": "build/index.d.ts",
+@@ -26,8 +26,8 @@
+     "fb-watchman": "^2.0.2",
+     "invariant": "^2.2.4",
+     "jest-worker": "^29.7.0",
+-    "micromatch": "^4.0.4",
+-    "walker": "^1.0.8"
++    "walker": "^1.0.8",
++    "picomatch": "2.3.2"
+   },
+   "devDependencies": {
+     "@expo/metro": "~56.0.2",
+@@ -50,5 +50,11 @@
+     "test": "expo-module test",
+     "typecheck": "expo-module typecheck",
+     "watch": "expo-module tsc --watch --preserveWatchOutput"
++  },
++  "voxDerivative": {
++    "owner": "osborn-studio/osvox",
++    "contract": "vox-canonical-signature-v1",
++    "upstreamArchive": "expo-metro-file-map-57.0.3.tgz",
++    "distribution": "private reviewed artifact; not an official upstream release"
+   }
+-}
+\ No newline at end of file
++}

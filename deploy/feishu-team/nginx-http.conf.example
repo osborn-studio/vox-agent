@@ -1,0 +1,10 @@
+# First phase only: obtain the certificate before activating the HTTPS site.
+server {
+    listen 80;
+    listen [::]:80;
+    server_name api.osbornvox.com;
+    access_log off;
+    error_log /dev/null;
+    location ^~ /.well-known/acme-challenge/ { root /var/www/vox-acme; }
+    location / { return 503; }
+}

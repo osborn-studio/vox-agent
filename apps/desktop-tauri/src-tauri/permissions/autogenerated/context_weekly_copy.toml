@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-context-weekly-copy"
+description = "Enables the context_weekly_copy command without any pre-configured scope."
+commands.allow = ["context_weekly_copy"]
+
+[[permission]]
+identifier = "deny-context-weekly-copy"
+description = "Denies the context_weekly_copy command without any pre-configured scope."
+commands.deny = ["context_weekly_copy"]

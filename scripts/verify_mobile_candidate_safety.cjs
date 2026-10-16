@@ -1,0 +1,22 @@
+'use strict';
+// Isolated candidate only. Execute every stage; compatibility failure never means success.
+const path=require('node:path'),fs=require('node:fs'),{spawnSync}=require('node:child_process');
+const flag=process.argv.indexOf('--app-root');if(flag<0||!process.argv[flag+1])throw Error('Explicit isolated --app-root required');
+const root=require('node:fs').realpathSync(process.argv[flag+1]),repo=path.resolve(__dirname,'..');
+if(!fs.realpathSync(root).startsWith(fs.realpathSync(path.join(repo,'build'))+path.sep))throw Error('Candidate safety only allowed in owned build fixtures');
+const crypto=require('node:crypto'),fixturePins=require('../security/mobile-candidate/fixture-verifiers.json');
+for(const [name,hash]of Object.entries(fixturePins)){const file=path.resolve(root,'../../scripts',name);if(crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex')!==hash)throw Error('Fixture verifier source mismatch: '+name);}
+const verifierPinBytes=fs.readFileSync(path.join(repo,'security/mobile-candidate/safety-verifiers.json'));if(crypto.createHash('sha256').update(verifierPinBytes).digest('hex')!=='8c1267ce8bc55d27b42ee7fd29fb68c929f0807cc670a32a93f67399b1d7340f')throw Error('Safety verifier manifest mismatch');
+for(const [name,hash]of Object.entries(JSON.parse(verifierPinBytes))){if(crypto.createHash('sha256').update(fs.readFileSync(path.join(repo,name))).digest('hex')!==hash)throw Error('Safety verifier source mismatch: '+name);}
+const contractFlag=process.argv.indexOf('--contract');const canonicalContract=contractFlag>=0&&process.argv[contractFlag+1]==='vox-canonical-signature-v1';if(contractFlag>=0&&!canonicalContract)throw Error('Unsupported explicit contract');
+const stages=[['provenance',[path.join(__dirname,'verify_mobile_candidate_provenance.cjs'),'--app-root',root]],[canonicalContract?'canonical_contract':'attacks',[path.join(__dirname,canonicalContract?'verify_mobile_canonical_signature_contract.cjs':'verify_mobile_candidate_attacks.cjs'),'--app-root',root]],...['verify_mobile_patch_installer.cjs','verify_mobile_xcode_uuid.cjs','verify_mobile_prebuild_parity_tests.cjs'].map(name=>[name,[path.resolve(root,'../../scripts',name)]])];
+for(const name of ['cache_file','cli','online_csr','provenance_tests','gate_mutations','dispatch'])stages.push([name,[path.join(__dirname,'verify_mobile_candidate_'+name+'.cjs'),'--app-root',root]]);
+const upstreamFlag=process.argv.indexOf('--upstream-dir');if(upstreamFlag<0)throw Error('Explicit --upstream-dir required for complete builder safety stage');
+stages.push(['builder',[path.join(__dirname,'verify_mobile_candidate_builder.py'),'--upstream-dir',fs.realpathSync(process.argv[upstreamFlag+1])],'python3']);
+const oracleFlag=process.argv.indexOf('--oracle-root');if(oracleFlag<0)throw Error('Explicit --oracle-root required for complete matcher parity stage');
+stages.push(['matcher_parity',[path.join(__dirname,'verify_mobile_candidate_matcher_parity.cjs'),'--app-root',root,'--oracle-root',fs.realpathSync(process.argv[oracleFlag+1])]]);
+if(canonicalContract)stages.push(['delivery_install',[path.join(__dirname,'test_mobile_delivery_install.cjs'),'--fixture-root',path.resolve(root,'../..')]]);
+if(canonicalContract)stages.push(['historical_compatibility',[path.join(__dirname,'verify_mobile_candidate_attacks.cjs'),'--app-root',root]]);
+let failed=false,compatibility=false,knownBreakingChange=false;const results=[];
+for(const [name,args,executable]of stages){const run=spawnSync(executable||process.execPath,args,{cwd:root,encoding:'utf8',timeout:120000,maxBuffer:2*1024*1024});process.stdout.write(run.stdout||'');process.stderr.write(run.stderr||'');results.push({name,status:run.status,error:run.error?.message});if(name==='historical_compatibility'){let report;try{report=JSON.parse((run.stdout||'').trim().split('\n').at(-1))}catch{}if(run.status===2&&report?.canonicalNullPositive===true&&report?.malformedCertificateSignaturesRejected===7&&report?.legacyOmittedNullPositive===false&&/FAIL preserved Forge compatibility positive: omitted NULL/.test(run.stderr||''))knownBreakingChange=true;else failed=true;}else if(name==='attacks'&&run.status===2)compatibility=true;else if(run.status!==0)failed=true;}
+console.log(JSON.stringify({contract:canonicalContract?'vox-canonical-signature-v1':'historical-forge',results,attackRegression:failed,unresolvedCompatibility:compatibility,knownBreakingChange}));process.exitCode=failed?1:compatibility?2:0;

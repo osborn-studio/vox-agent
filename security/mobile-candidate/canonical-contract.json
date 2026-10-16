@@ -1,0 +1,16 @@
+{
+  "id": "vox-canonical-signature-v1",
+  "status": "owner-authorized-implementation-not-production-qualified",
+  "ownerEvidence": {
+    "threadId": "01a10c38-df1e-7211-9e07-13b23510503b",
+    "userMessageId": "01a115ad-df5e-713d-8735-f7ee93dba67a",
+    "deliveryMessageId": "Sentinel_998f6412517c81918362a621b0a8d99d",
+    "decision": "接受可能需要重新签名的迁移路线",
+    "verifiedBy": "direct read_thread userMessage, 2026-10-07"
+  },
+  "signature": "RSASSA-PKCS1-v1_5 SHA-256; canonical DigestInfo NULL; RSA >=2048",
+  "legacyOmittedNull": "unsupported; preserve historical compatibility corpus",
+  "failureCode": "VOX_UNSUPPORTED_CERTIFICATE_SIGNATURE",
+  "realHistoricalCertificatesAffected": "unknown",
+  "notAuthorized": ["real key/certificate access", "real reissue/re-sign/revoke", "registry publication", "automatic merge", "production deployment"]
+}

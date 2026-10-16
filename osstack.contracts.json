@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "kind": "osstack.contract_manifest",
+  "service": "vox-agent-desktop-gateway",
+  "endpoints": [
+    {
+      "id": "desktop-contract",
+      "method": "GET",
+      "path": "/v1/desktop/contract",
+      "owner": "services/api-ts"
+    },
+    {
+      "id": "agent-query",
+      "method": "POST",
+      "path": "/v1/agents/query",
+      "owner": "engine/api/memory"
+    },
+    {
+      "id": "speech-stream-create",
+      "method": "POST",
+      "path": "/v1/speech/streams",
+      "owner": "engine/api/speech"
+    },
+    {
+      "id": "speech-stream-replay",
+      "method": "GET",
+      "path": "/v1/speech/streams/:id/events",
+      "owner": "engine/api/speech"
+    },
+    {
+      "id": "speech-stream-partial",
+      "method": "POST",
+      "path": "/v1/speech/streams/:id/partial",
+      "owner": "engine/api/speech"
+    },
+    {
+      "id": "speech-stream-final",
+      "method": "POST",
+      "path": "/v1/speech/streams/:id/final",
+      "owner": "engine/api/speech"
+    },
+    {
+      "id": "speech-stream-cancel",
+      "method": "POST",
+      "path": "/v1/speech/streams/:id/cancel",
+      "owner": "engine/api/speech"
+    },
+    {
+      "id": "speech-stream-complete",
+      "method": "POST",
+      "path": "/v1/speech/streams/:id/complete",
+      "owner": "engine/api/speech"
+    },
+    {
+      "id": "realtime-translation",
+      "method": "POST",
+      "path": "/v1/translations",
+      "owner": "engine/api/translation"
+    },
+    {
+      "id": "conversation-session-create",
+      "method": "POST",
+      "path": "/v1/conversation-sessions",
+      "owner": "engine/api/conversation_sessions"
+    },
+    {
+      "id": "conversation-session-end",
+      "method": "POST",
+      "path": "/v1/conversation-sessions/:id/end",
+      "owner": "engine/api/conversation_sessions"
+    },
+    {
+      "id": "conversation-invite-claim",
+      "method": "POST",
+      "path": "/public/v1/conversation-sessions/claim",
+      "owner": "engine/api/conversation_sessions"
+    },
+    {
+      "id": "conversation-turn-replay",
+      "method": "GET",
+      "path": "/public/v1/conversation-sessions/:id/turns",
+      "owner": "engine/api/conversation_sessions"
+    },
+    {
+      "id": "conversation-turn-publish",
+      "method": "POST",
+      "path": "/public/v1/conversation-sessions/:id/turns",
+      "owner": "engine/api/conversation_sessions"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-context-sign-out"
+description = "Enables the context_sign_out command without any pre-configured scope."
+commands.allow = ["context_sign_out"]
+
+[[permission]]
+identifier = "deny-context-sign-out"
+description = "Denies the context_sign_out command without any pre-configured scope."
+commands.deny = ["context_sign_out"]

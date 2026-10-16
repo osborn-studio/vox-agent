@@ -1,0 +1,24 @@
+{
+  "name": "@voxlog/api-ts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "test": "node --import tsx --test src/test/**/*.test.ts"
+  },
+  "dependencies": {
+    "@voxlog/contracts": "file:../../packages/contracts",
+    "@fastify/formbody": "^8.0.2",
+    "@fastify/multipart": "^9.2.1",
+    "fastify": "^5.10.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^24.8.1",
+    "tsx": "^4.23.1",
+    "typescript": "^5.9.3"
+  }
+}

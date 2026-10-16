@@ -1,0 +1,10 @@
+# Set VOX_TEAM_DOMAIN to a domain you own, with DNS pointing to this server.
+# No access log: OAuth callback query parameters must not be retained.
+{$VOX_TEAM_DOMAIN} {
+    request_body {
+        max_size 1MB
+    }
+    header Referrer-Policy "no-referrer"
+    header X-Content-Type-Options "nosniff"
+    reverse_proxy 127.0.0.1:8766
+}

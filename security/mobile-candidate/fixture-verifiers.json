@@ -1,0 +1,6 @@
+{
+  "verify_mobile_patch_installer.cjs": "de02753c1aebfd2c57c9c16b7ebe1350b4ff4d5f0d65e9e2e5ec05f7b975fa22",
+  "verify_mobile_xcode_uuid.cjs": "2336383dc4845557101e427c6dae7a10b44ab57467f60b42e9ff78775b4e0caa",
+  "verify_mobile_prebuild_parity_tests.cjs": "8dabe20d37f9cd657d679ad12f4689eeb790f91783d5e2119679429b8757af83",
+  "verify_mobile_dependency_defenses.cjs": "911da7b857b697c412c5f53c2ac6c5b07b7b1804990fb717fb78ffbd13e61902"
+}

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-resolve-engine-permission"
+description = "Enables the resolve_engine_permission command without any pre-configured scope."
+commands.allow = ["resolve_engine_permission"]
+
+[[permission]]
+identifier = "deny-resolve-engine-permission"
+description = "Denies the resolve_engine_permission command without any pre-configured scope."
+commands.deny = ["resolve_engine_permission"]

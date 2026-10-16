@@ -1,0 +1,8 @@
+[package]
+name = "vox-agent-input-output"
+version = "0.1.0"
+edition = "2021"
+description = "input/output policy helpers for Vox Agent desktop"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }

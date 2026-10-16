@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-get-engine-model-policy"
+description = "Enables the get_engine_model_policy command without any pre-configured scope."
+commands.allow = ["get_engine_model_policy"]
+
+[[permission]]
+identifier = "deny-get-engine-model-policy"
+description = "Denies the get_engine_model_policy command without any pre-configured scope."
+commands.deny = ["get_engine_model_policy"]

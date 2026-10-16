@@ -1,0 +1,26 @@
+# Install only after provisioning a supported OS keyring for the vox-team user.
+# A system service cannot assume an interactive user's unlocked keyring/DBus session.
+[Unit]
+Description=Vox team login and Feishu service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=vox-team
+Group=vox-team
+WorkingDirectory=/opt/vox-agent
+ExecStart=/opt/vox-agent/.venv/bin/python -m engine.backup_runtime --config /etc/vox-team/runtime.json --host 127.0.0.1 --port 8766
+Restart=on-failure
+RestartSec=5
+StateDirectory=vox-team
+StateDirectoryMode=0700
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/vox-team
+
+[Install]
+WantedBy=multi-user.target

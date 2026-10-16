@@ -1,0 +1,101 @@
+name: Release DMG
+
+on:
+  push:
+    tags:
+      # Final releases only (vX.Y.Z). Preview/candidate tags such as
+      # v4.2.9-preview.1 must not start a macOS release build; they are
+      # qualified by their own platform workflow (T47q).
+      - "v[0-9]+.[0-9]+.[0-9]+"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'App version (X.Y.Z); manual runs upload artifacts only'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-dmg-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-macos:
+    name: Build Vox Agent DMG
+    runs-on: macos-26
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VOX_TEAM_LOGIN_URL: https://api.osbornvox.com
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Resolve version and preserve existing release
+        id: release
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: python scripts/prepare_dmg_release.py
+
+      - name: Install engine build dependencies
+        if: steps.release.outputs.skip != 'true'
+        run: python -m pip install . pyinstaller
+
+      - name: Build DMG
+        if: steps.release.outputs.skip != 'true'
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: bash ./scripts/build_voxagent_dmg.sh
+
+      - name: Verify packaged version and cloud login origin
+        if: steps.release.outputs.skip != 'true'
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          python - <<'PYVERIFY'
+          import os, plistlib
+          from pathlib import Path
+          path = Path('build/voxagent-release/Vox Agent.app/Contents/Info.plist')
+          with path.open('rb') as source:
+              info = plistlib.load(source)
+          if info.get('CFBundleShortVersionString') != os.environ['VERSION']:
+              raise SystemExit('Packaged version differs from release version')
+          if info.get('VoxTeamLoginURL') != os.environ['VOX_TEAM_LOGIN_URL']:
+              raise SystemExit('Packaged cloud login origin is missing or incorrect')
+          PYVERIFY
+
+      - name: Reject legacy updater assets
+        if: steps.release.outputs.skip != 'true'
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: python scripts/verify_update_assets.py --dist dist --version "$VERSION"
+
+      - name: Upload artifact
+        if: steps.release.outputs.skip != 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: vox-agent-release
+          path: |
+            dist/VoxAgent-v${{ steps.release.outputs.version }}-cloud.dmg
+            dist/SHA256SUMS.txt
+          if-no-files-found: error
+
+      # Create-only: if another publisher wins the race, fail instead of replacing
+      # their assets. Publishing/promoting the draft remains a separate acceptance step.
+      - name: Create draft release
+        if: github.event_name == 'push' && github.ref_type == 'tag' && steps.release.outputs.skip != 'true'
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: >-
+          gh release create "$GITHUB_REF_NAME"
+          "dist/VoxAgent-v${VERSION}-cloud.dmg"
+          "dist/SHA256SUMS.txt"
+          --verify-tag --draft --prerelease --latest=false
+          --title "Vox Agent $VERSION candidate" --generate-notes

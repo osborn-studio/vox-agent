@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-set-backend-base-url"
+description = "Enables the set_backend_base_url command without any pre-configured scope."
+commands.allow = ["set_backend_base_url"]
+
+[[permission]]
+identifier = "deny-set-backend-base-url"
+description = "Denies the set_backend_base_url command without any pre-configured scope."
+commands.deny = ["set_backend_base_url"]

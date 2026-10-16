@@ -1,0 +1,16 @@
+[Unit]
+Description=Encrypted consistent Vox database backup
+[Service]
+Type=oneshot
+UMask=0077
+RuntimeDirectory=vox-team-backup
+RuntimeDirectoryMode=0700
+LoadCredentialEncrypted=backup-password:/etc/credstore.encrypted/vox-team-backup
+ExecStart=/usr/bin/python3 /opt/vox-agent/current/deploy/feishu-team/backup-linux.py
+ExecStopPost=/usr/bin/python3 /opt/vox-agent/current/deploy/feishu-team/backup-linux.py --recover
+TimeoutStartSec=5min
+MemoryMax=256M
+MemorySwapMax=0
+PrivateTmp=true
+ProtectHome=true
+NoNewPrivileges=true

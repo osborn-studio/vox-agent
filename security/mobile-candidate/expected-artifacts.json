@@ -1,0 +1,27 @@
+{
+  "metro0844": {
+    "filename": "metro-file-map-0.84.4-vox.1.tgz",
+    "integrity": "sha512-6qcZUHtNcv8pWJlzSwlTUWm2nHYRWf/Y6Bo5LP3PH9P3Im7KMty88JDO+YwWXrc1NP+eKjCJJ94abQhBQLAauA==",
+    "sha256": "9e0d3eb52b14e411dba572160a67be323a70f2730931540850e5bc177e679bdd"
+  },
+  "metro0845": {
+    "filename": "metro-file-map-0.84.5-vox.1.tgz",
+    "integrity": "sha512-vjIrq68GaQjoU84ihiuYQmYKoOsQUpEe1gX9yID/1Rk3XK3EMhh0R6sz+v3mxE3pdjMzmGvpBQA4QP6On71ZkQ==",
+    "sha256": "8ff77909cc753c48c8ba1e5ad56ad498a1eb6596beb62831a06bd3accdedbfbe"
+  },
+  "expo5703": {
+    "filename": "expo-metro-file-map-57.0.3-vox.1.tgz",
+    "integrity": "sha512-hanUejQbh9aVARD3grPjq4IbAyzhGDOjYuf53TaTJy1FrkeFQ1gej4oaA5OHtfWn3Py47xaZPV2MVbyJQDiD1A==",
+    "sha256": "996130294459cb4e2f1fb358b138fc3c7e47c3e7f1be0fa29f864019b68d3872"
+  },
+  "cert": {
+    "filename": "expo-code-signing-certificates-0.0.6-vox.1.tgz",
+    "integrity": "sha512-4kVAo1HWH4j3tg/NMg7hdIc8bhU7qWLRWMA6jv5wn7fEk1/SkZePPn2IhaL885lsIdx8jesoqqtwrPHQNQdSng==",
+    "sha256": "5e61c9cc5bdd746237e12648148f0fb9efe1cbe6f2a1555ce83aab74118b704e"
+  },
+  "cli": {
+    "filename": "expo-cli-57.0.27-vox.1.tgz",
+    "integrity": "sha512-Kltlv8iqS5LSfVNyw837BotZWoeZEkg3LrPDowB5eCYkxNJau/ZGxBSTqym+hhXoEhG/9bSAb0k3zI49TiS+2Q==",
+    "sha256": "e4c995ec10badd0e89b45fa89cdf77e49235332bb22cf2ca110658fe1a7975e4"
+  }
+}

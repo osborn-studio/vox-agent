@@ -1,0 +1,748 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vox Agent</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="cockpit">
+      <aside id="sidebar-pane" class="sidebar" aria-label="Vox Agent navigation">
+        <header class="brand">
+          <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span>
+            <strong>Vox Agent</strong>
+            <small>Local command center</small>
+          </span>
+        </header>
+
+        <nav class="primary-nav" aria-label="Conversations">
+          <p class="section-label">Conversations</p>
+          <button id="target-group" class="nav-item target-item" type="button" aria-pressed="true">
+            <span class="nav-glyph" aria-hidden="true">#</span>
+            Open Context Flow
+          </button>
+        </nav>
+
+        <nav class="primary-nav" aria-label="Workspace views">
+          <p class="section-label">Workspace</p>
+          <button class="nav-item active" data-view-target="command" aria-current="page">
+            <span class="nav-glyph" aria-hidden="true">⌁</span>
+            Command
+            <kbd>⌘1</kbd>
+          </button>
+          <button class="nav-item" data-view-target="sessions">
+            <span class="nav-glyph" aria-hidden="true">◫</span>
+            Sessions
+            <kbd>⌘2</kbd>
+          </button>
+          <button class="nav-item" data-view-target="history">
+            <span class="nav-glyph" aria-hidden="true">↺</span>
+            History
+            <kbd>⌘3</kbd>
+          </button>
+          <button class="nav-item" data-view-target="settings">
+            <span class="nav-glyph" aria-hidden="true">⚙︎</span>
+            Settings
+            <kbd>⌘4</kbd>
+          </button>
+          <button class="nav-item" data-view-target="vocabulary">
+            <span class="nav-glyph" aria-hidden="true">Aa</span>
+            Vocabulary
+            <kbd>⌘5</kbd>
+          </button>
+          <button class="nav-item" data-view-target="modes">
+            <span class="nav-glyph" aria-hidden="true">◇</span>
+            Modes
+            <kbd>⌘6</kbd>
+          </button>
+        </nav>
+
+        <section class="agent-roster" aria-labelledby="agents-label">
+          <div class="section-heading">
+            <button id="toggle-agents" class="disclosure-button" type="button" aria-expanded="true" aria-controls="agent-targets">
+              <span id="agents-label" class="section-label">Agents</span>
+            </button>
+            <span id="agent-count" class="count-label">0</span>
+          </div>
+          <div id="agent-targets">
+          <button id="target-coordinator" class="nav-item target-item" type="button" aria-pressed="false">
+            <span class="nav-glyph" aria-hidden="true">V</span>
+            Vox Agent coordinator
+          </button>
+          <div id="agent-roster" class="roster-list">
+            <div class="agent-row selected">
+              <span class="status-form idle" aria-hidden="true"></span>
+              <span class="agent-copy">
+                <strong>Vox Agent</strong>
+                <small>Waiting for engine</small>
+              </span>
+              <span class="agent-state">offline</span>
+            </div>
+          </div>
+          </div>
+        </section>
+
+        <footer class="sidebar-footer">
+          <div class="connection-row">
+            <span class="status-form idle" aria-hidden="true"></span>
+            <span>Engine</span>
+            <span id="bridge-status" class="badge neutral">Connecting</span>
+          </div>
+          <div class="connection-row">
+            <span class="status-form idle" aria-hidden="true"></span>
+            <span>Providers</span>
+            <span id="provider-status" class="badge neutral">Unknown</span>
+          </div>
+          <div class="connection-row">
+            <span class="status-form idle" aria-hidden="true"></span>
+            <span>Global voice</span>
+            <span id="hotkey-status" class="badge neutral">Idle</span>
+          </div>
+        </footer>
+      </aside>
+
+      <section class="workspace">
+        <header class="toolbar">
+          <button id="toggle-sidebar" class="icon-button pane-toggle" type="button" aria-controls="sidebar-pane" aria-expanded="true" aria-label="Show or hide the sidebar (Ctrl+Alt+B)" title="Sidebar (Ctrl+Alt+B)" data-i18n-aria="aria.sidebar" data-i18n-title="title.sidebar">⇤</button>
+          <div class="toolbar-title">
+            <p class="eyebrow">Private workspace</p>
+            <h1 id="workspace-title">Command</h1>
+          </div>
+          <div class="toolbar-actions">
+            <span id="contract-status" class="badge neutral">Checking Contract</span>
+            <button id="toggle-inspector" class="icon-button pane-toggle" type="button" aria-controls="inspector-pane" aria-expanded="true" aria-label="Show or hide the right panel (Ctrl+Alt+I)" title="Right panel (Ctrl+Alt+I)" data-i18n-aria="aria.inspector" data-i18n-title="title.inspector">⇥</button>
+            <button id="refresh-recent" class="icon-button" title="Refresh recent activity" aria-label="Refresh recent activity">↻</button>
+            <button id="refresh-health" class="icon-button" title="Refresh engine health" aria-label="Refresh engine health">⌁</button>
+          </div>
+        </header>
+
+        <div class="status-strip" aria-label="Agent operations status">
+          <span><i class="status-form running" aria-hidden="true"></i><b id="running-count">0</b> running</span>
+          <span><i class="status-form idle" aria-hidden="true"></i><b id="queued-count">0</b> queued</span>
+          <span><i class="status-form awaiting" aria-hidden="true"></i><b id="approval-count">0</b> awaiting approval</span>
+          <span><i class="status-form failed" aria-hidden="true"></i><b id="failed-count">0</b> failed</span>
+          <span class="status-strip-tail">local · auditable · private</span>
+        </div>
+
+        <div class="workspace-scroll" tabindex="0" role="region" aria-labelledby="workspace-title">
+          <section class="workspace-view" data-view="command" aria-label="Agent command timeline">
+            <section id="onboarding-panel" class="inline-card onboarding-card hidden">
+              <span class="card-edge awaiting" aria-hidden="true"></span>
+              <div class="card-content">
+                <div class="card-heading">
+                  <div>
+                    <p class="eyebrow">First launch</p>
+                    <h2>Finish the local workspace setup</h2>
+                  </div>
+                  <span id="onboarding-status" class="badge warn">Setup Needed</span>
+                </div>
+                <p class="secondary-copy">Connect the local engine, choose a profile, and store at least one provider credential.</p>
+                <div id="onboarding-checks" class="settings-checks"></div>
+                <button id="complete-onboarding" class="button">Complete setup</button>
+              </div>
+            </section>
+
+            <div class="timeline-heading">
+              <div>
+                <p class="eyebrow">Now</p>
+                <h2 id="timeline-title">Agent timeline</h2>
+              </div>
+              <span id="timeline-scope" class="timeline-scope">current session</span>
+            </div>
+
+            <section id="context-flow" class="context-flow" aria-labelledby="timeline-title">
+              <p class="inline-note" data-i18n="flow.note">Your inputs to the team and their delivery status. This is not the group's full message history.</p>
+              <div id="context-records" class="context-records" role="list" aria-label="Context records" data-i18n-aria="aria.records"></div>
+              <button id="context-load-older" class="button quiet" type="button" hidden data-i18n="flow.loadOlder">Load older records</button>
+              <p id="context-empty" class="timeline-empty" data-i18n="flow.empty">No records yet. What you record is saved on this device first, then sent.</p>
+              <p id="context-live" class="visually-hidden" role="status" aria-live="polite"></p>
+            </section>
+
+            <div id="agent-flow" hidden>
+            <article class="timeline-turn system-turn">
+              <div class="turn-identity">
+                <span class="agent-avatar" aria-hidden="true">V</span>
+                <span><strong>Vox Agent</strong><small>Coordinator</small></span>
+              </div>
+              <div class="turn-body">
+                <p>I coordinate grounded memory, voice capture, tools, and specialist agents from one auditable timeline.</p>
+                <div class="capability-row" aria-label="Available capabilities">
+                  <span>Grounded answers</span><span>Voice commands</span><span>Scoped actions</span><span>Cited translation</span>
+                </div>
+              </div>
+            </article>
+
+            <div id="engine-task-timeline" class="engine-task-timeline" aria-live="polite"></div>
+
+            <article id="agent-answer-card" class="timeline-turn agent-answer hidden" aria-live="polite">
+              <div class="turn-identity">
+                <span class="agent-avatar" aria-hidden="true">V</span>
+                <span><strong id="agent-answerer">Vox Agent</strong><small>Grounded answer</small></span>
+              </div>
+              <div class="turn-body">
+                <p id="agent-answer"></p>
+                <p id="agent-context" class="secondary-copy"></p>
+              </div>
+            </article>
+
+            <div id="engine-timeline-empty" class="timeline-empty">
+              <span class="empty-symbol" aria-hidden="true">⌁</span>
+              <p>Your next command becomes a traceable agent turn here.</p>
+              <small>Hold the global shortcut to speak, or type below.</small>
+            </div>
+            </div>
+
+            <div id="engine-permission-list" class="engine-permission-list" aria-live="assertive"></div>
+
+            <article id="policy-preview-card" class="inline-card permission-card hidden" aria-live="polite">
+              <span class="card-edge awaiting" aria-hidden="true"></span>
+              <div class="card-content">
+                <div class="card-heading">
+                  <div>
+                    <p class="eyebrow">Scoped action</p>
+                    <h2>Vox Agent requests output permission</h2>
+                  </div>
+                  <span id="policy-preview-status" class="badge warn">Pending</span>
+                </div>
+                <p class="scope-line"><code>active application</code><code>paste transcript</code><code>one time</code></p>
+                <p id="policy-preview-text" class="permission-preview"></p>
+                <div class="actions">
+                  <button id="policy-preview-send" class="button success">Approve &amp; send</button>
+                  <button id="policy-preview-cancel" class="button quiet">Deny</button>
+                </div>
+              </div>
+            </article>
+
+          </section>
+
+          <section class="workspace-view" data-view="sessions" aria-label="Session memory" hidden>
+            <div class="view-intro">
+              <p class="eyebrow">Session intelligence</p>
+              <h2>Turn activity into durable memory.</h2>
+              <p>Inspect intent, entities, tags, and the exact export destinations for the active session.</p>
+            </div>
+
+            <section class="surface-card digest-card">
+              <div class="card-heading">
+                <h2>Session digest</h2>
+                <span id="digest-status" class="badge neutral">Idle</span>
+              </div>
+              <div class="compact-controls">
+                <label class="field"><span>Scope</span><select id="digest-type"><option value="session">session</option><option value="daily">daily</option><option value="project">project</option></select></label>
+                <label class="field"><span>Date</span><input id="digest-date" type="date" /></label>
+                <label class="field grow"><span>Project key</span><input id="digest-project-key" type="text" placeholder="active-project" /></label>
+                <button id="refresh-digest" class="button quiet">Refresh</button>
+                <button id="rebuild-digest" class="button">Rebuild</button>
+              </div>
+              <div class="digest-layout">
+                <div class="digest-primary">
+                  <p class="field-label">Summary</p>
+                  <p id="digest-summary" class="digest-summary">(waiting)</p>
+                  <dl class="detail-list">
+                    <div><dt>Intent</dt><dd id="digest-intent">(waiting)</dd></div>
+                    <div><dt>Suggested tags</dt><dd id="digest-tags">(waiting)</dd></div>
+                    <div><dt>Entities</dt><dd id="digest-entities">(waiting)</dd></div>
+                  </dl>
+                </div>
+                <aside class="digest-meta">
+                  <dl class="detail-list compact">
+                    <div><dt>Enhancer</dt><dd id="digest-enhancer">(waiting)</dd></div>
+                    <div><dt>Last rebuilt</dt><dd id="digest-rebuilt-at">(waiting)</dd></div>
+                    <div><dt>Obsidian export</dt><dd id="digest-export-status">(waiting)</dd></div>
+                    <div><dt>AI Mate export</dt><dd id="ai-mate-export-status">(waiting)</dd></div>
+                  </dl>
+                  <button id="export-obsidian" class="button quiet full">Export to Obsidian</button>
+                  <button id="export-ai-mate-memory" class="button quiet full">Export to AI Mate Memory</button>
+                </aside>
+              </div>
+            </section>
+          </section>
+
+          <section class="workspace-view" data-view="history" aria-label="Agent history" hidden>
+            <div class="view-intro">
+              <p class="eyebrow">Audit trail</p>
+              <h2>Search every voice and agent turn.</h2>
+              <p>Filter by specialist or session, then replay the context that produced the result.</p>
+            </div>
+            <section class="surface-card history-panel">
+              <div class="card-heading">
+                <h2>History</h2>
+                <div class="actions compact-actions history-export-actions">
+                  <span id="history-result-count" class="count-label">0 items</span>
+                  <span id="history-status" class="badge neutral">Idle</span>
+                  <button id="export-history-markdown" class="button quiet" type="button">Export .md</button>
+                  <button id="export-history-json" class="button quiet" type="button">Export .json</button>
+                  <button id="open-history-exports" class="button quiet" type="button" disabled>Open exports</button>
+                </div>
+              </div>
+              <div class="compact-controls">
+                <label class="field grow"><span>Search</span><input id="history-query" type="search" placeholder="Search transcript or agent output" /></label>
+                <label class="field"><span>Agent</span><select id="history-agent"><option value="">all agents</option></select></label>
+                <label class="field grow"><span>Session</span><input id="history-session" type="text" placeholder="session id" /></label>
+                <button id="use-current-session" class="button quiet">Use current</button>
+                <label class="check-control"><input id="history-current-only" type="checkbox" /><span>Current only</span></label>
+                <button id="refresh-history" class="button">Search</button>
+              </div>
+              <p id="history-export-status" class="inline-note" role="status" aria-live="polite">Exports are written to the private Vox Agent data directory.</p>
+              <div id="history-empty" class="empty-state">No history results yet.</div>
+              <div id="history-list" class="history-list hidden" role="list"></div>
+            </section>
+          </section>
+
+          <section class="workspace-view" data-view="vocabulary" aria-label="Recognition vocabulary" hidden>
+            <div class="view-intro">
+              <p class="eyebrow">Recognition control</p>
+              <h2>Teach Vox Agent the words that matter.</h2>
+              <p>Corrections are applied before polishing. Preferred terms are preserved so provider output stays faithful to names, products, and domain language.</p>
+            </div>
+
+            <div class="vocabulary-layout">
+              <section class="surface-card vocabulary-card">
+                <div class="card-heading">
+                  <div>
+                    <h2>Correction rules</h2>
+                    <p class="secondary-copy">Map recurring recognition output to the exact text you want.</p>
+                  </div>
+                  <span id="dictionary-status" class="badge neutral" role="status" aria-live="polite">Idle</span>
+                </div>
+                <form id="dictionary-form" class="dictionary-form">
+                  <label class="field"><span>Recognized text</span><input id="dictionary-wrong-input" type="text" maxlength="200" autocomplete="off" placeholder="vox log" required /></label>
+                  <label class="field"><span>Preferred text</span><input id="dictionary-right-input" type="text" maxlength="500" autocomplete="off" placeholder="Vox Agent" required /></label>
+                  <div class="actions">
+                    <button id="save-dictionary-term" class="button" type="submit">Add correction</button>
+                    <button id="refresh-dictionary" class="button quiet" type="button">Refresh</button>
+                  </div>
+                </form>
+                <p id="dictionary-empty" class="empty-state">No custom corrections yet.</p>
+                <div id="dictionary-corrections" class="vocabulary-list hidden" role="list" aria-live="polite"></div>
+              </section>
+
+              <section class="surface-card vocabulary-card">
+                <div class="card-heading">
+                  <div>
+                    <h2>Protected vocabulary</h2>
+                    <p class="secondary-copy">Preferred correction values retained by the recognition pipeline.</p>
+                  </div>
+                  <span id="dictionary-preserve-count" class="count-label">0 terms</span>
+                </div>
+                <p id="dictionary-preserve-empty" class="empty-state">No protected terms yet.</p>
+                <div id="dictionary-preserve" class="term-chip-list hidden" role="list" aria-live="polite"></div>
+              </section>
+            </div>
+          </section>
+
+          <section class="workspace-view" data-view="modes" aria-label="Named capture and output modes" hidden>
+            <div class="view-intro">
+              <p class="eyebrow">Capture routing</p>
+              <h2>Save the way you want Vox Agent to work.</h2>
+              <p>Named modes bind a target application, privacy policy, and output risk. Applying one changes the controls used by the next voice capture without executing anything.</p>
+            </div>
+
+            <div class="mode-layout">
+              <section class="surface-card mode-card">
+                <div class="card-heading">
+                  <div>
+                    <h2>Create named mode</h2>
+                    <p class="secondary-copy">Every field maps to a real capture or output-policy control.</p>
+                  </div>
+                  <span id="named-mode-status" class="badge neutral" role="status" aria-live="polite">Idle</span>
+                </div>
+                <form id="named-mode-form" class="named-mode-form">
+                  <label class="field"><span>Name</span><input id="named-mode-name" type="text" maxlength="80" autocomplete="off" placeholder="Focus writing" required /></label>
+                  <label class="field"><span>Target application</span><input id="named-mode-target-app" type="text" maxlength="200" autocomplete="off" placeholder="Cursor" required /></label>
+                  <label class="field"><span>Risk</span><select id="named-mode-risk"><option value="low">low</option><option value="medium">medium</option><option value="high">high</option></select></label>
+                  <label class="field"><span>Recording policy</span><select id="named-mode-recording"><option value="normal">normal</option><option value="private">private</option><option value="ephemeral">ephemeral</option></select></label>
+                  <label class="field span-two"><span>Global hotkey (optional)</span><input id="named-mode-hotkey" type="text" maxlength="120" autocomplete="off" placeholder="CommandOrControl+Alt+1" /></label>
+                  <div class="actions">
+                    <button id="save-named-mode" class="button" type="submit">Save mode</button>
+                    <button id="refresh-named-modes" class="button quiet" type="button">Refresh</button>
+                  </div>
+                </form>
+              </section>
+
+              <section class="surface-card mode-card">
+                <div class="card-heading">
+                  <div>
+                    <h2>Saved modes</h2>
+                    <p class="secondary-copy">Apply restores the mode; its hotkey also starts capture using the global hold/toggle behavior.</p>
+                  </div>
+                  <span id="named-mode-count" class="count-label">0 modes</span>
+                </div>
+                <p id="named-mode-empty" class="empty-state">No named modes yet.</p>
+                <div id="named-mode-list" class="mode-list hidden" role="list" aria-live="polite"></div>
+              </section>
+            </div>
+          </section>
+
+          <section class="workspace-view" data-view="settings" aria-label="Vox Agent settings" hidden>
+            <div class="view-intro">
+              <p class="eyebrow">Local control plane</p>
+              <h2>Configure providers without exposing secrets.</h2>
+              <p>Credentials are written through the operating-system secure store; the workspace keeps presence flags only.</p>
+            </div>
+
+            <section class="surface-card settings-section" aria-labelledby="context-settings-title">
+              <div class="card-heading">
+                <div><p class="eyebrow">Context</p><h2 id="context-settings-title" data-i18n="diagnostics.title">Context diagnostics</h2></div>
+                <button id="context-refresh-diagnostics" class="button quiet" type="button" data-i18n="diagnostics.refresh">Refresh diagnostics</button>
+              </div>
+              <label class="field"><span data-i18n="language.title">Language</span><select id="context-language"><option value="en">English</option><option value="zh">中文</option></select></label>
+              <dl id="context-diagnostics" class="metric-grid"></dl>
+              <p id="context-diagnostics-status" class="inline-note" role="status"></p>
+            </section>
+
+            <section class="surface-card settings-section">
+              <div class="card-heading">
+                <h2>Runtime &amp; global voice</h2>
+                <span id="settings-status" class="badge neutral">Not Saved</span>
+              </div>
+              <div class="form-grid three">
+                <label class="field span-two"><span>Backend URL</span><input id="backend-url" type="url" placeholder="http://127.0.0.1:7901" /></label>
+                <div class="field button-field"><span>&nbsp;</span><button id="save-backend" class="button quiet full">Save backend</button></div>
+                <label class="field"><span>Global hotkey</span><input id="hotkey-accelerator" type="text" placeholder="CommandOrControl+Shift+Space" /></label>
+                <label class="field"><span>Behavior</span><select id="hotkey-behavior"><option value="hold">Hold to talk</option><option value="toggle">Press to start / stop</option></select></label>
+                <label class="check-control settings-check"><input id="hotkey-enabled" type="checkbox" /><span>Enable global hotkey</span></label>
+              </div>
+              <button id="save-hotkey" class="button quiet">Apply hotkey</button>
+            </section>
+
+            <section class="surface-card settings-section">
+              <div class="card-heading">
+                <h2>Provider routing</h2>
+                <span id="active-profile-label" class="badge neutral">Profile</span>
+              </div>
+              <form id="provider-settings-form">
+              <div id="provider-recommendation" class="inline-note">Readiness check will show the configured STT route for this profile.</div>
+              <div class="form-grid two">
+                <label class="field"><span>Backend API token</span><input id="backend-api-token" type="password" autocomplete="off" placeholder="optional bearer token" /></label>
+                <label class="field"><span>Agent Engine admin token</span><input id="engine-api-token" type="password" autocomplete="off" placeholder="personal mode needs no token" /></label>
+                <label class="field"><span>Active profile</span><select id="active-profile"><option value="home">home</option><option value="office">office</option></select></label>
+              </div>
+              <div id="profile-summary" class="inline-note">Select a profile to inspect its STT and LLM routing.</div>
+              <div class="form-grid two">
+                <label class="field"><span>STT main route</span><select id="stt-main-route"><option value="qwen-us">Qwen ASR US</option><option value="qwen-cn">Qwen ASR CN</option><option value="openai-whisper">OpenAI Whisper</option><option value="siliconflow-whisper">SiliconFlow SenseVoice</option><option value="sherpa-sensevoice">Sherpa SenseVoice Local</option><option value="whispercpp-local">whisper.cpp Local</option><option value="qwen-local">Qwen3 ASR Local</option></select></label>
+                <label class="field"><span>STT fallback route</span><select id="stt-fallback-route"><option value="qwen-us">Qwen ASR US</option><option value="qwen-cn">Qwen ASR CN</option><option value="openai-whisper">OpenAI Whisper</option><option value="siliconflow-whisper">SiliconFlow SenseVoice</option><option value="sherpa-sensevoice">Sherpa SenseVoice Local</option><option value="whispercpp-local">whisper.cpp Local</option><option value="qwen-local">Qwen3 ASR Local</option></select></label>
+              </div>
+              <div class="form-grid two">
+                <label class="field"><span>LLM main route</span><select id="llm-main-route"><option value="openai-gpt">OpenAI GPT</option><option value="qwen-turbo">Qwen Bailian</option><option value="doubao">Doubao ARK</option><option value="claude">Claude</option><option value="openai-compatible-custom">Custom OpenAI-compatible</option><option value="ollama">Ollama Local</option></select></label>
+                <label class="field"><span>LLM fallback route</span><select id="llm-fallback-route"><option value="openai-gpt">OpenAI GPT</option><option value="qwen-turbo">Qwen Bailian</option><option value="doubao">Doubao ARK</option><option value="claude">Claude</option><option value="openai-compatible-custom">Custom OpenAI-compatible</option><option value="ollama">Ollama Local</option></select></label>
+              </div>
+              <div class="form-grid two">
+                <label class="field"><span>DashScope US key</span><input id="dashscope-key-us" type="password" autocomplete="off" placeholder="stored securely" /></label>
+                <label class="field"><span>DashScope CN key</span><input id="dashscope-key-cn" type="password" autocomplete="off" placeholder="stored securely" /></label>
+                <label class="field"><span>OpenAI key (ASR + LLM)</span><input id="openai-key" type="password" autocomplete="off" placeholder="stored securely" /></label>
+                <label class="field"><span>SiliconFlow key</span><input id="siliconflow-key" type="password" autocomplete="off" placeholder="stored securely" /></label>
+                <label class="field"><span>Doubao ARK key</span><input id="doubao-key" type="password" autocomplete="off" placeholder="stored securely" /></label>
+                <label class="field"><span>Anthropic key</span><input id="anthropic-key" type="password" autocomplete="off" placeholder="stored securely" /></label>
+                <label class="field"><span>Custom provider key</span><input id="custom-llm-key" type="password" autocomplete="off" placeholder="optional; stored securely" /></label>
+              </div>
+              <div class="form-grid two">
+                <label class="field"><span>OpenAI model</span><input id="openai-llm-model" type="text" autocomplete="off" placeholder="gpt-5-mini" /></label>
+                <label class="field"><span>Qwen model</span><input id="qwen-llm-model" type="text" autocomplete="off" placeholder="qwen3.7-plus" /></label>
+                <label class="field"><span>Doubao model / endpoint ID</span><input id="doubao-model" type="text" autocomplete="off" placeholder="doubao-seed-2-0-lite-260215" /></label>
+                <label class="field"><span>Anthropic model</span><input id="anthropic-model" type="text" autocomplete="off" placeholder="claude-sonnet-5" /></label>
+                <label class="field"><span>Custom base URL (no credentials)</span><input id="custom-llm-base-url" type="url" autocomplete="off" placeholder="https://provider.example/v1" /></label>
+                <label class="field"><span>Custom model</span><input id="custom-llm-model" type="text" autocomplete="off" placeholder="team-model" /></label>
+                <label class="field"><span>Ollama model</span><input id="ollama-model" type="text" autocomplete="off" placeholder="qwen2.5:7b" /></label>
+              </div>
+              <div class="stored-secret-row"><span>Provider configuration</span><div id="provider-flags" class="meta-chips"></div></div>
+              <div class="actions">
+                <button id="save-settings" class="button" type="button">Save securely</button>
+                <button id="test-settings" class="button quiet" type="button">Check routing</button>
+              </div>
+              <div id="settings-checks" class="settings-checks hidden"></div>
+              </form>
+            </section>
+
+            <section class="surface-card settings-section">
+              <div class="card-heading">
+                <div>
+                  <h2>Provider qualification</h2>
+                  <p class="secondary-copy">Separate implementation, credential, local runtime, and live-probe evidence. Configured does not mean verified.</p>
+                </div>
+                <span id="provider-qualification-status" class="badge neutral" role="status" aria-live="polite">Not checked</span>
+              </div>
+              <div id="provider-qualification-summary" class="inline-note">Load the versioned readiness matrix for the active profile.</div>
+              <div id="provider-qualification-list" class="provider-qualification-list" aria-live="polite"></div>
+              <div class="actions">
+                <button id="refresh-provider-qualification" class="button quiet" type="button">Refresh qualification</button>
+              </div>
+            </section>
+
+            <section class="surface-card settings-section">
+              <div class="card-heading">
+                <div>
+                  <h2>Agent model policy</h2>
+                  <p class="secondary-copy">Choose persistent engine routing overrides, or inherit the environment defaults.</p>
+                </div>
+                <span id="model-policy-status" class="badge neutral" role="status" aria-live="polite">Not loaded</span>
+              </div>
+              <div class="form-grid two">
+                <label class="field"><span>Answer model</span><select id="model-answerer"><option value="">Environment default</option></select></label>
+                <label class="field"><span>Speech recognition</span><select id="model-asr-adapter"><option value="">Environment default</option></select></label>
+              </div>
+              <p id="model-policy-summary" class="inline-note">Connect the local Agent Engine to inspect effective routing.</p>
+              <div class="actions">
+                <button id="apply-model-policy" class="button" type="button">Apply model policy</button>
+                <button id="refresh-model-policy" class="button quiet" type="button">Refresh</button>
+              </div>
+            </section>
+
+            <section class="surface-card settings-section">
+              <div class="card-heading">
+                <div>
+                  <h2>Engine diagnostics</h2>
+                  <p class="secondary-copy">Live process, service, and compatibility-server state from the local runtime.</p>
+                </div>
+                <span id="engine-diagnostics-status" class="badge neutral" role="status" aria-live="polite">Not checked</span>
+              </div>
+              <dl class="detail-list settings-detail-list">
+                <div><dt>Process</dt><dd id="engine-process-state">Unknown</dd></div>
+                <div><dt>Agent service</dt><dd id="engine-service-state">Unknown</dd></div>
+                <div><dt>Engine version</dt><dd id="engine-version-state">Unknown</dd></div>
+                <div><dt>Voice-memory backend</dt><dd id="backend-service-state">Unknown</dd></div>
+                <div><dt>Engine log</dt><dd id="engine-log-path">Not reported</dd></div>
+              </dl>
+              <div class="actions">
+                <button id="refresh-engine-diagnostics" class="button quiet" type="button">Refresh diagnostics</button>
+                <button id="start-settings-engine" class="button" type="button">Start engine</button>
+                <button id="stop-settings-engine" class="button danger" type="button">Stop engine</button>
+              </div>
+            </section>
+
+            <section class="surface-card settings-section">
+              <div class="card-heading">
+                <div>
+                  <h2>Memory, exports &amp; policy</h2>
+                  <p class="secondary-copy">Keep private-mode captures out of the archive and sync normal-mode history only.</p>
+                </div>
+                <span id="obsidian-sync-status" class="badge neutral" role="status" aria-live="polite">Not synced</span>
+              </div>
+              <div class="form-grid two">
+                <label class="check-control settings-check"><input id="digest-enhancement-enabled" type="checkbox" checked /><span>Enhance session digests</span></label>
+                <label class="field"><span>Digest enhancer</span><select id="digest-enhancement-provider"><option value="auto">auto</option><option value="openai-gpt">OpenAI GPT</option><option value="qwen-turbo">Qwen Bailian</option><option value="doubao">Doubao ARK</option><option value="claude">Claude</option><option value="openai-compatible-custom">Custom OpenAI-compatible</option><option value="ollama">Ollama Local</option></select></label>
+                <label class="field"><span>Obsidian vault</span><input id="obsidian-vault-dir" type="text" placeholder="Vault path" /></label>
+                <label class="field"><span>Archive window</span><input id="obsidian-sync-days" type="number" min="1" max="365" step="1" value="7" /></label>
+                <label class="field span-two"><span>AI Mate memory</span><input id="ai-mate-memory-dir" type="text" placeholder="Memory path" /></label>
+                <label class="field"><span>Never archive apps</span><textarea id="never-archive-apps" rows="3" placeholder="one app match per line"></textarea></label>
+                <label class="field"><span>Fast path only apps</span><textarea id="fast-path-only-apps" rows="3" placeholder="one app match per line"></textarea></label>
+                <label class="field span-two"><span>Disable direct typing apps</span><textarea id="disable-direct-typing-apps" rows="3" placeholder="one app match per line"></textarea></label>
+              </div>
+              <p id="obsidian-sync-summary" class="inline-note">Archive output: selected vault / Vox Agent / Voice Logs</p>
+              <div class="actions">
+                <button id="run-obsidian-sync" class="button" type="button">Run archive sync</button>
+              </div>
+            </section>
+
+            <section class="surface-card settings-section">
+              <div class="card-heading">
+                <div>
+                  <h2>Cross-platform sync</h2>
+                  <p class="secondary-copy">Configure the shared Vox Agent sync contract once for macOS and Windows. Credentials stay in the operating-system secure store.</p>
+                </div>
+                <span id="cross-platform-sync-status" class="badge neutral" role="status" aria-live="polite">Not configured</span>
+              </div>
+              <div class="form-grid two">
+                <label class="check-control settings-check"><input id="notion-sync-enabled" type="checkbox" /><span>Enable Notion history sync</span></label>
+                <label class="check-control settings-check"><input id="notion-include-raw-text" type="checkbox" /><span>Include raw transcript</span></label>
+                <label class="field"><span>Notion token</span><input id="notion-token" type="password" autocomplete="off" placeholder="stored securely; leave blank to keep" /></label>
+                <label class="field"><span>Notion data source ID</span><input id="notion-data-source-id" type="text" maxlength="200" autocomplete="off" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" /></label>
+                <label class="field"><span>Notion direction</span><select id="notion-sync-direction"><option value="bidirectional">Bidirectional</option><option value="upload_only">Upload only</option><option value="download_only">Download only</option></select></label>
+                <span></span>
+                <label class="check-control settings-check"><input id="git-sync-enabled" type="checkbox" /><span>Enable private Git sync</span></label>
+                <span></span>
+                <label class="field"><span>Git repository</span><input id="git-sync-repo-url" type="text" maxlength="2000" autocomplete="off" placeholder="https://github.com/you/vox-agent-sync.git" /></label>
+                <label class="field"><span>Git working directory</span><input id="git-sync-local-path" type="text" maxlength="2000" autocomplete="off" placeholder="C:\Users\you\Documents\Vox Agent Sync" /></label>
+              </div>
+              <p id="cross-platform-sync-summary" class="inline-note">Save settings before syncing. Git authentication uses the system credential helper or SSH agent; Vox Agent never writes a Git token to settings.</p>
+              <div class="actions">
+                <button id="run-notion-sync" class="button" type="button">Sync Notion now</button>
+                <button id="run-git-sync" class="button quiet" type="button">Sync private Git now</button>
+              </div>
+            </section>
+
+            <section class="surface-card settings-section">
+              <div class="card-heading">
+                <div>
+                  <h2>Move this workspace</h2>
+                  <p class="secondary-copy">Export history, vocabulary, modes, provider choices, and non-secret sync settings for another Vox Agent installation.</p>
+                </div>
+                <span id="migration-status" class="badge neutral" role="status" aria-live="polite">Ready</span>
+              </div>
+              <label class="field"><span>Migration bundle</span><input id="migration-bundle-path" type="text" maxlength="4000" autocomplete="off" placeholder="Select or paste a .voxagent.json path" /></label>
+              <p id="migration-summary" class="inline-note">Secrets are never written to the migration bundle. Re-enter provider and Notion credentials on the destination device.</p>
+              <div class="actions">
+                <button id="import-previous-data" class="button quiet" type="button">Import data from previous app</button>
+                <button id="export-migration-bundle" class="button" type="button">Export Vox Agent bundle</button>
+                <button id="import-migration-bundle" class="button quiet" type="button">Import bundle</button>
+                <button id="open-migration-directory" class="button quiet" type="button" disabled>Open bundle folder</button>
+              </div>
+            </section>
+          </section>
+        </div>
+
+        <footer class="voice-stage" aria-label="Voice and text command input">
+          <div class="voice-status-row">
+            <span id="permission-status" class="badge neutral">Mic Unknown</span>
+            <span id="recording-status" class="voice-state">Idle · ready to listen</span>
+            <span id="transcript-status" class="badge neutral">Transcript Idle</span>
+          </div>
+          <div class="voice-compose">
+            <button id="start-recording" class="mic-button" aria-label="Start voice capture" title="Start voice capture">
+              <span aria-hidden="true">●</span>
+            </button>
+            <label class="command-field">
+              <span id="composer-label" class="visually-hidden">Agent command</span>
+              <textarea id="agent-query" rows="2" placeholder="Tell your agents what outcome you want…"></textarea>
+              <span id="partial-transcript" class="live-transcript">Hold the global shortcut to speak.</span>
+              <span id="final-transcript" class="final-transcript">Voice keeps raw audio, transcript, and correction evidence.</span>
+            </label>
+            <div class="compose-actions">
+              <button id="record-context" class="send-button" type="button" aria-label="Record and sync" title="Record and sync (Ctrl+Enter)" data-i18n-aria="aria.record" data-i18n-title="title.record">↵</button>
+              <button id="ask-agent" class="send-button" disabled aria-label="Run Agent" title="Run Agent">↵</button>
+              <button id="stop-recording" class="stop-button" aria-label="Stop and process voice capture" title="Stop and process">■</button>
+            </div>
+          </div>
+          <p id="composer-status" class="composer-status" role="status" aria-live="polite"></p>
+          <div class="voice-footer">
+            <span><kbd>Ctrl/⌘ ↵</kbd> send</span>
+            <span id="composer-bytes" class="mono-label"></span>
+            <span><kbd>Esc</kbd> cancel voice</span>
+            <span id="voice-provider-summary">local ASR · policy-gated output</span>
+          </div>
+        </footer>
+      </section>
+
+      <aside id="inspector-pane" class="inspector" aria-label="Right panel" data-i18n-aria="aria.rightPanel">
+        <header class="inspector-header">
+          <div><p class="eyebrow">Inspector</p><h2 id="inspector-title">Operations</h2></div>
+          <span id="engine-stream-status" class="badge neutral">Connecting</span>
+        </header>
+
+        <div class="inspector-scroll">
+          <div id="context-panel">
+            <section class="inspector-section" aria-labelledby="context-account-title">
+              <div class="section-heading"><h3 id="context-account-title" data-i18n="account.title">Feishu account</h3></div>
+              <p id="context-account-line" class="inspector-copy">Not signed in</p>
+              <button id="context-sign-in" class="button quiet" type="button" data-i18n="account.signIn" hidden>Sign in with Feishu</button>
+              <button id="context-sign-out" class="text-button" type="button" data-i18n="account.signOut" hidden>Sign out</button>
+              <p id="context-account-note" class="inspector-copy" role="status" aria-live="polite"></p>
+            </section>
+            <section class="inspector-section" aria-labelledby="context-conversations-title">
+              <div class="section-heading"><h3 id="context-conversations-title" data-i18n="conversations.title">Feishu conversations</h3><button id="context-refresh-conversations" class="text-button" type="button" data-i18n="conversations.refresh" disabled>Refresh</button></div>
+              <ul id="context-conversations" class="context-conversations" aria-labelledby="context-conversations-title"></ul>
+              <p id="context-conversations-note" class="inspector-copy" role="status" aria-live="polite"></p>
+            </section>
+            <section class="inspector-section">
+              <div class="section-heading"><h3 data-i18n="delivery.title">Delivery</h3><span id="context-session-status" class="badge neutral" role="status">Checking</span></div>
+              <label class="field"><span data-i18n="delivery.destination">Destination</span><select id="context-destination" disabled></select></label>
+              <p id="context-quota" class="inspector-copy"></p>
+            </section>
+            <section class="inspector-section">
+              <div class="section-heading"><h3 data-i18n="project.title">Project</h3><button id="context-refresh-projects" class="text-button" type="button" data-i18n="project.refresh">Refresh projects</button></div>
+              <label class="field"><span data-i18n="project.label">Project for this input</span><select id="context-project"></select></label>
+              <button id="context-inspect-repository" class="button quiet" type="button" aria-label="Inspect a local repository read-only; attribution stays unchanged" data-i18n-aria="aria.inspect" data-i18n="project.inspect">Inspect local repository</button>
+              <p id="context-project-note" class="inspector-copy" role="status"></p>
+              <p id="context-repository-note" class="inspector-copy" role="status" aria-live="polite"></p>
+            </section>
+            <section class="inspector-section" id="private-section" aria-labelledby="private-title">
+              <div class="section-heading"><h3 id="private-title" data-i18n="private.title">Private notes</h3><button id="private-refresh" class="text-button" type="button" data-i18n="private.refresh">Load this week</button></div>
+              <p class="inspector-copy" data-i18n="private.clearNotice">Unsaved private input and weekly drafts are cleared when you collapse this panel, sign out or the screen locks.</p>
+              <p id="private-unavailable" class="inspector-copy" hidden data-i18n="private.unavailable">Private notes need this device's protected key store, which is not available yet.</p>
+              <label class="field"><span data-i18n="private.label">New private note</span><textarea id="private-text" rows="3" maxlength="8192"></textarea></label>
+              <fieldset class="tag-options"><legend data-i18n="private.tags">Tags</legend><label class="tag-option"><input type="checkbox" data-private-tag="decision" /><span data-i18n="tag.decision">decision</span></label><label class="tag-option"><input type="checkbox" data-private-tag="progress" /><span data-i18n="tag.progress">progress</span></label><label class="tag-option"><input type="checkbox" data-private-tag="blocker" /><span data-i18n="tag.blocker">blocker</span></label><label class="tag-option"><input type="checkbox" data-private-tag="question" /><span data-i18n="tag.question">question</span></label><label class="tag-option"><input type="checkbox" data-private-tag="verification" /><span data-i18n="tag.verification">verification</span></label></fieldset>
+              <button id="private-save" class="button quiet" type="button" data-i18n="private.save">Save privately</button>
+              <p id="private-status" class="inspector-copy" role="status" aria-live="polite"></p>
+              <ul id="private-list" class="private-notes" aria-labelledby="private-title"></ul>
+              <p id="private-empty" class="inspector-copy" data-i18n="private.empty">No private notes loaded.</p>
+              <p id="private-omitted" class="inspector-copy" hidden data-i18n="private.omitted">Some notes are left out because you can no longer see them.</p>
+            </section>
+            <section class="inspector-section" id="weekly-section" aria-labelledby="weekly-title">
+              <div class="section-heading"><h3 id="weekly-title" data-i18n="weekly.title">Weekly draft</h3></div>
+              <p class="inspector-copy" data-i18n="weekly.boundary">Weeks run Monday to Monday in Asia/Shanghai time, as on macOS.</p>
+              <label class="field"><span data-i18n="weekly.week">Week starting (Monday)</span><input id="weekly-week" type="date" /></label>
+              <button id="weekly-load" class="button quiet" type="button" data-i18n="weekly.load">Load sources</button>
+              <p id="weekly-coverage" class="inspector-copy" role="status"></p>
+              <ul id="weekly-sources" class="weekly-sources" aria-labelledby="weekly-title"></ul>
+              <button id="weekly-compose" class="button quiet" type="button" data-i18n="weekly.compose" disabled>Write draft</button>
+              <label id="weekly-draft-field" class="field" hidden><span data-i18n="weekly.draft">Draft (you can edit it)</span><textarea id="weekly-draft" rows="8"></textarea></label>
+              <button id="weekly-copy" class="button quiet" type="button" data-i18n="weekly.copy" disabled>Check and copy</button>
+              <p id="weekly-status" class="inspector-copy" role="status" aria-live="polite"></p>
+            </section>
+            <section class="inspector-section">
+              <div class="section-heading"><h3 data-i18n="legend.title">What the states mean</h3></div>
+              <dl class="state-legend">
+                <div><dt data-i18n="legend.local">Saved on this device</dt><dd data-i18n="legend.localDetail">Encrypted locally. Not yet accepted by the server.</dd></div>
+                <div><dt data-i18n="legend.accepted">Accepted by the server</dt><dd data-i18n="legend.acceptedDetail">Queued for delivery. Not yet in the group.</dd></div>
+                <div><dt data-i18n="legend.delivered">Delivered</dt><dd data-i18n="legend.deliveredDetail">The server reported delivery with a message id.</dd></div>
+                <div><dt data-i18n="legend.verifying">Result being verified</dt><dd data-i18n="legend.verifyingDetail">The request may have arrived. It is read back, never sent twice automatically.</dd></div>
+              </dl>
+            </section>
+          </div>
+          <div id="operations-panel" hidden>
+          <section class="inspector-section">
+            <div class="section-heading"><h3>Voice route</h3><button id="refresh-permissions" class="text-button">Check mic</button></div>
+            <div class="form-stack">
+              <label class="field"><span>Target application</span><input id="target-app" type="text" value="Cursor" /></label>
+              <div class="form-grid two compact">
+                <label class="field"><span>Risk</span><select id="target-risk"><option value="low">low</option><option value="medium">medium</option><option value="high">high</option></select></label>
+                <label class="field"><span>Mode</span><select id="record-mode"><option value="normal">normal</option><option value="private">private</option><option value="ephemeral">ephemeral</option></select></label>
+              </div>
+              <label class="field"><span>Session</span><span class="input-action"><input id="session-id" type="text" placeholder="automatic session id" /><button id="new-session" class="icon-button" aria-label="Create new session" title="Create new session">＋</button></span></label>
+            </div>
+          </section>
+
+          <section class="inspector-section">
+            <div class="section-heading"><h3>Recognition evidence</h3><span id="output-policy-strategy" class="mono-label">paste</span></div>
+            <dl class="metric-grid">
+              <div><dt>Provider</dt><dd id="transcript-provider">pending selected route</dd></div>
+              <div><dt>Model</dt><dd id="transcript-model">not invoked</dd></div>
+              <div><dt>Segments</dt><dd id="transcript-segments">0</dd></div>
+              <div><dt>Policy</dt><dd>verified</dd></div>
+            </dl>
+            <p id="output-policy-reason" class="inspector-copy">Low-risk targets prefer a fast, auditable paste.</p>
+          </section>
+
+          <section class="inspector-section recent">
+            <div class="section-heading"><h3>Recent utterance</h3><span id="recent-status" class="badge neutral">Waiting</span></div>
+            <div id="recent-empty" class="inspector-empty">No recent utterance yet.</div>
+            <div id="recent-card" class="recent-card hidden">
+              <dl class="metric-grid">
+                <div><dt>App</dt><dd id="recent-app">-</dd></div>
+                <div><dt>Risk</dt><dd id="recent-risk">-</dd></div>
+                <div><dt>Provider</dt><dd id="recent-provider">-</dd></div>
+                <div><dt>Confidence</dt><dd id="recent-confidence">-</dd></div>
+              </dl>
+              <div class="evidence-block"><span>Final</span><p id="recent-display"></p></div>
+              <details><summary>Raw transcript &amp; IDs</summary><p id="recent-raw"></p><p id="recent-ids" class="mono-copy"></p></details>
+              <div class="form-stack compact">
+                <label class="field"><span>Retry provider</span><input id="retry-provider" type="text" placeholder="default route" /></label>
+                <label class="field"><span>Mode</span><select id="recent-mode-select"><option value="normal">normal</option><option value="private">private</option><option value="ephemeral">ephemeral</option></select></label>
+                <label class="field"><span>Recognized</span><input id="dictionary-wrong" type="text" placeholder="wrong text" /></label>
+                <label class="field"><span>Preferred</span><input id="dictionary-right" type="text" placeholder="correct text" /></label>
+              </div>
+              <div class="actions compact-actions">
+                <button id="retry-recent" class="button quiet">Retry</button>
+                <button id="apply-recent-mode" class="button quiet">Set mode</button>
+                <button id="add-dictionary" class="button quiet">Add word</button>
+                <button id="undo-output" class="button danger">Undo</button>
+                <button id="dismiss-recent" class="text-button">Dismiss</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="inspector-section activity-section">
+            <div class="section-heading"><h3>Machine activity</h3><span class="mono-label">live log</span></div>
+            <pre id="activity-log" class="log"></pre>
+          </section>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

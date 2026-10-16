@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-upload-voice"
+description = "Enables the upload_voice command without any pre-configured scope."
+commands.allow = ["upload_voice"]
+
+[[permission]]
+identifier = "deny-upload-voice"
+description = "Denies the upload_voice command without any pre-configured scope."
+commands.deny = ["upload_voice"]

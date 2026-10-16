@@ -1,0 +1,18 @@
+[Unit]
+Description=Upload encrypted Vox backup to private COS and verify read-back
+[Service]
+Type=oneshot
+UMask=0077
+LoadCredentialEncrypted=cos-backup:/etc/credstore.encrypted/vox-team-cos
+ExecStart=/opt/vox-agent/cos-venv/bin/python /opt/vox-agent/current/deploy/feishu-team/upload-cos.py
+TimeoutStartSec=10min
+MemoryMax=256M
+MemorySwapMax=0
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateDevices=true
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+LimitCORE=0

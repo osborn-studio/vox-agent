@@ -1,0 +1,866 @@
+--- a/build/main.d.ts
++++ b/build/main.d.ts
+@@ -1,135 +1,21 @@
+-/// <reference types="node" />
+-import { pki as PKI } from 'node-forge';
+-/**
+- * Custom X.509 extension that stores information about the Expo project that a code signing certificate is valid for.
+- * Used to prevent spoofing of scoping identifiers in Expo Go.
+- *
+- * Note: Generated with oidgen script. Resides in the Microsoft OID space. Could apply for Expo space but would take time: https://pen.iana.org/pen/PenApplication.page
+- */
+-export declare const expoProjectInformationOID = "1.2.840.113556.1.8000.2554.43437.254.128.102.157.7894389.20439.2.1";
+-/**
+- * Generate a public and private RSA key pair.
+- * @returns RSA key pair
+- */
+-export declare function generateKeyPair(): PKI.rsa.KeyPair;
+-/**
+- * Convert a key RSA key pair generated using {@link generateKeyPair} to PEM strings.
+- * @param keyPair RSA key pair
+- * @returns PEM formatted key pair
+- */
+-export declare function convertKeyPairToPEM(keyPair: PKI.rsa.KeyPair): {
+-    privateKeyPEM: string;
+-    publicKeyPEM: string;
+-};
+-/**
+- * Convert a X.509 certificate generated using {@link generateSelfSignedCodeSigningCertificate} to a PEM string.
+- * @param certificate X.509 certificate
+- * @returns
+- */
+-export declare function convertCertificateToCertificatePEM(certificate: PKI.Certificate): string;
+-/**
+- * Convert a PEM-formatted RSA key pair to a key pair for use with this library.
+- * @param keyPair PEM-formatted private key and public key
+- * @returns RSA key pair
+- */
+-export declare function convertKeyPairPEMToKeyPair({ privateKeyPEM, publicKeyPEM, }: {
+-    privateKeyPEM: string;
+-    publicKeyPEM: string;
+-}): PKI.rsa.KeyPair;
+-/**
+- * Convert a PEM-formatted RSA public key to a public key for use with this library.
+- * @param publicKeyPEM PEM formatted public key
+- * @returns RSA public key
+- */
+-export declare function convertPublicKeyPEMToPublicKey(publicKeyPEM: string): PKI.rsa.PublicKey;
+-/**
+- * Convert a PEM-formatted RSA private key to a private key for use with this library.
+- * @param privateKeyPEM PEM formatted private key
+- * @returns RSA private key
+- */
+-export declare function convertPrivateKeyPEMToPrivateKey(privateKeyPEM: string): PKI.rsa.PrivateKey;
+-/**
+- * Convert a PEM-formatted X.509 certificate to a certificate for use with this library.
+- * @param certificatePEM PEM formatted X.509 certificate
+- * @returns  X.509 Certificate
+- */
+-export declare function convertCertificatePEMToCertificate(certificatePEM: string): PKI.Certificate;
+-/**
+- * Convert a CSR to PEM-formatted X.509 CSR
+- * @param csr CSR
+- * @returns X.509 CSR
+- */
+-export declare function convertCSRToCSRPEM(csr: PKI.CertificateRequest): string;
+-/**
+- * Convert a PEM-formatted X.509 CSR to a CSR
+- * @param CSRPEM PEM-formatted X.509 CSR
+- * @returns CSR
+- */
+-export declare function convertCSRPEMToCSR(CSRPEM: string): PKI.CertificateRequest;
+-declare type GenerateParameters = {
+-    /**
+-     * Public/private key pair generated via {@link generateKeyPair}.
+-     */
+-    keyPair: PKI.rsa.KeyPair;
+-    /**
+-     * Certificate validity range start.
+-     */
+-    validityNotBefore: Date;
+-    /**
+-     * Certificate validity range end.
+-     */
+-    validityNotAfter: Date;
+-    /**
+-     * CN issuer and subject Distinguished Name (DN).
+-     * Used for both issuer and subject in the case of self-signed certificates.
+-     */
+-    commonName: string;
+-};
+-/**
+- * Generate a self-signed (root) code-signing certificate valid for use with expo-updates.
+- *
+- * @returns PKI.Certificate valid for expo-updates code signing
+- */
+-export declare function generateSelfSignedCodeSigningCertificate({ keyPair: { publicKey, privateKey }, validityNotBefore, validityNotAfter, commonName, }: GenerateParameters): PKI.Certificate;
+-/**
+- * Validate that a certificate and corresponding key pair can be used for expo-updates code signing.
+- * @param certificate X.509 certificate
+- * @param keyPair RSA key pair
+- */
+-export declare function validateSelfSignedCertificate(certificate: PKI.Certificate, keyPair: PKI.rsa.KeyPair): void;
+-/**
+- * Sign a SHA-256 hash of the provided string with an RSA private key and verify that the signature
+- * is valid for the RSA public key in the certificate. The verification part is most useful for
+- * debugging, so while this may be used in server implementation for expo-updates code signing,
+- * a similar method without verification can be created for efficiency for use in production.
+- *
+- * @param privateKey RSA private key
+- * @param certificate X.509 certificate
+- * @param bufferToSign buffer to hash, generate a signature for, and verify
+- * @returns base64-encoded RSA signature
+- */
+-export declare function signBufferRSASHA256AndVerify(privateKey: PKI.rsa.PrivateKey, certificate: PKI.Certificate, bufferToSign: Buffer): string;
+-/**
+- * Generate a self-signed CSR for a given key pair. Most commonly used with {@link generateDevelopmentCertificateFromCSR}.
+- * @param keyPair RSA key pair
+- * @param commonName commonName attribute of the subject of the resulting certificate (human readable name of the certificate)
+- * @returns CSR
+- */
+-export declare function generateCSR(keyPair: PKI.rsa.KeyPair, commonName: string): PKI.CertificateRequest;
+-/**
+- * For use by a server to generate a development certificate (good for 30 days) for a particular
+- * appId and scopeKey (Expo project manifest fields verified by the client during certificate validation).
+- *
+- * Note that this function assumes the issuer is trusted, and that the user that created the CSR and issued
+- * the request has permission to sign manifests for the appId and scopeKey. This constraint must be
+- * verified on the server before calling this method.
+- *
+- * @param issuerPrivateKey private key to sign the resulting certificate with
+- * @param issuerCertificate parent certificate (should be a CA) of the resulting certificate
+- * @param csr certificate signing request containing the user's public key
+- * @param appId app ID (UUID) of the app that the resulting certificate will sign the development manifest for
+- * @param scopeKey scope key of the app that the resuting certificate will sign the development manifest for
+- * @returns certificate to use to sign development manifests
+- */
+-export declare function generateDevelopmentCertificateFromCSR(issuerPrivateKey: PKI.rsa.PrivateKey, issuerCertificate: PKI.Certificate, csr: PKI.CertificateRequest, appId: string, scopeKey: string): PKI.Certificate;
+-export {};
++import { X509Certificate as NativeCertificate } from 'node:crypto';
++import { X509Certificate as ParsedCertificate } from '@peculiar/x509';
++import { KeyObject } from 'node:crypto';
++import { Pkcs10CertificateRequest } from '@peculiar/x509';
++export declare const expoProjectInformationOID: string;
++export interface KeyPair { privateKey: KeyObject; publicKey: KeyObject; }
++export interface Certificate { pem: string; native: NativeCertificate; parsed: ParsedCertificate; publicKey: KeyObject; validity: {notBefore: Date;notAfter: Date}; subject: {getField(name: string): {value: string}|null}; verify(issuer: Certificate): boolean; getExtension(name: string|{id:string}): {id:string;critical:boolean;value:string;digitalSignature:boolean;codeSigning:boolean}|null; }
++export declare function generateKeyPair(): KeyPair;
++export declare function convertKeyPairToPEM(keyPair: KeyPair): {privateKeyPEM:string;publicKeyPEM:string};
++export declare function convertKeyPairPEMToKeyPair(pem: {privateKeyPEM:string;publicKeyPEM:string}): KeyPair;
++export declare function convertPrivateKeyPEMToPrivateKey(pem:string):KeyObject;
++export declare function convertPublicKeyPEMToPublicKey(pem:string):KeyObject;
++export declare function convertCertificatePEMToCertificate(pem:string):Certificate;
++export declare function convertCertificateToCertificatePEM(cert:Certificate):string;
++export declare function generateCSR(keys:KeyPair,name:string):Promise<Pkcs10CertificateRequest>;
++export declare function convertCSRToCSRPEM(csr:Pkcs10CertificateRequest):string;
++export declare function convertCSRPEMToCSR(pem:string):Pkcs10CertificateRequest;
++export declare function generateSelfSignedCodeSigningCertificate(p:{keyPair:KeyPair;commonName:string;validityNotBefore:Date;validityNotAfter:Date}):Promise<Certificate>;
++export declare function validateSelfSignedCertificate(c:Certificate,k:KeyPair):void;
++export declare function signBufferRSASHA256AndVerify(k:KeyObject,c:Certificate,data:Buffer):string;
++export declare function generateDevelopmentCertificateFromCSR(k:KeyObject,c:Certificate,csr:Pkcs10CertificateRequest,appId:string,scopeKey:string):Promise<Certificate>;
+--- a/build/main.js
++++ b/build/main.js
+@@ -1,288 +1,22 @@
+-"use strict";
+-var __importDefault = (this && this.__importDefault) || function (mod) {
+-    return (mod && mod.__esModule) ? mod : { "default": mod };
+-};
+-Object.defineProperty(exports, "__esModule", { value: true });
+-exports.generateDevelopmentCertificateFromCSR = exports.generateCSR = exports.signBufferRSASHA256AndVerify = exports.validateSelfSignedCertificate = exports.generateSelfSignedCodeSigningCertificate = exports.convertCSRPEMToCSR = exports.convertCSRToCSRPEM = exports.convertCertificatePEMToCertificate = exports.convertPrivateKeyPEMToPrivateKey = exports.convertPublicKeyPEMToPublicKey = exports.convertKeyPairPEMToKeyPair = exports.convertCertificateToCertificatePEM = exports.convertKeyPairToPEM = exports.generateKeyPair = exports.expoProjectInformationOID = void 0;
+-const assert_1 = __importDefault(require("assert"));
+-const node_forge_1 = require("node-forge");
+-const utils_1 = require("./utils");
+-/**
+- * Custom X.509 extension that stores information about the Expo project that a code signing certificate is valid for.
+- * Used to prevent spoofing of scoping identifiers in Expo Go.
+- *
+- * Note: Generated with oidgen script. Resides in the Microsoft OID space. Could apply for Expo space but would take time: https://pen.iana.org/pen/PenApplication.page
+- */
+-exports.expoProjectInformationOID = '1.2.840.113556.1.8000.2554.43437.254.128.102.157.7894389.20439.2.1';
+-/**
+- * Generate a public and private RSA key pair.
+- * @returns RSA key pair
+- */
+-function generateKeyPair() {
+-    return node_forge_1.pki.rsa.generateKeyPair();
+-}
+-exports.generateKeyPair = generateKeyPair;
+-/**
+- * Convert a key RSA key pair generated using {@link generateKeyPair} to PEM strings.
+- * @param keyPair RSA key pair
+- * @returns PEM formatted key pair
+- */
+-function convertKeyPairToPEM(keyPair) {
+-    return {
+-        privateKeyPEM: node_forge_1.pki.privateKeyToPem(keyPair.privateKey),
+-        publicKeyPEM: node_forge_1.pki.publicKeyToPem(keyPair.publicKey),
+-    };
+-}
+-exports.convertKeyPairToPEM = convertKeyPairToPEM;
+-/**
+- * Convert a X.509 certificate generated using {@link generateSelfSignedCodeSigningCertificate} to a PEM string.
+- * @param certificate X.509 certificate
+- * @returns
+- */
+-function convertCertificateToCertificatePEM(certificate) {
+-    return node_forge_1.pki.certificateToPem(certificate);
+-}
+-exports.convertCertificateToCertificatePEM = convertCertificateToCertificatePEM;
+-/**
+- * Convert a PEM-formatted RSA key pair to a key pair for use with this library.
+- * @param keyPair PEM-formatted private key and public key
+- * @returns RSA key pair
+- */
+-function convertKeyPairPEMToKeyPair({ privateKeyPEM, publicKeyPEM, }) {
+-    return {
+-        privateKey: node_forge_1.pki.privateKeyFromPem(privateKeyPEM),
+-        publicKey: node_forge_1.pki.publicKeyFromPem(publicKeyPEM),
+-    };
+-}
+-exports.convertKeyPairPEMToKeyPair = convertKeyPairPEMToKeyPair;
+-/**
+- * Convert a PEM-formatted RSA public key to a public key for use with this library.
+- * @param publicKeyPEM PEM formatted public key
+- * @returns RSA public key
+- */
+-function convertPublicKeyPEMToPublicKey(publicKeyPEM) {
+-    return node_forge_1.pki.publicKeyFromPem(publicKeyPEM);
+-}
+-exports.convertPublicKeyPEMToPublicKey = convertPublicKeyPEMToPublicKey;
+-/**
+- * Convert a PEM-formatted RSA private key to a private key for use with this library.
+- * @param privateKeyPEM PEM formatted private key
+- * @returns RSA private key
+- */
+-function convertPrivateKeyPEMToPrivateKey(privateKeyPEM) {
+-    return node_forge_1.pki.privateKeyFromPem(privateKeyPEM);
+-}
+-exports.convertPrivateKeyPEMToPrivateKey = convertPrivateKeyPEMToPrivateKey;
+-/**
+- * Convert a PEM-formatted X.509 certificate to a certificate for use with this library.
+- * @param certificatePEM PEM formatted X.509 certificate
+- * @returns  X.509 Certificate
+- */
+-function convertCertificatePEMToCertificate(certificatePEM) {
+-    return node_forge_1.pki.certificateFromPem(certificatePEM, true);
+-}
+-exports.convertCertificatePEMToCertificate = convertCertificatePEMToCertificate;
+-/**
+- * Convert a CSR to PEM-formatted X.509 CSR
+- * @param csr CSR
+- * @returns X.509 CSR
+- */
+-function convertCSRToCSRPEM(csr) {
+-    return node_forge_1.pki.certificationRequestToPem(csr);
+-}
+-exports.convertCSRToCSRPEM = convertCSRToCSRPEM;
+-/**
+- * Convert a PEM-formatted X.509 CSR to a CSR
+- * @param CSRPEM PEM-formatted X.509 CSR
+- * @returns CSR
+- */
+-function convertCSRPEMToCSR(CSRPEM) {
+-    return node_forge_1.pki.certificationRequestFromPem(CSRPEM, true);
+-}
+-exports.convertCSRPEMToCSR = convertCSRPEMToCSR;
+-/**
+- * Generate a self-signed (root) code-signing certificate valid for use with expo-updates.
+- *
+- * @returns PKI.Certificate valid for expo-updates code signing
+- */
+-function generateSelfSignedCodeSigningCertificate({ keyPair: { publicKey, privateKey }, validityNotBefore, validityNotAfter, commonName, }) {
+-    const cert = node_forge_1.pki.createCertificate();
+-    cert.publicKey = publicKey;
+-    cert.serialNumber = (0, utils_1.toPositiveHex)(node_forge_1.util.bytesToHex(node_forge_1.random.getBytesSync(9)));
+-    (0, assert_1.default)(validityNotAfter > validityNotBefore, 'validityNotAfter must be later than validityNotBefore');
+-    cert.validity.notBefore = validityNotBefore;
+-    cert.validity.notAfter = validityNotAfter;
+-    const attrs = [
+-        {
+-            name: 'commonName',
+-            value: commonName,
+-        },
+-    ];
+-    cert.setSubject(attrs);
+-    cert.setIssuer(attrs);
+-    cert.setExtensions([
+-        {
+-            name: 'keyUsage',
+-            critical: true,
+-            keyCertSign: false,
+-            digitalSignature: true,
+-            nonRepudiation: false,
+-            keyEncipherment: false,
+-            dataEncipherment: false,
+-        },
+-        {
+-            name: 'extKeyUsage',
+-            critical: true,
+-            serverAuth: false,
+-            clientAuth: false,
+-            codeSigning: true,
+-            emailProtection: false,
+-            timeStamping: false,
+-        },
+-    ]);
+-    cert.sign(privateKey, node_forge_1.md.sha256.create());
+-    return cert;
+-}
+-exports.generateSelfSignedCodeSigningCertificate = generateSelfSignedCodeSigningCertificate;
+-function arePublicKeysEqual(key1, key2) {
+-    return key1.n.equals(key2.n) && key1.e.equals(key2.e);
+-}
+-function doPrivateAndPublicKeysMatch(privateKey, publicKey) {
+-    return publicKey.n.equals(privateKey.n) && publicKey.e.equals(privateKey.e);
+-}
+-/**
+- * Validate that a certificate and corresponding key pair can be used for expo-updates code signing.
+- * @param certificate X.509 certificate
+- * @param keyPair RSA key pair
+- */
+-function validateSelfSignedCertificate(certificate, keyPair) {
+-    if (certificate.issuer.hash !== certificate.subject.hash) {
+-        throw new Error('Certificate issuer hash does not match subject hash, indicating certificate is not self-signed.');
+-    }
+-    const now = new Date();
+-    if (certificate.validity.notBefore > now || certificate.validity.notAfter < now) {
+-        throw new Error('Certificate validity expired');
+-    }
+-    const keyUsage = certificate.getExtension('keyUsage');
+-    const digitalSignature = keyUsage.digitalSignature;
+-    if (!keyUsage || !digitalSignature) {
+-        throw new Error('X509v3 Key Usage: Digital Signature not present');
+-    }
+-    const extKeyUsage = certificate.getExtension('extKeyUsage');
+-    const codeSigning = extKeyUsage.codeSigning;
+-    if (!extKeyUsage || !codeSigning) {
+-        throw new Error('X509v3 Extended Key Usage: Code Signing not present');
+-    }
+-    const isValid = certificate.verify(certificate);
+-    if (!isValid) {
+-        throw new Error('Certificate signature not valid');
+-    }
+-    const certificatePublicKey = certificate.publicKey;
+-    if (!arePublicKeysEqual(certificatePublicKey, keyPair.publicKey)) {
+-        throw new Error('Certificate pubic key does not match key pair public key');
+-    }
+-    if (!doPrivateAndPublicKeysMatch(keyPair.privateKey, keyPair.publicKey)) {
+-        throw new Error('keyPair key mismatch');
+-    }
+-}
+-exports.validateSelfSignedCertificate = validateSelfSignedCertificate;
+-/**
+- * Sign a SHA-256 hash of the provided string with an RSA private key and verify that the signature
+- * is valid for the RSA public key in the certificate. The verification part is most useful for
+- * debugging, so while this may be used in server implementation for expo-updates code signing,
+- * a similar method without verification can be created for efficiency for use in production.
+- *
+- * @param privateKey RSA private key
+- * @param certificate X.509 certificate
+- * @param bufferToSign buffer to hash, generate a signature for, and verify
+- * @returns base64-encoded RSA signature
+- */
+-function signBufferRSASHA256AndVerify(privateKey, certificate, bufferToSign) {
+-    const digest = node_forge_1.md.sha256.create().update(bufferToSign.toString('binary'));
+-    const digestSignature = privateKey.sign(digest);
+-    const isValidSignature = certificate.publicKey.verify(digest.digest().getBytes(), digestSignature);
+-    if (!isValidSignature) {
+-        throw new Error('Signature generated with private key not valid for certificate');
+-    }
+-    return node_forge_1.util.encode64(digestSignature);
+-}
+-exports.signBufferRSASHA256AndVerify = signBufferRSASHA256AndVerify;
+-/**
+- * Generate a self-signed CSR for a given key pair. Most commonly used with {@link generateDevelopmentCertificateFromCSR}.
+- * @param keyPair RSA key pair
+- * @param commonName commonName attribute of the subject of the resulting certificate (human readable name of the certificate)
+- * @returns CSR
+- */
+-function generateCSR(keyPair, commonName) {
+-    const csr = node_forge_1.pki.createCertificationRequest();
+-    csr.publicKey = keyPair.publicKey;
+-    const attrs = [
+-        {
+-            name: 'commonName',
+-            value: commonName,
+-        },
+-    ];
+-    csr.setSubject(attrs);
+-    csr.sign(keyPair.privateKey, node_forge_1.md.sha256.create());
+-    return csr;
+-}
+-exports.generateCSR = generateCSR;
+-/**
+- * For use by a server to generate a development certificate (good for 30 days) for a particular
+- * appId and scopeKey (Expo project manifest fields verified by the client during certificate validation).
+- *
+- * Note that this function assumes the issuer is trusted, and that the user that created the CSR and issued
+- * the request has permission to sign manifests for the appId and scopeKey. This constraint must be
+- * verified on the server before calling this method.
+- *
+- * @param issuerPrivateKey private key to sign the resulting certificate with
+- * @param issuerCertificate parent certificate (should be a CA) of the resulting certificate
+- * @param csr certificate signing request containing the user's public key
+- * @param appId app ID (UUID) of the app that the resulting certificate will sign the development manifest for
+- * @param scopeKey scope key of the app that the resuting certificate will sign the development manifest for
+- * @returns certificate to use to sign development manifests
+- */
+-function generateDevelopmentCertificateFromCSR(issuerPrivateKey, issuerCertificate, csr, appId, scopeKey) {
+-    (0, assert_1.default)(csr.verify(csr), 'CSR not self-signed');
+-    const certificate = node_forge_1.pki.createCertificate();
+-    certificate.publicKey = csr.publicKey;
+-    certificate.serialNumber = (0, utils_1.toPositiveHex)(node_forge_1.util.bytesToHex(node_forge_1.random.getBytesSync(9)));
+-    // set certificate subject attrs from CSR
+-    certificate.setSubject(csr.subject.attributes);
+-    // 30 day validity into the future, 1 day in the past just in case of clock skew at callsite
+-    certificate.validity.notBefore = new Date();
+-    certificate.validity.notBefore.setDate(certificate.validity.notBefore.getDate() - 1);
+-    certificate.validity.notAfter = new Date();
+-    certificate.validity.notAfter.setDate(certificate.validity.notBefore.getDate() + 30);
+-    certificate.setIssuer(issuerCertificate.subject.attributes);
+-    certificate.setExtensions([
+-        {
+-            name: 'keyUsage',
+-            critical: true,
+-            keyCertSign: false,
+-            digitalSignature: true,
+-            nonRepudiation: false,
+-            keyEncipherment: false,
+-            dataEncipherment: false,
+-        },
+-        {
+-            name: 'extKeyUsage',
+-            critical: true,
+-            serverAuth: false,
+-            clientAuth: false,
+-            codeSigning: true,
+-            emailProtection: false,
+-            timeStamping: false,
+-        },
+-        {
+-            name: 'expoProjectInformation',
+-            id: exports.expoProjectInformationOID,
+-            // critical: true, // can't be critical since openssl verify doesn't know about this extension
+-            value: `${appId},${scopeKey}`,
+-        },
+-    ]);
+-    certificate.sign(issuerPrivateKey, node_forge_1.md.sha256.create());
+-    return certificate;
+-}
+-exports.generateDevelopmentCertificateFromCSR = generateDevelopmentCertificateFromCSR;
+-//# sourceMappingURL=main.js.map
+\ No newline at end of file
++require('reflect-metadata');
++const crypto=require('node:crypto'),x=require('@peculiar/x509');
++const wc=crypto.webcrypto,algo={name:'RSASSA-PKCS1-v1_5',hash:'SHA-256'};
++const oid='1.2.840.113556.1.8000.2554.43437.254.128.102.157.7894389.20439.2.1';
++function generateKeyPair(){return crypto.generateKeyPairSync('rsa',{modulusLength:2048});}
++function convertKeyPairToPEM(k){return {privateKeyPEM:k.privateKey.export({format:'pem',type:'pkcs1'}),publicKeyPEM:k.publicKey.export({format:'pem',type:'spki'})};}
++function convertPrivateKeyPEMToPrivateKey(p){return crypto.createPrivateKey(p)}
++function convertPublicKeyPEMToPublicKey(p){return crypto.createPublicKey(p)}
++function convertKeyPairPEMToKeyPair(p){return {privateKey:convertPrivateKeyPEMToPrivateKey(p.privateKeyPEM),publicKey:convertPublicKeyPEMToPublicKey(p.publicKeyPEM)}}
++function convertCertificatePEMToCertificate(pem){const native=new crypto.X509Certificate(pem),p=new x.X509Certificate(native.raw);return {pem:native.toString(),native,parsed:p,publicKey:native.publicKey,validity:{notBefore:new Date(native.validFrom),notAfter:new Date(native.validTo)},subject:{getField(n){const v=p.subjectName.getField(n)[0];return v===undefined?null:{value:v}}},verify(c){return native.verify(c.publicKey)},getExtension(n){const id=typeof n==='object'?n.id:({keyUsage:'2.5.29.15',extKeyUsage:'2.5.29.37'}[n]||n);const e=p.extensions.find(e=>e.type===id);if(!e)return null;return {id,critical:e.critical,value:Buffer.from(e.value).toString(),digitalSignature:!!(e.usages&x.KeyUsageFlags.digitalSignature),codeSigning:!!e.usages?.includes?.('1.3.6.1.5.5.7.3.3')}}};}
++function convertCertificateToCertificatePEM(c){return c.pem}
++async function webkeys(k){return {privateKey:await wc.subtle.importKey('pkcs8',k.privateKey.export({format:'der',type:'pkcs8'}),algo,true,['sign']),publicKey:await wc.subtle.importKey('spki',k.publicKey.export({format:'der',type:'spki'}),algo,true,['verify'])}}
++async function generateCSR(k,name){return x.Pkcs10CertificateRequestGenerator.create({keys:await webkeys(k),name:[{CN:[name]}],signingAlgorithm:algo},wc)}
++function convertCSRToCSRPEM(c){return c.toString('pem')}
++function convertCSRPEMToCSR(p){return new x.Pkcs10CertificateRequest(p)}
++function extensions(extra=[]){return [new x.KeyUsagesExtension(x.KeyUsageFlags.digitalSignature,true),new x.ExtendedKeyUsageExtension(['1.3.6.1.5.5.7.3.3'],true),...extra]}
++async function generateSelfSignedCodeSigningCertificate(p){if(!(p.validityNotBefore instanceof Date)||!(p.validityNotAfter instanceof Date)||!Number.isFinite(+p.validityNotBefore)||!Number.isFinite(+p.validityNotAfter)||!(p.validityNotAfter>p.validityNotBefore))throw new Error('validityNotAfter must be later than validityNotBefore');const c=await x.X509CertificateGenerator.createSelfSigned({keys:await webkeys(p.keyPair),name:[{CN:[p.commonName]}],notBefore:p.validityNotBefore,notAfter:p.validityNotAfter,extensions:extensions()},wc);return convertCertificatePEMToCertificate(c.toString('pem'))}
++function equal(a,b){return a.export({format:'der',type:'spki'}).equals(b.export({format:'der',type:'spki'}))}
++function validateSelfSignedCertificate(c,k){if(c.publicKey.asymmetricKeyType!=='rsa'||!(c.publicKey.asymmetricKeyDetails?.modulusLength>=2048)||c.parsed.signatureAlgorithm.name!=='RSASSA-PKCS1-v1_5'||c.parsed.signatureAlgorithm.hash?.name!=='SHA-256')throw new Error('Certificate crypto policy invalid');if(c.native.issuer!==c.native.subject)throw new Error('Certificate issuer hash does not match subject hash, indicating certificate is not self-signed.');if(!Number.isFinite(+c.validity.notBefore)||!Number.isFinite(+c.validity.notAfter)||!(c.validity.notBefore<=new Date()&&new Date()<=c.validity.notAfter))throw new Error('Certificate validity expired');if(!c.getExtension('keyUsage')?.digitalSignature)throw new Error('X509v3 Key Usage: Digital Signature not present');if(!c.getExtension('extKeyUsage')?.codeSigning)throw new Error('X509v3 Extended Key Usage: Code Signing not present');if(!c.verify(c))throw Object.assign(new Error('Certificate signature not valid under Vox canonical signature v1. Use supported tooling to reissue the certificate and re-sign dependent artifacts; changing PEM formatting cannot repair it.'),{code:'VOX_UNSUPPORTED_CERTIFICATE_SIGNATURE'});if(!equal(c.publicKey,k.publicKey))throw new Error('Certificate pubic key does not match key pair public key');if(!equal(crypto.createPublicKey(k.privateKey),k.publicKey))throw new Error('keyPair key mismatch')}
++function signBufferRSASHA256AndVerify(key,c,data){if(key.asymmetricKeyType!=='rsa'||c.publicKey.asymmetricKeyType!=='rsa')throw new Error('RSA key required');const s=crypto.sign('sha256',data,{key,padding:crypto.constants.RSA_PKCS1_PADDING});if(!crypto.verify('sha256',data,{key:c.publicKey,padding:crypto.constants.RSA_PKCS1_PADDING},s))throw new Error('Signature generated with private key not valid for certificate');return s.toString('base64')}
++async function generateDevelopmentCertificateFromCSR(key,issuer,csr,appId,scopeKey){if(!await csr.verify(wc))throw new Error('CSR not self-signed');const notBefore=new Date();notBefore.setDate(notBefore.getDate()-1);const notAfter=new Date(notBefore);notAfter.setDate(notBefore.getDate()+30);const c=await x.X509CertificateGenerator.create({subject:csr.subjectName,issuer:issuer.parsed.subjectName,publicKey:csr.publicKey,signingKey:await wc.subtle.importKey('pkcs8',key.export({format:'der',type:'pkcs8'}),algo,true,['sign']),notBefore,notAfter,extensions:extensions([new x.Extension(oid,false,Buffer.from(`${appId},${scopeKey}`))]),signingAlgorithm:algo},wc);return convertCertificatePEMToCertificate(c.toString('pem'))}
++module.exports={expoProjectInformationOID:oid,generateKeyPair,convertKeyPairToPEM,convertKeyPairPEMToKeyPair,convertPrivateKeyPEMToPrivateKey,convertPublicKeyPEMToPublicKey,convertCertificatePEMToCertificate,convertCertificateToCertificatePEM,generateCSR,convertCSRToCSRPEM,convertCSRPEMToCSR,generateSelfSignedCodeSigningCertificate,validateSelfSignedCertificate,signBufferRSASHA256AndVerify,generateDevelopmentCertificateFromCSR};
+--- a/build/main.js.map
++++ /dev/null
+@@ -1 +0,0 @@
+-{"version":3,"file":"main.js","sourceRoot":"","sources":["../src/main.ts"],"names":[],"mappings":"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"}
+\ No newline at end of file
+--- a/package.json
++++ b/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "@expo/code-signing-certificates",
+-  "version": "0.0.6",
++  "version": "0.0.6-vox.1",
+   "description": "A library for working with expo-updates code signing certificates",
+   "main": "build/main.js",
+   "types": "build/main.d.ts",
+@@ -35,7 +35,8 @@
+     "build"
+   ],
+   "dependencies": {
+-    "node-forge": "^1.3.3"
++    "@peculiar/x509": "2.1.0",
++    "reflect-metadata": "0.2.2"
+   },
+   "devDependencies": {
+     "@tsconfig/node14": "^1.0.1",
+@@ -53,5 +54,15 @@
+     "ts-node-dev": "^1.1.8",
+     "typescript": "^4.5.5",
+     "uuid": "^8.3.2"
++  },
++  "voxDerivative": {
++    "owner": "osborn-studio/osvox",
++    "contract": "vox-canonical-signature-v1",
++    "upstreamArchive": "expo-code-signing-certificates-0.0.6.tgz",
++    "distribution": "private reviewed artifact; not an official upstream release"
++  },
++  "exports": {
++    ".": "./build/main.js",
++    "./package.json": "./package.json"
+   }
+ }
+--- a/build/__tests__/main-test.js
++++ /dev/null
+@@ -1,276 +0,0 @@
+-"use strict";
+-var __importDefault = (this && this.__importDefault) || function (mod) {
+-    return (mod && mod.__esModule) ? mod : { "default": mod };
+-};
+-Object.defineProperty(exports, "__esModule", { value: true });
+-const fs_1 = require("fs");
+-const node_forge_1 = require("node-forge");
+-const path_1 = __importDefault(require("path"));
+-const main_1 = require("../main");
+-describe(main_1.generateKeyPair, () => {
+-    it('generates a key pair', () => {
+-        const keyPair = (0, main_1.generateKeyPair)();
+-        expect(keyPair.privateKey).toBeTruthy();
+-        expect(keyPair.publicKey).toBeTruthy();
+-        expect(keyPair.publicKey.n.bitLength()).toEqual(2048);
+-        const digest = node_forge_1.md.sha256.create().update('hello');
+-        expect(keyPair.publicKey.verify(digest.digest().getBytes(), keyPair.privateKey.sign(digest))).toBeTruthy();
+-    });
+-});
+-describe(main_1.convertKeyPairToPEM, () => {
+-    it('converts key pair to PEM', () => {
+-        const keyPair = (0, main_1.generateKeyPair)();
+-        const keyPairPEM = (0, main_1.convertKeyPairToPEM)(keyPair);
+-        expect(keyPairPEM.privateKeyPEM).toBeTruthy();
+-        expect(keyPairPEM.publicKeyPEM).toBeTruthy();
+-    });
+-});
+-describe(main_1.convertCertificateToCertificatePEM, () => {
+-    it('converts certificate to PEM', () => {
+-        const keyPair = (0, main_1.generateKeyPair)();
+-        const validityNotAfter = new Date();
+-        validityNotAfter.setFullYear(validityNotAfter.getFullYear() + 1);
+-        const certificate = (0, main_1.generateSelfSignedCodeSigningCertificate)({
+-            keyPair,
+-            validityNotAfter,
+-            validityNotBefore: new Date(),
+-            commonName: 'test',
+-        });
+-        expect((0, main_1.convertCertificateToCertificatePEM)(certificate)).toBeTruthy();
+-    });
+-});
+-describe(main_1.convertKeyPairPEMToKeyPair, () => {
+-    it('converts key pair PEM to key pair', () => {
+-        const keyPair = (0, main_1.generateKeyPair)();
+-        const keyPairPEM = (0, main_1.convertKeyPairToPEM)(keyPair);
+-        expect((0, main_1.convertKeyPairPEMToKeyPair)(keyPairPEM)).toBeTruthy();
+-    });
+-});
+-describe(main_1.convertCertificatePEMToCertificate, () => {
+-    it('converts certificate PEM to certificate', () => {
+-        const keyPair = (0, main_1.generateKeyPair)();
+-        const validityNotAfter = new Date();
+-        validityNotAfter.setFullYear(validityNotAfter.getFullYear() + 1);
+-        const certificate = (0, main_1.generateSelfSignedCodeSigningCertificate)({
+-            keyPair,
+-            validityNotAfter,
+-            validityNotBefore: new Date(),
+-            commonName: 'test',
+-        });
+-        expect((0, main_1.convertCertificatePEMToCertificate)((0, main_1.convertCertificateToCertificatePEM)(certificate))).toBeTruthy();
+-    });
+-});
+-describe(main_1.generateSelfSignedCodeSigningCertificate, () => {
+-    it('generates certificate with correct data', () => {
+-        const keyPair = (0, main_1.generateKeyPair)();
+-        const validityNotAfter = new Date();
+-        validityNotAfter.setFullYear(validityNotAfter.getFullYear() + 1);
+-        const certificate = (0, main_1.generateSelfSignedCodeSigningCertificate)({
+-            keyPair,
+-            validityNotAfter,
+-            validityNotBefore: new Date(),
+-            commonName: 'Test',
+-        });
+-        // check self-signed
+-        expect(certificate.verify(certificate)).toBe(true);
+-        // check extensions
+-        expect(certificate.getExtension('keyUsage')).toMatchObject({
+-            critical: true,
+-            dataEncipherment: false,
+-            digitalSignature: true,
+-            id: '2.5.29.15',
+-            keyCertSign: false,
+-            keyEncipherment: false,
+-            name: 'keyUsage',
+-            nonRepudiation: false,
+-        });
+-        expect(certificate.getExtension('extKeyUsage')).toMatchObject({
+-            clientAuth: false,
+-            codeSigning: true,
+-            critical: true,
+-            emailProtection: false,
+-            id: '2.5.29.37',
+-            name: 'extKeyUsage',
+-            serverAuth: false,
+-            timeStamping: false,
+-        });
+-    });
+-});
+-describe(main_1.validateSelfSignedCertificate, () => {
+-    it('does not throw for certificate generated with generateSelfSignedCodeSigningCertificate', () => {
+-        const keyPair = (0, main_1.generateKeyPair)();
+-        const validityNotAfter = new Date();
+-        validityNotAfter.setFullYear(validityNotAfter.getFullYear() + 1);
+-        const certificate = (0, main_1.generateSelfSignedCodeSigningCertificate)({
+-            keyPair,
+-            validityNotAfter,
+-            validityNotBefore: new Date(),
+-            commonName: 'Test',
+-        });
+-        expect(() => (0, main_1.validateSelfSignedCertificate)(certificate, keyPair)).not.toThrow();
+-    });
+-    it('throws when certificate is expired', () => {
+-        const keyPair = (0, main_1.generateKeyPair)();
+-        const validityNotAfter = new Date();
+-        const validity = new Date();
+-        validity.setFullYear(validity.getFullYear() - 1);
+-        const certificate = (0, main_1.generateSelfSignedCodeSigningCertificate)({
+-            keyPair,
+-            validityNotAfter,
+-            validityNotBefore: validity,
+-            commonName: 'Test',
+-        });
+-        expect(() => (0, main_1.validateSelfSignedCertificate)(certificate, keyPair)).toThrow('Certificate validity expired');
+-    });
+-    it('throws when missing keyUsage', () => {
+-        const keyPair = (0, main_1.generateKeyPair)();
+-        const validityNotAfter = new Date();
+-        validityNotAfter.setFullYear(validityNotAfter.getFullYear() + 1);
+-        const certificate = (0, main_1.generateSelfSignedCodeSigningCertificate)({
+-            keyPair,
+-            validityNotAfter,
+-            validityNotBefore: new Date(),
+-            commonName: 'Test',
+-        });
+-        certificate.setExtensions([
+-            {
+-                name: 'keyUsage',
+-                critical: true,
+-                keyCertSign: false,
+-                digitalSignature: false,
+-                nonRepudiation: false,
+-                keyEncipherment: false,
+-                dataEncipherment: false,
+-            },
+-        ]);
+-        expect(() => (0, main_1.validateSelfSignedCertificate)(certificate, keyPair)).toThrow('X509v3 Key Usage: Digital Signature not present');
+-    });
+-    it('throws when missing extKeyUsage', () => {
+-        const keyPair = (0, main_1.generateKeyPair)();
+-        const validityNotAfter = new Date();
+-        validityNotAfter.setFullYear(validityNotAfter.getFullYear() + 1);
+-        const certificate = (0, main_1.generateSelfSignedCodeSigningCertificate)({
+-            keyPair,
+-            validityNotAfter,
+-            validityNotBefore: new Date(),
+-            commonName: 'Test',
+-        });
+-        certificate.setExtensions([
+-            {
+-                name: 'keyUsage',
+-                critical: true,
+-                keyCertSign: false,
+-                digitalSignature: true,
+-                nonRepudiation: false,
+-                keyEncipherment: false,
+-                dataEncipherment: false,
+-            },
+-            {
+-                name: 'extKeyUsage',
+-                critical: true,
+-                serverAuth: false,
+-                clientAuth: false,
+-                codeSigning: false,
+-                emailProtection: false,
+-                timeStamping: false,
+-            },
+-        ]);
+-        expect(() => (0, main_1.validateSelfSignedCertificate)(certificate, keyPair)).toThrow('X509v3 Extended Key Usage: Code Signing not present');
+-    });
+-    it('throws when certificate public key does not match key pair', () => {
+-        const keyPair = (0, main_1.generateKeyPair)();
+-        const keyPair2 = (0, main_1.generateKeyPair)();
+-        const validityNotAfter = new Date();
+-        validityNotAfter.setFullYear(validityNotAfter.getFullYear() + 1);
+-        const certificate = (0, main_1.generateSelfSignedCodeSigningCertificate)({
+-            keyPair,
+-            validityNotAfter,
+-            validityNotBefore: new Date(),
+-            commonName: 'Test',
+-        });
+-        expect(() => (0, main_1.validateSelfSignedCertificate)(certificate, keyPair2)).toThrow('Certificate pubic key does not match key pair public key');
+-    });
+-    it('throws when private key does not match public key', () => {
+-        const keyPair = (0, main_1.generateKeyPair)();
+-        const keyPair2 = (0, main_1.generateKeyPair)();
+-        const validityNotAfter = new Date();
+-        validityNotAfter.setFullYear(validityNotAfter.getFullYear() + 1);
+-        const certificate = (0, main_1.generateSelfSignedCodeSigningCertificate)({
+-            keyPair,
+-            validityNotAfter,
+-            validityNotBefore: new Date(),
+-            commonName: 'Test',
+-        });
+-        const keyPairManual = {
+-            publicKey: keyPair.publicKey,
+-            privateKey: keyPair2.privateKey,
+-        };
+-        expect(() => (0, main_1.validateSelfSignedCertificate)(certificate, keyPairManual)).toThrow('keyPair key mismatch');
+-    });
+-});
+-describe(main_1.signBufferRSASHA256AndVerify, () => {
+-    it('signs and verifies', async () => {
+-        const [privateKeyPEM, certificatePEM] = await Promise.all([
+-            fs_1.promises.readFile(path_1.default.join(__dirname, './fixtures/test-private-key.pem'), 'utf8'),
+-            fs_1.promises.readFile(path_1.default.join(__dirname, './fixtures/test-certificate.pem'), 'utf8'),
+-        ]);
+-        const privateKey = (0, main_1.convertPrivateKeyPEMToPrivateKey)(privateKeyPEM);
+-        const certificate = (0, main_1.convertCertificatePEMToCertificate)(certificatePEM);
+-        const signature = (0, main_1.signBufferRSASHA256AndVerify)(privateKey, certificate, Buffer.from('hello', 'utf-8'));
+-        expect(signature).toMatchSnapshot();
+-    });
+-    test.each([['a', 'öäå']])('encoding assumption about node-forge: case %p', (input) => {
+-        expect(Buffer.from(input).toString('binary')).toEqual(node_forge_1.util.encodeUtf8(input));
+-        expect(Buffer.from(input, 'utf-8').toString('binary')).toEqual(node_forge_1.util.encodeUtf8(input));
+-    });
+-});
+-describe('CSR generation and certificate generation from CA + CSR', () => {
+-    it('generates a development certificate', async () => {
+-        const [issuerPrivateKeyPEM, issuerCertificatePEM] = await Promise.all([
+-            fs_1.promises.readFile(path_1.default.join(__dirname, './fixtures/test-private-key.pem'), 'utf8'),
+-            fs_1.promises.readFile(path_1.default.join(__dirname, './fixtures/test-certificate.pem'), 'utf8'),
+-        ]);
+-        const issuerPrivateKey = (0, main_1.convertPrivateKeyPEMToPrivateKey)(issuerPrivateKeyPEM);
+-        const issuerCertificate = (0, main_1.convertCertificatePEMToCertificate)(issuerCertificatePEM);
+-        const keyPair = (0, main_1.generateKeyPair)();
+-        const csr1 = (0, main_1.generateCSR)(keyPair, 'Test common name');
+-        const csrPEM = (0, main_1.convertCSRToCSRPEM)(csr1);
+-        const csr = (0, main_1.convertCSRPEMToCSR)(csrPEM);
+-        const certificate = (0, main_1.generateDevelopmentCertificateFromCSR)(issuerPrivateKey, issuerCertificate, csr, 'testApp', 'testScopeKey');
+-        // check signed by issuer
+-        expect(issuerCertificate.verify(certificate)).toBe(true);
+-        // check subject attributes are transferred
+-        expect(certificate.subject.getField('CN').value).toEqual('Test common name');
+-        // check extensions
+-        expect(certificate.getExtension('keyUsage')).toMatchObject({
+-            critical: true,
+-            dataEncipherment: false,
+-            digitalSignature: true,
+-            id: '2.5.29.15',
+-            keyCertSign: false,
+-            keyEncipherment: false,
+-            name: 'keyUsage',
+-            nonRepudiation: false,
+-        });
+-        expect(certificate.getExtension('extKeyUsage')).toMatchObject({
+-            clientAuth: false,
+-            codeSigning: true,
+-            critical: true,
+-            emailProtection: false,
+-            id: '2.5.29.37',
+-            name: 'extKeyUsage',
+-            serverAuth: false,
+-            timeStamping: false,
+-        });
+-        expect(certificate.getExtension('expoProjectInformation')).toMatchObject({
+-            name: 'expoProjectInformation',
+-            id: main_1.expoProjectInformationOID,
+-            value: 'testApp,testScopeKey',
+-        });
+-        expect(certificate.validity.notBefore.getTime()).toBeLessThanOrEqual(Date.now());
+-        const expectedNotAfter = certificate.validity.notBefore;
+-        expectedNotAfter.setDate(expectedNotAfter.getDate() + 30);
+-        expect(certificate.validity.notAfter.getTime()).toEqual(expectedNotAfter.getTime());
+-    });
+-});
+-//# sourceMappingURL=main-test.js.map
+\ No newline at end of file
+--- a/build/__tests__/utils-test.js
++++ /dev/null
+@@ -1,15 +0,0 @@
+-"use strict";
+-Object.defineProperty(exports, "__esModule", { value: true });
+-const utils_1 = require("../utils");
+-describe(utils_1.toPositiveHex, () => {
+-    test.each([
+-        ['646a60245faa852fe108ecbbd018dfc8', '646a60245faa852fe108ecbbd018dfc8'],
+-        ['eb668fcee52ce9ebd5461a2e71be1269', '6b668fcee52ce9ebd5461a2e71be1269'],
+-        ['6', '6'],
+-        ['e', '6'],
+-        ['9', '1'], // "negative" hex string
+-    ])('case %p', (input, output) => {
+-        expect((0, utils_1.toPositiveHex)(input)).toEqual(output);
+-    });
+-});
+-//# sourceMappingURL=utils-test.js.map
+\ No newline at end of file
+--- a/build/utils.js
++++ /dev/null
+@@ -1,22 +0,0 @@
+-"use strict";
+-var __importDefault = (this && this.__importDefault) || function (mod) {
+-    return (mod && mod.__esModule) ? mod : { "default": mod };
+-};
+-Object.defineProperty(exports, "__esModule", { value: true });
+-exports.toPositiveHex = void 0;
+-const assert_1 = __importDefault(require("assert"));
+-// a hexString is considered negative if its most significant bit is 1
+-// because serial numbers use ones' complement notation
+-// this RFC in section 4.1.2.2 requires serial numbers to be positive
+-// http://www.ietf.org/rfc/rfc5280.txt
+-function toPositiveHex(hexString) {
+-    (0, assert_1.default)(hexString[0] !== undefined && hexString[0] !== null);
+-    let mostSignificantHexAsInt = parseInt(hexString[0], 16);
+-    if (mostSignificantHexAsInt < 8) {
+-        return hexString;
+-    }
+-    mostSignificantHexAsInt -= 8;
+-    return mostSignificantHexAsInt.toString(16) + hexString.substring(1);
+-}
+-exports.toPositiveHex = toPositiveHex;
+-//# sourceMappingURL=utils.js.map
+\ No newline at end of file
+--- a/build/__tests__/main-test.js.map
++++ /dev/null
+@@ -1 +0,0 @@
+-{"version":3,"file":"main-test.js","sourceRoot":"","sources":["../../src/__tests__/main-test.ts"],"names":[],"mappings":"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"}
+\ No newline at end of file
+--- a/build/__tests__/utils-test.js.map
++++ /dev/null
+@@ -1 +0,0 @@
+-{"version":3,"file":"utils-test.js","sourceRoot":"","sources":["../../src/__tests__/utils-test.ts"],"names":[],"mappings":";;AAAA,oCAAyC;AAEzC,QAAQ,CAAC,qBAAa,EAAE,GAAG,EAAE;IAC3B,IAAI,CAAC,IAAI,CAAC;QACR,CAAC,kCAAkC,EAAE,kCAAkC,CAAC;QACxE,CAAC,kCAAkC,EAAE,kCAAkC,CAAC;QACxE,CAAC,GAAG,EAAE,GAAG,CAAC;QACV,CAAC,GAAG,EAAE,GAAG,CAAC;QACV,CAAC,GAAG,EAAE,GAAG,CAAC,EAAE,wBAAwB;KACrC,CAAC,CAAC,SAAS,EAAE,CAAC,KAAK,EAAE,MAAM,EAAE,EAAE;QAC9B,MAAM,CAAC,IAAA,qBAAa,EAAC,KAAK,CAAC,CAAC,CAAC,OAAO,CAAC,MAAM,CAAC,CAAC;IAC/C,CAAC,CAAC,CAAC;AACL,CAAC,CAAC,CAAC"}
+\ No newline at end of file
+--- a/build/utils.js.map
++++ /dev/null
+@@ -1 +0,0 @@
+-{"version":3,"file":"utils.js","sourceRoot":"","sources":["../src/utils.ts"],"names":[],"mappings":";;;;;;AAAA,oDAA4B;AAE5B,sEAAsE;AACtE,uDAAuD;AACvD,qEAAqE;AACrE,sCAAsC;AACtC,SAAgB,aAAa,CAAC,SAAiB;IAC7C,IAAA,gBAAM,EAAC,SAAS,CAAC,CAAC,CAAC,KAAK,SAAS,IAAI,SAAS,CAAC,CAAC,CAAC,KAAK,IAAI,CAAC,CAAC;IAC5D,IAAI,uBAAuB,GAAG,QAAQ,CAAC,SAAS,CAAC,CAAC,CAAC,EAAE,EAAE,CAAC,CAAC;IACzD,IAAI,uBAAuB,GAAG,CAAC,EAAE;QAC/B,OAAO,SAAS,CAAC;KAClB;IACD,uBAAuB,IAAI,CAAC,CAAC;IAC7B,OAAO,uBAAuB,CAAC,QAAQ,CAAC,EAAE,CAAC,GAAG,SAAS,CAAC,SAAS,CAAC,CAAC,CAAC,CAAC;AACvE,CAAC;AARD,sCAQC"}
+\ No newline at end of file
+--- a/build/__tests__/main-test.d.ts
++++ /dev/null
+@@ -1 +0,0 @@
+-export {};
+--- a/build/__tests__/utils-test.d.ts
++++ /dev/null
+@@ -1 +0,0 @@
+-export {};
+--- a/build/utils.d.ts
++++ /dev/null
+@@ -1 +0,0 @@
+-export declare function toPositiveHex(hexString: string): string;

@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "id": "sensevoice-int8",
+  "provider": "sherpa-sensevoice",
+  "architecture": "any",
+  "revision": "2024-07-17",
+  "license": "FunASR-Model-License",
+  "source": {
+    "kind": "files",
+    "baseUrl": "https://huggingface.co/csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17/resolve/2365baeacb507f821a0c8120fcee3d484dba7a07/"
+  },
+  "files": [
+    {
+      "path": "model.int8.onnx",
+      "size": 239233841,
+      "sha256": "c71f0ce00bec95b07744e116345e33d8cbbe08cef896382cf907bf4b51a2cd51"
+    },
+    {
+      "path": "tokens.txt",
+      "size": 315894,
+      "sha256": "f449eb28dc567533d7fa59be34e2abca8784f771850c78a47fb731a31429a1dc"
+    }
+  ],
+  "digest": "414332c02decae90da032dbc5fcbfcb4c81a9ba7eab61c9a6ba55938bbd55723"
+}

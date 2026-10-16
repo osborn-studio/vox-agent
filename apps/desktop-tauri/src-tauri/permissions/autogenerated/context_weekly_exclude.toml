@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-context-weekly-exclude"
+description = "Enables the context_weekly_exclude command without any pre-configured scope."
+commands.allow = ["context_weekly_exclude"]
+
+[[permission]]
+identifier = "deny-context-weekly-exclude"
+description = "Denies the context_weekly_exclude command without any pre-configured scope."
+commands.deny = ["context_weekly_exclude"]

@@ -1,0 +1,22 @@
+--- a/scripts/verify_mobile_dependency_defenses.cjs
++++ b/scripts/verify_mobile_dependency_defenses.cjs
+@@ -2,6 +2,19 @@
+ const assert = require('node:assert/strict');
+ const {createRequire} = require('node:module');
+ const requireMobile = createRequire(require('node:path').resolve(__dirname, '../mobile/voxagent-companion/package.json'));
++// Explicit isolated candidate mode; a missing gate must fail closed.
++if (process.argv.includes('--candidate')) {
++  const at = process.argv.indexOf('--candidate-repo');
++  if (at < 0 || !process.argv[at + 1]) throw new Error('Explicit --candidate-repo required');
++  const candidateRepo = require('node:fs').realpathSync(process.argv[at + 1]);
++  const appRoot = require('node:fs').realpathSync(require('node:path').resolve(__dirname, '../mobile/voxagent-companion'));
++  for (const verifier of ['verify_mobile_candidate_provenance.cjs', 'verify_mobile_candidate_attacks.cjs']) {
++    const result = require('node:child_process').spawnSync(process.execPath, [require('node:path').join(candidateRepo, 'scripts', verifier), '--app-root', appRoot], {stdio: 'inherit', timeout: 30000});
++    if (result.error || result.signal || result.status === null) throw new Error('Candidate safety oracle did not complete');
++    if (result.status !== 0) process.exit(result.status);
++  }
++  process.exit(0);
++}
+ const braces = requireMobile('braces');
+ const forge = requireMobile('node-forge');
+ const baseline = process.argv.includes('--baseline');

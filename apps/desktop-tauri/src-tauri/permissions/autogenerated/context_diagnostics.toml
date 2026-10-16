@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-context-diagnostics"
+description = "Enables the context_diagnostics command without any pre-configured scope."
+commands.allow = ["context_diagnostics"]
+
+[[permission]]
+identifier = "deny-context-diagnostics"
+description = "Denies the context_diagnostics command without any pre-configured scope."
+commands.deny = ["context_diagnostics"]

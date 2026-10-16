@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "corrections": {},
+  "preserve": [],
+  "format_rules": {
+    "cn_en_space": true,
+    "punctuation": "zh-CN"
+  }
+}

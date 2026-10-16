@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "source_contract": "engine.input_backup.BackupInput and BackupStore.status",
+  "cases": [
+    {
+      "request": {"eventId": "event-1", "targetId": "team", "text": "synthetic context"},
+      "receipt": {"eventId": "event-1", "status": "pending", "messageId": null}
+    },
+    {
+      "request": {"eventId": "event-1", "targetId": "team", "text": "synthetic context", "projectId": "p1", "repoSource": "manual", "repository": "studio/repo"},
+      "receipt": {"eventId": "event-1", "status": "delivered", "messageId": "om_synthetic", "attribution": {"version": 1, "projectId": "p1", "repositoryId": "studio/repo"}}
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "voice-hud",
+  "description": "Voice HUD: listens to its own HUD events only. No Context, private, credential, settings or update commands.",
+  "windows": [
+    "voice-hud"
+  ],
+  "permissions": [
+    "core:event:allow-listen",
+    "core:event:allow-unlisten"
+  ]
+}

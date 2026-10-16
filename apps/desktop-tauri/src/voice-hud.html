@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vox Agent Voice</title>
+    <link rel="stylesheet" href="./voice-hud.css" />
+  </head>
+  <body>
+    <main id="voice-hud" class="voice-hud" data-phase="preparing" aria-label="Vox Agent voice capture">
+      <div class="voice-symbol" aria-hidden="true">
+        <span></span><span></span><span></span><span></span><span></span>
+      </div>
+      <section class="voice-copy">
+        <div class="voice-heading">
+          <strong id="hud-status" aria-live="polite">Preparing microphone</strong>
+          <time id="hud-elapsed" datetime="PT0S">0:00</time>
+        </div>
+        <p>To <b id="hud-target-agent">Vox Agent Coordinator</b></p>
+        <p id="hud-instruction" class="instruction">Hold to speak · release to send · Esc to cancel</p>
+      </section>
+      <div class="level-stack" aria-label="Live microphone level">
+        <div class="level-row">
+          <span>RMS</span>
+          <div id="hud-rms-meter" class="level-meter" role="meter" aria-label="RMS microphone level" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div>
+        </div>
+        <div class="level-row peak">
+          <span>Peak</span>
+          <div id="hud-peak-meter" class="level-meter" role="meter" aria-label="Peak microphone level" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div>
+        </div>
+      </div>
+    </main>
+    <script type="module" src="./voice-hud.js"></script>
+  </body>
+</html>

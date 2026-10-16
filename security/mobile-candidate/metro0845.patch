@@ -1,0 +1,45 @@
+--- a/package.json
++++ b/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "metro-file-map",
+-  "version": "0.84.5",
++  "version": "0.84.5-vox.1",
+   "description": "[Experimental] - 🚇 File crawling, watching and mapping for Metro",
+   "main": "src/index.js",
+   "exports": {
+@@ -25,14 +25,20 @@
+     "graceful-fs": "^4.2.4",
+     "invariant": "^2.2.4",
+     "jest-worker": "^29.7.0",
+-    "micromatch": "^4.0.4",
+     "nullthrows": "^1.1.1",
+-    "walker": "^1.0.7"
++    "walker": "^1.0.7",
++    "picomatch": "2.3.2"
+   },
+   "devDependencies": {
+     "slash": "^3.0.0"
+   },
+   "engines": {
+     "node": "^20.19.4 || ^22.13.0 || ^24.3.0 || >= 25.0.0"
++  },
++  "voxDerivative": {
++    "owner": "osborn-studio/osvox",
++    "contract": "vox-canonical-signature-v1",
++    "upstreamArchive": "metro-file-map-0.84.5.tgz",
++    "distribution": "private reviewed artifact; not an official upstream release"
+   }
+ }
+--- a/src/watchers/common.js
++++ b/src/watchers/common.js
+@@ -11,7 +11,8 @@
+ exports.includedByGlob = includedByGlob;
+ exports.posixPathMatchesPattern = void 0;
+ exports.typeFromStat = typeFromStat;
+-var _micromatch = _interopRequireDefault(require("micromatch"));
++const picomatch = require("picomatch");
++const _micromatch = { default: { some: (list, patterns, options) => [].concat(patterns).some(pattern => { const match = picomatch(String(pattern), options); return [].concat(list).some(item => match(item)); }) } };
+ var _path = _interopRequireDefault(require("path"));
+ function _interopRequireDefault(e) {
+   return e && e.__esModule ? e : { default: e };

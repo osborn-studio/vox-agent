@@ -1,0 +1,137 @@
+import XCTest
+@testable import VoxLog
+
+final class DeepgramProtocolTests: XCTestCase {
+
+    func testBuildWebSocketURL_usesExpectedQueryItems() throws {
+        let config = try XCTUnwrap(DeepgramASRConfig(credentials: [
+            "apiKey": "dg_test_key",
+            "model": "nova-2",
+        ]))
+        let url = try DeepgramProtocol.buildWebSocketURL(
+            config: config,
+            options: ASRRequestOptions(
+                enablePunc: true,
+                hotwords: ["VoxLog", "Deepgram"],
+                boostingTableID: "ignored",
+                contextHistoryLength: 8
+            )
+        )
+        let components = try XCTUnwrap(URLComponents(url: url, resolvingAgainstBaseURL: false))
+        let items = components.queryItems ?? []
+
+        XCTAssertEqual(components.scheme, "wss")
+        XCTAssertEqual(components.host, "api.deepgram.com")
+        XCTAssertEqual(components.path, "/v1/listen")
+        XCTAssertEqual(items.value(for: "model"), "nova-2")
+        XCTAssertEqual(items.value(for: "language"), DeepgramASRConfig.defaultLanguage)
+        XCTAssertEqual(items.value(for: "encoding"), "linear16")
+        XCTAssertEqual(items.value(for: "sample_rate"), "16000")
+        XCTAssertEqual(items.value(for: "channels"), "1")
+        XCTAssertEqual(items.value(for: "interim_results"), "true")
+        XCTAssertEqual(items.value(for: "punctuate"), "true")
+        XCTAssertEqual(items.value(for: "smart_format"), "true")
+        XCTAssertEqual(items.values(for: "keywords"), ["VoxLog:2", "Deepgram:2"])
+        XCTAssertNil(items.value(for: "keyterm"))
+    }
+
+    func testBuildWebSocketURL_usesKeytermForNova3Models() throws {
+        let config = try XCTUnwrap(DeepgramASRConfig(credentials: [
+            "apiKey": "dg_test_key",
+            "model": "nova-3",
+        ]))
+        let url = try DeepgramProtocol.buildWebSocketURL(
+            config: config,
+            options: ASRRequestOptions(
+                enablePunc: false,
+                hotwords: ["VoxLog", "Hangzhou"]
+            )
+        )
+        let components = try XCTUnwrap(URLComponents(url: url, resolvingAgainstBaseURL: false))
+        let items = components.queryItems ?? []
+
+        XCTAssertEqual(items.value(for: "punctuate"), "false")
+        XCTAssertEqual(items.values(for: "keyterm"), ["VoxLog", "Hangzhou"])
+        XCTAssertNil(items.value(for: "keywords"))
+    }
+
+    func testUpdateTranscript_buildsPartialTextAgainstConfirmedSegments() throws {
+        let message = """
+        {
+          "type": "Results",
+          "is_final": false,
+          "speech_final": false,
+          "channel": {
+            "alternatives": [
+              { "transcript": "world" }
+            ]
+          }
+        }
+        """
+
+        let update = try XCTUnwrap(
+            DeepgramProtocol.makeTranscriptUpdate(
+                from: Data(message.utf8),
+                confirmedSegments: ["Hello"]
+            )
+        )
+
+        XCTAssertEqual(update.confirmedSegments, ["Hello"])
+        XCTAssertEqual(update.transcript.partialText, " world")
+        XCTAssertEqual(update.transcript.authoritativeText, "Hello world")
+        XCTAssertFalse(update.transcript.isFinal)
+    }
+
+    func testUpdateTranscript_promotesFinalResultsToConfirmedSegments() throws {
+        let message = """
+        {
+          "type": "Results",
+          "is_final": true,
+          "speech_final": true,
+          "channel": {
+            "alternatives": [
+              { "transcript": "world" }
+            ]
+          }
+        }
+        """
+
+        let update = try XCTUnwrap(
+            DeepgramProtocol.makeTranscriptUpdate(
+                from: Data(message.utf8),
+                confirmedSegments: ["Hello"]
+            )
+        )
+
+        XCTAssertEqual(update.confirmedSegments, ["Hello", " world"])
+        XCTAssertEqual(update.transcript.partialText, "")
+        XCTAssertEqual(update.transcript.authoritativeText, "Hello world")
+        XCTAssertTrue(update.transcript.isFinal)
+    }
+
+    func testUpdateTranscript_ignoresNonTranscriptMessages() throws {
+        let message = """
+        {
+          "type": "Metadata",
+          "request_id": "abc123"
+        }
+        """
+
+        let update = try DeepgramProtocol.makeTranscriptUpdate(
+            from: Data(message.utf8),
+            confirmedSegments: []
+        )
+
+        XCTAssertNil(update)
+    }
+}
+
+private extension [URLQueryItem] {
+    func value(for name: String) -> String? {
+        first(where: { $0.name == name })?.value
+    }
+
+    func values(for name: String) -> [String] {
+        filter { $0.name == name }.compactMap(\.value)
+    }
+}

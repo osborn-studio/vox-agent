@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-context-weekly-load"
+description = "Enables the context_weekly_load command without any pre-configured scope."
+commands.allow = ["context_weekly_load"]
+
+[[permission]]
+identifier = "deny-context-weekly-load"
+description = "Denies the context_weekly_load command without any pre-configured scope."
+commands.deny = ["context_weekly_load"]

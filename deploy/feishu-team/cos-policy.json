@@ -1,0 +1,8 @@
+{
+  "version": "2.0",
+  "statement": [{
+    "effect": "allow",
+    "action": ["name/cos:PutObject", "name/cos:GetObject", "name/cos:HeadObject"],
+    "resource": ["qcs::cos:ap-singapore:uid/1377872589:vox-team-backups-1377872589/vox-team/*"]
+  }]
+}
