@@ -207,40 +207,15 @@ struct ChatInputBar: View {
     // MARK: - Translate
 
     @ViewBuilder private var translateControls: some View {
-        Button(action: translateDraft) {
-            Label(
-                isTranslating ? L("翻译中…", "Translating…") : L("翻译", "Translate"),
-                systemImage: "character.bubble"
-            )
-            .labelStyle(.titleAndIcon)
-            .font(.system(size: 12, weight: .medium))
-            .foregroundStyle(canTranslate || isTranslating ? Color.primary : Color.secondary)
-            .padding(.horizontal, TF.spacingSM)
-            .frame(height: ChatLayoutMetrics.inputChipHeight)
-            .background(RoundedRectangle(cornerRadius: TF.cornerSM).fill(TF.surface))
-            .overlay(RoundedRectangle(cornerRadius: TF.cornerSM).stroke(TF.line))
-        }
-        .buttonStyle(.plain)
-        .disabled(!canTranslate)
-        .help(translateHelp)
-        .accessibilityLabel(L("翻译草稿", "Translate draft"))
-        .accessibilityHint(translateHelp)
-
-        if isTranslating {
-            Button(L("取消", "Cancel"), action: cancelTranslation)
-                .buttonStyle(.plain)
-                .font(.system(size: 11))
-                .foregroundStyle(.secondary)
-        } else if translationOriginal != nil {
-            Button(action: restoreTranslation) {
-                Label(L("还原", "Restore"), systemImage: "arrow.uturn.backward")
-                    .labelStyle(.titleAndIcon)
-            }
-            .buttonStyle(.plain)
-            .font(.system(size: 11))
-            .foregroundStyle(.secondary)
-            .help(L("恢复翻译前的原文", "Restore the text before translation"))
-        }
+        ComposerTranslateControls(
+            isTranslating: isTranslating,
+            canTranslate: canTranslate,
+            canRestore: translationOriginal != nil,
+            help: translateHelp,
+            onTranslate: translateDraft,
+            onCancel: cancelTranslation,
+            onRestore: restoreTranslation
+        )
     }
 
     private var translateHelp: String {

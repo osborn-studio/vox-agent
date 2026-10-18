@@ -23,6 +23,13 @@ enum KeychainService {
  static func resetLogin() { fatalError("uninjected login reset") }
  static func completeFeishuLogin(orgID: String, name: String) { fatalError("uninjected login completion") }
 }
+enum TranslationTarget { case simplifiedChinese, english; var label: String { "" } }
+enum ComposerTranslationDirection { static func target(for text: String) -> TranslationTarget { .simplifiedChinese } }
+struct ComposerTranslationResult { let text: String; let target: TranslationTarget; let unchanged: Bool }
+@MainActor enum ComposerTranslator {
+ static func translate(_ draft: String) async throws -> ComposerTranslationResult { fatalError("real model call") }
+}
+enum TranslationFailure: Error { case network, cancelled; var message: String { "" } }
 """
 (out / "account-stubs.swift").write_text(stubs)
 subprocess.run(
@@ -45,6 +52,8 @@ subprocess.run(
                 "macos/VoxLog/Services/FeishuTimelineModel.swift",
                 "macos/VoxLog/UI/Chat/FeishuTimeline.swift",
                 "macos/VoxLog/UI/Chat/FeishuTextComposer.swift",
+                "macos/VoxLog/UI/Chat/ComposerTranslateControls.swift",
+                "macos/VoxLog/UI/Chat/CopyOriginalButton.swift",
                 "macos/VoxLog/UI/Chat/ChatLayoutMetrics.swift",
                 "macos/VoxLog/UI/DesignSystem.swift",
                 "macos/VoxLog/Services/FeishuConversationOutbox.swift",

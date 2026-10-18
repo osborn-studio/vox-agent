@@ -50,6 +50,13 @@ enum KeychainService {
  static func resetLogin() { fatalError("uninjected login reset") }
  static func completeFeishuLogin(orgID: String, name: String) { fatalError("uninjected login completion") }
 }
+enum TranslationTarget { case simplifiedChinese, english; var label: String { "" } }
+enum ComposerTranslationDirection { static func target(for text: String) -> TranslationTarget { .simplifiedChinese } }
+struct ComposerTranslationResult { let text: String; let target: TranslationTarget; let unchanged: Bool }
+@MainActor enum ComposerTranslator {
+ static func translate(_ draft: String) async throws -> ComposerTranslationResult { fatalError("real model call") }
+}
+enum TranslationFailure: Error { case network, cancelled; var message: String { "" } }
 """)
 sources = [
     "Services/InputBackupClient.swift",
@@ -59,6 +66,8 @@ sources = [
     "Services/FeishuConversationOutbox.swift",
     "UI/Chat/SidebarSelection.swift",
     "UI/Chat/FeishuTextComposer.swift",
+    "UI/Chat/ComposerTranslateControls.swift",
+    "UI/Chat/CopyOriginalButton.swift",
     "UI/Chat/ChatLayoutMetrics.swift",
     "UI/DesignSystem.swift",
 ]
