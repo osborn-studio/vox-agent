@@ -25,11 +25,19 @@ enum ChatLayoutMetrics {
     static let scrollToBottomButtonSize: CGFloat = 36
     static let inputHorizontalInset: CGFloat = 12
     static let inputMinHeight: CGFloat = 52
-    static let inputRestHeight: CGFloat = 52
+    /// Composer at rest: one text line plus the control row below it.
+    static let inputRestHeight: CGFloat = inputTextMinHeight + inputToolbarHeight
     static let voiceInputExpandedHeight: CGFloat = 120
     static let voiceWaveformHeight: CGFloat = 28
+    /// Height of the voice header shown above the text while capturing.
+    static let voiceHeaderHeight: CGFloat = 44
     static let inputButtonReserveWidth: CGFloat = 92
+    /// Text area bounds. The composer grows upward with its content between
+    /// these two values; beyond the maximum the text scrolls.
+    static let inputTextMinHeight: CGFloat = 36
     static let inputMaxHeight: CGFloat = 176
+    /// Bottom control row: Translate on the left; model badge, mic and send on the right.
+    static let inputToolbarHeight: CGFloat = 36
     static let inputLineHeight: CGFloat = 18
 
     static var inputMaxVisibleLines: Int {

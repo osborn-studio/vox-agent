@@ -52,26 +52,10 @@ struct TranslationConfiguration: Sendable {
     }
 }
 
+/// Epoch of the selected LLM configuration. `KeychainService` bumps it on every
+/// save so configuration snapshots and the composer's model badge re-read state.
 @MainActor @Observable final class TranslationSettings {
     static let shared = TranslationSettings()
-    static let preferenceKey = "voxagent_message_translation_development"
     private(set) var generation: UInt64 = 0
-    private(set) var enabled: Bool
-    private var observers: [UUID: () -> Void] = [:]
-    private let defaults: UserDefaults
-    init(defaults: UserDefaults = .standard) {
-        self.defaults = defaults; enabled = defaults.bool(forKey: Self.preferenceKey)
-    }
-    func setEnabled(_ value: Bool) {
-        guard enabled != value else { return }
-        enabled = value; defaults.set(value, forKey: Self.preferenceKey); configurationChanged()
-    }
-    func configurationChanged() {
-        generation &+= 1
-        for action in observers.values { action() }
-    }
-    func observe(_ action: @escaping () -> Void) -> UUID {
-        let id = UUID(); observers[id] = action; return id
-    }
-    func removeObserver(_ id: UUID) { observers.removeValue(forKey: id) }
+    func configurationChanged() { generation &+= 1 }
 }

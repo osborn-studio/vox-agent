@@ -358,8 +358,6 @@ final class AppState {
         set { UserDefaults.standard.set(newValue, forKey: "tf_hasCompletedSetup") }
     }
 
-    let messageTranslations = MessageTranslationStore()
-
     init() {
         let conversations = FeishuConversationStore()
         feishuConversations = conversations
@@ -371,14 +369,8 @@ final class AppState {
         let account = feishuAccount
         inputBackup.ensureCredential = { [weak account] in await account?.ensureSession() ?? false }
         let timeline = feishuAccount.timeline
-        let translations = messageTranslations
-        TranslationSourceLifecycle.connect(translations, timeline: timeline, outbox: outbox)
-        var translationSelection = conversations.selection
         conversations.onNavigationChange = { [weak conversations, weak outbox, weak timeline] in
             guard let conversations else { return }
-            if translationSelection != conversations.selection {
-                translations.clear(); translationSelection = conversations.selection
-            }
             let selected = conversations.conversations.first { conversations.selection == .feishu($0.id) }
             outbox?.select(selected)
             timeline?.select(selected?.id)
@@ -555,5 +547,6 @@ extension Notification.Name {
     static let selectMode = Notification.Name("VoxLogSelectMode")
     static let navigateToVocabulary = Notification.Name("VoxLogNavigateToVocabulary")
     static let navigateToAbout = Notification.Name("VoxLogNavigateToAbout")
+    static let navigateToModels = Notification.Name("VoxLogNavigateToModels")
     static let focusPermissionApproval = Notification.Name("VoxAgentFocusPermissionApproval")
 }

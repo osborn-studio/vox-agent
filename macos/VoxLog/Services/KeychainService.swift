@@ -42,6 +42,13 @@ enum KeychainService {
         }
         return (values["model"] ?? L("尚未配置", "Not configured"), parts?.string ?? L("无效地址", "Invalid endpoint"))
     }
+    /// Whether a model name is saved for the provider. Reads the plaintext
+    /// store only, so it is cheap enough for a view body and never touches
+    /// the secure keychain items.
+    static func llmModelConfigured(for provider: LLMProvider) -> Bool {
+        let values = loadAll()[llmStorageKey(for: provider)] as? [String: String] ?? [:]
+        return !(values["model"] ?? "").isEmpty
+    }
     private static var cachedCredentials: [String: Any]?
     private static var keychainServicePrefix = "com.voxlog"
     private static var appSupportDirectoryOverride: URL?

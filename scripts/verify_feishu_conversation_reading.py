@@ -15,6 +15,7 @@ stubs = """import Foundation
 func L(_ zh: String, _ en: String) -> String { en }
 enum KeychainService {
  static func load(key: String) -> String? { fatalError("real credential read") }
+ static func loadScalarWithoutInteraction(key: String) -> String? { fatalError("real credential read") }
  static func save(key: String, value: String) throws { fatalError("real credential write") }
  static func delete(key: String) -> Bool { fatalError("real credential delete") }
 }

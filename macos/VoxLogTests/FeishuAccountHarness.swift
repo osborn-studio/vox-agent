@@ -26,6 +26,7 @@ import Foundation
     var renewable = false
     var lifetime: Double = 3600
     var renewStatus = 200
+    var renewBody: String?
     var meStatus = 200
     var suppressed = false
     var expiryOffset: Double = 0
@@ -48,7 +49,7 @@ import Foundation
             case "begin": return (Data(#"{"requestId":"r","pollSecret":"p","browserURL":"https://fixture.test/v1/auth/feishu/browser"}"#.utf8), 200)
             case "messages" where self.messagesPrincipalRequired: return (Data(#"{"detail":"FEISHU_PRINCIPAL_REQUIRED"}"#.utf8), 403)
             case "me": return (Data(self.result.utf8), self.meStatus)
-            case "renew": return (Data(self.result.utf8), self.renewStatus)
+            case "renew": return (Data((self.renewBody ?? self.result).utf8), self.renewStatus)
             case "link-previous": return (Data(#"{"sameIdentity":true}"#.utf8), 200)
             case "poll": return (Data("{\"status\":\"ready\",\"profile\":\(self.profile)}".utf8), 200)
             case "conversations": return (Data(self.discovery.utf8), self.discoveryStatus)
@@ -301,6 +302,64 @@ import Foundation
             }
             precondition(a.profile != nil && f.credential == credential)
             precondition(f.requests.filter { $0 == "renew" }.count == 1)
+        }
+        // Renewal failures map the server's detail code and HTTP status to fixed
+        // status lines plus a last-renewal record; raw server text never reaches the UI.
+        do {
+            let cases: [(Int, String, FeishuRenewalOutcome, String, Bool)] = [
+                (503, "MEMBERSHIP_CHECK_UNAVAILABLE", .membershipCheckUnavailable, "membership", true),
+                (503, "PRIVATE UPSTREAM BODY xyz", .serverUnavailable, "unavailable", true),
+                (429, "RENEWAL_RATE_LIMIT", .rateLimited, "too frequent", true),
+                (409, "RENEWAL_IN_PROGRESS", .inProgress, "in progress", true),
+                (500, "", .serverError, "server error", true),
+                (401, "SESSION_EXPIRED", .sessionExpired, "expired", false),
+                (401, "ACCOUNT_DISABLED", .accountDisabled, "disabled", false),
+            ]
+            for (code, detail, outcome, phrase, retained) in cases {
+                let f = Fixture(); let (a, _) = try f.make()
+                f.profile = #"{"name":"Alice","tenantKey":"team","openId":"ou_alice","appId":"cli_test","userId":"alice","orgId":"org"}"#
+                f.renewable = true; f.lifetime = 100
+                await f.candidate(a); await a.confirm(backup: backup)
+                precondition(a.profile != nil && a.lastRenewal == nil && a.lastRenewalLine == nil)
+                precondition(a.sessionExpiresAt.map { abs($0.timeIntervalSinceNow - 100) < 5 } == true)
+                precondition(a.sessionValidityLine?.contains("valid until") == true)
+                let before = Date()
+                f.renewStatus = code; f.renewBody = "{\"detail\":\"\(detail)\"}"
+                let valid = await a.ensureSession()
+                precondition(f.requests.filter { $0 == "renew" }.count == 1)
+                let report = a.lastRenewal!
+                precondition(report.outcome == outcome && report.at >= before, "\(code) \(detail): \(report.outcome)")
+                precondition(a.status.localizedCaseInsensitiveContains(phrase), "\(outcome): \(a.status)")
+                precondition(!a.status.contains("xyz") && (detail.isEmpty || !a.status.contains(detail)))
+                precondition(a.lastRenewalLine?.contains(outcome.rawValue) == true && a.lastRenewalLine?.contains("xyz") == false)
+                if retained {
+                    precondition(valid && a.profile != nil && f.credential != nil && a.sessionExpiresAt != nil)
+                } else {
+                    precondition(!valid && a.profile == nil && f.credential == nil && a.sessionExpiresAt == nil && a.sessionValidityLine == nil)
+                }
+            }
+        }
+        // A successful renewal records its time and code; restore reports a renewal
+        // failure even when the old access token still works.
+        do {
+            let f = Fixture(); let (a, _) = try f.make()
+            f.profile = #"{"name":"Alice","tenantKey":"team","openId":"ou_alice","appId":"cli_test","userId":"alice","orgId":"org"}"#
+            f.renewable = true; f.lifetime = 100
+            await f.candidate(a); await a.confirm(backup: backup)
+            f.lifetime = 3600
+            let renewedNow = await a.ensureSession()
+            precondition(renewedNow && a.lastRenewal?.outcome == .renewed)
+            precondition(a.lastRenewalLine?.contains("RENEWED") == true && a.sessionExpiresAt!.timeIntervalSinceNow > 3000)
+            let fresh = FeishuAccountClient(conversations: FeishuConversationStore(), endpoint: "https://fixture.test", effects: f.effects())
+            f.renewStatus = 503; f.renewBody = #"{"detail":"MEMBERSHIP_CHECK_UNAVAILABLE"}"#
+            await fresh.restore()
+            precondition(fresh.profile != nil && fresh.lastRenewal?.outcome == .membershipCheckUnavailable)
+            precondition(fresh.status.localizedCaseInsensitiveContains("membership") && fresh.sessionValidityLine != nil)
+            let gone = FeishuAccountClient(conversations: FeishuConversationStore(), endpoint: "https://fixture.test", effects: f.effects())
+            f.renewStatus = 401; f.renewBody = #"{"detail":"ACCOUNT_DISABLED"}"#
+            await gone.restore()
+            precondition(gone.profile == nil && f.credential == nil && gone.lastRenewal?.outcome == .accountDisabled)
+            precondition(gone.status.localizedCaseInsensitiveContains("disabled"))
         }
         print("PASS: production AccountClient lifecycle (offline injected effects; standalone, not XCTest)")
     }

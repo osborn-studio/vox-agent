@@ -5,10 +5,6 @@ struct FeishuTimeline: View {
     @Bindable var model: FeishuTimelineModel
     let account: FeishuAccountClient
     let conversation: String
-    var translationContent: (FeishuReadItem) -> AnyView = { _ in AnyView(EmptyView()) }
-    var translationActions: (FeishuReadItem) -> AnyView = { _ in AnyView(EmptyView()) }
-
-    @State private var visibleTranslationAnchor: String?
 
     private var modeLabel: String {
         switch model.mode {
@@ -53,21 +49,20 @@ struct FeishuTimeline: View {
                                 HStack {
                                     Text(author(item)).font(.caption).foregroundStyle(.secondary)
                                     Spacer(minLength: TF.spacingSM)
-                                    translationActions(item)
+                                    if !item.deleted, !item.placeholder, let text = item.text {
+                                        CopyOriginalButton(text: text)
+                                    }
                                 }
                                 if item.deleted { Label(L("消息已撤回", "Message withdrawn"), systemImage: "minus.circle") }
                                 else if item.placeholder { Label(L("非纯文字内容，请在飞书查看", "Non-text content; view in Feishu"), systemImage: "doc") }
                                 else { Text(item.text ?? "").textSelection(.enabled) }
-                                translationContent(item)
                                 if item.source == "submission" { Text(L("原始提交", "Original submission")).font(.caption).foregroundStyle(.secondary) }
                                 else if item.updated { Text(L("已编辑", "Edited")).font(.caption).foregroundStyle(.secondary) }
                             }
                         }
                     }
                 }
-                .scrollTargetLayout()
             }
-            .scrollPosition(id: $visibleTranslationAnchor, anchor: .top)
         }
         .background(FeishuWindowVisibility(model: model, account: account, conversation: conversation).frame(width: 0, height: 0))
     }

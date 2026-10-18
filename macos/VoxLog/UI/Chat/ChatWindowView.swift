@@ -37,12 +37,7 @@ struct ChatWindowView: View {
     @State private var selectedWorkspace = MissionControlNavigation.initialWorkspace()
     @State private var agents: [Agent] = Agent.defaults
     @State private var messageCounts: [String: Int] = [:]
-    @State private var visibleTranslationAnchor: String?
-    @State private var translationDataset = LocalTranslationDataset()
-    private var messages: [VoiceMessage] {
-        get { translationDataset.messages }
-        nonmutating set { translationDataset.refresh(newValue) }
-    }
+    @State private var messages: [VoiceMessage] = []
     @State private var textInput = ""
     @State private var localDrafts: [String: String] = [:]
     @State private var draftProjects: [String: ContextProjectDraft] = [:]
@@ -66,10 +61,7 @@ struct ChatWindowView: View {
     @State private var newAgentEmoji = "🤖"
     @State private var allTasks: [VoxTask] = []
     @State private var activeTasks: [VoxTask] = []
-    private var agentMessages: [AgentChatMessage] {
-        get { translationDataset.agentMessages }
-        nonmutating set { translationDataset.agentMessages = newValue }
-    }
+    @State private var agentMessages: [AgentChatMessage] = []
     @State private var engineMessageTimer: Timer?
     @State private var isLeftSidebarCollapsed = false
     @State private var isInspectorCollapsed = false
@@ -94,9 +86,7 @@ struct ChatWindowView: View {
         .safeAreaInset(edge: .bottom) { FeishuDraftRecoveryView(outbox: appState.feishuOutbox, account: appState.feishuAccount) }
         .frame(minWidth: windowMinWidth, minHeight: 620)
         .background(TF.appBackground)
-        .background(TranslationWindowVisibility(store: appState.messageTranslations).frame(width: 0, height: 0))
         .task {
-            translationDataset.translations = appState.messageTranslations
             await loadData()
             isNavigationReady = true
             consumePendingApprovalFocus()
@@ -409,34 +399,15 @@ struct ChatWindowView: View {
                                     help: L("操作台", "Operations")) { isInspectorCollapsed.toggle() }
             }
             if case .feishu(let id) = selection {
-                FeishuTimeline(model: appState.feishuAccount.timeline, account: appState.feishuAccount, conversation: id,
-                    translationContent: { AnyView(feishuTranslationActions($0).resultBlock) },
-                    translationActions: { AnyView(feishuTranslationActions($0)) })
+                FeishuTimeline(model: appState.feishuAccount.timeline, account: appState.feishuAccount, conversation: id)
             }
             FeishuTextComposer(outbox: appState.feishuOutbox, account: appState.feishuAccount,
-                translationContent: { AnyView(originalTranslationActions($0).resultBlock) },
-                translationActions: { AnyView(originalTranslationActions($0)) },
                 voiceControls: { AnyView(FeishuVoiceDraftControls(appState: appState)) })
 
         }
         .padding(TF.spacingLG)
         .frame(maxWidth: ChatLayoutMetrics.conversationContentMaxWidth, maxHeight: .infinity, alignment: .topLeading)
         .frame(minWidth: ChatLayoutMetrics.conversationMinWidth, maxWidth: .infinity)
-    }
-
-    private func feishuTranslationActions(_ item: FeishuReadItem) -> MessageTextActions {
-        MessageTextActions(store: appState.messageTranslations, current: { [weak timeline = appState.feishuAccount.timeline, id = item.id] in timeline?.translationSource(id) })
-    }
-    private func originalTranslationActions(_ record: FeishuPendingText) -> MessageTextActions {
-        MessageTextActions(store: appState.messageTranslations, current: { [weak outbox = appState.feishuOutbox, weak timeline = appState.feishuAccount.timeline, id = record.eventId] in
-            guard let timeline else { return nil }; return outbox?.translationSource(id, timeline: timeline)
-        })
-    }
-    private func localTranslationActions(_ id: String) -> MessageTextActions {
-        MessageTextActions(store: appState.messageTranslations, current: { [weak translationDataset] in translationDataset?.source(local: id) }, showsOriginalCopy: false)
-    }
-    private func agentTranslationActions(_ id: UUID) -> MessageTextActions {
-        MessageTextActions(store: appState.messageTranslations, current: { [weak translationDataset] in translationDataset?.source(agent: id) })
     }
 
     private var conversationPane: some View {
@@ -518,7 +489,6 @@ struct ChatWindowView: View {
                     .frame(maxWidth: ChatLayoutMetrics.conversationContentMaxWidth)
                     .frame(maxWidth: .infinity, alignment: .center)
                 }
-                .scrollPosition(id: $visibleTranslationAnchor, anchor: .top)
                 .padding(.horizontal, ChatLayoutMetrics.conversationContentHorizontalInset)
                 .padding(.vertical, 12)
                 .padding(.bottom, 42)
@@ -639,9 +609,7 @@ struct ChatWindowView: View {
                 onCreateTask: { message, targetAgent in
                     createTask(from: message, assignTo: targetAgent)
                 },
-                onRecall: recallMessage,
-                translationContent: AnyView(localTranslationActions(message.id).resultBlock),
-                translationActions: AnyView(localTranslationActions(message.id))
+                onRecall: recallMessage
             )
             if selection.isBackupGroup, let state = deliveryStates[message.id] {
                 HStack(spacing: TF.spacingSM) {
@@ -674,9 +642,7 @@ struct ChatWindowView: View {
             AgentTimelineTurn(
                 message: message,
                 agentEmoji: agentInfo?.emoji ?? "🤖",
-                agentName: agentInfo?.name ?? message.agentId,
-                translationContent: AnyView(agentTranslationActions(message.id).resultBlock),
-                translationActions: AnyView(agentTranslationActions(message.id))
+                agentName: agentInfo?.name ?? message.agentId
             )
         case .permission(let approval):
             if let engine {
@@ -990,7 +956,7 @@ struct ChatWindowView: View {
 
     private func recallMessage(_ msg: VoiceMessage) {
         guard msg.canRecall else { return }
-        translationDataset.messages.removeAll { $0.id == msg.id }
+        messages.removeAll { $0.id == msg.id }
         Task {
             await historyStore.delete(id: msg.id)
             await loadMessages()

@@ -1,0 +1,107 @@
+# Pull-request and main-branch verification on GitHub-hosted runners only.
+#
+# Restored on 2026-10-18 from the archived source definition in
+# .github/source-workflows/test-engine.yml.txt, trimmed to the jobs that run
+# on the public source snapshot without private infrastructure:
+#   python-lint, python-test, swift-build.
+# Self-hosted runners are deliberately not referenced here. This is a public
+# repository: a self-hosted runner reachable from pull_request events would
+# execute fork code on the owner's machines. Main-branch isolated runners can
+# be added later behind repository variables, as the archived file shows.
+name: Verify
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Cancel superseded runs on the same ref to save CI minutes.
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  python-lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install ruff
+        run: python -m pip install ruff==0.15.22
+
+      - name: Ruff lint
+        run: python -m ruff check .
+
+  python-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install package and dev dependencies
+        run: python -m pip install -e ".[dev,mcp]"
+
+      - name: Run Python tests
+        # The Claude CLI end-to-end test requires an authenticated external service.
+        # Every deterministic unit, contract, org-collab, voice-memory, and retry
+        # test runs here.
+        # The three deselected tests read files that the public source snapshot
+        # deliberately omits (private product plans, the release benchmark
+        # corpus, the private README wording); see SOURCE_SNAPSHOT.md.
+        run: >-
+          python -m pytest tests
+          --ignore=tests/test_engine_e2e_claude.py
+          --deselect tests/test_instruction_contract.py::test_claude_records_intentional_asymmetry_and_design_contract
+          --deselect tests/test_mobile_release_readiness.py::test_product_decisions_name_required_release_dimensions
+          --deselect tests/test_translation_benchmark.py::test_release_corpus_covers_each_chinese_japanese_english_direction
+          -W error::DeprecationWarning
+          -q --tb=short
+
+      - name: Verify standalone model archive and small App boundaries
+        run: python -m pytest scripts/test_package_model_media.py scripts/test_small_app_bundle.py scripts/test_app_equivalence.py scripts/test_split_model_media.py scripts/test_render_split_media_dmg.py scripts/test_write_app_model_catalog.py scripts/test_prepare_common_asr_app.py -q --tb=short
+
+  swift-build:
+    # macOS 26 image: Package.swift needs swift-tools-version 6.2 (Xcode 26).
+    runs-on: macos-26
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: Swift tests
+        working-directory: macos
+        run: swift test -Xswiftc -warnings-as-errors
+
+      - name: Swift release build
+        working-directory: macos
+        run: swift build -c release -Xswiftc -warnings-as-errors

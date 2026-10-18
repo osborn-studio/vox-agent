@@ -1,4 +1,5 @@
-"""Offline production Swift regression harness; never launches UI or reads credentials."""
+"""Offline production Swift regression harness for the translation protocol, transport,
+protection, configuration snapshot and composer direction; never launches UI or reads credentials."""
 
 import argparse
 from pathlib import Path
@@ -19,30 +20,15 @@ enum KeychainService {
  static func loadLLMCredentials(for p: LLMProvider) -> [String: String]? { fatalError("real credential read") }
  static func llmDisplayConfiguration(for p: LLMProvider) -> (model: String, endpoint: String) { ("synthetic", "https://fixture.test/v1") }
  static func load(key: String) -> String? { fatalError("real credential read") }
+ static func loadScalarWithoutInteraction(key: String) -> String? { fatalError("real credential read") }
  static func save(key: String, value: String) throws { fatalError("real credential write") }
  static func delete(key: String) -> Bool { fatalError("real credential delete") }
 }
-@MainActor enum LoginSession {
- static func resetLogin() { fatalError("uninjected login reset") }
- static func completeFeishuLogin(orgID: String, name: String) { fatalError("uninjected login completion") }
-}
 """)
 sources = [
-    "Services/InputBackupClient.swift",
-    "Services/FeishuAccountClient.swift",
-    "Services/FeishuConversationStore.swift",
-    "Services/FeishuConversationOutbox.swift",
-    "Services/FeishuTimelineModel.swift",
-    "UI/Chat/SidebarSelection.swift",
-    "Services/AgentChatMessage.swift",
-    "Services/VoiceMessage.swift",
     "LLM/LLMProvider.swift",
     "ASR/SpeechRecognizer.swift",
     "ASR/ASRProvider.swift",
-    "UI/DesignSystem.swift",
-    "UI/Chat/ChatLayoutMetrics.swift",
-    "UI/Chat/FeishuTimeline.swift",
-    "UI/Chat/FeishuTextComposer.swift",
 ]
 subprocess.run(
     [

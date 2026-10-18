@@ -1,6 +1,11 @@
 import SwiftUI
 import AppKit
 
+/// Conversation composer. Layout follows a two-row pattern: the text area on
+/// top grows upward with its content (Shift+Return adds lines) until
+/// `ChatLayoutMetrics.inputMaxHeight`, then scrolls; the control row below
+/// holds Translate on the left and the Polish model badge, mic and send on
+/// the right. Capture is owned by the shared `RecognitionSession`.
 struct ChatInputBar: View {
 
     @Environment(AppState.self) private var appState
@@ -20,7 +25,19 @@ struct ChatInputBar: View {
     @State private var firstTranscriptLatency: TimeInterval?
     @State private var fixedWordCount = 0
     @State private var voiceError: String?
+    /// The current draft has already been through Polish (or translation) and
+    /// is sent as is. Cleared whenever the draft is emptied or restored.
     @State private var hasPolished = false
+    @State private var isPolishing = false
+    /// Inline reason the last Polish attempt failed. The draft is kept; the
+    /// user retries with Send or sends the original explicitly.
+    @State private var polishFailure: String?
+    @State private var isTranslating = false
+    @State private var translationTask: Task<Void, Never>?
+    /// Draft text before the last translation, for one-click restore.
+    @State private var translationOriginal: String?
+    @State private var translationNote: String?
+    @State private var measuredTextHeight: CGFloat = ChatLayoutMetrics.inputTextMinHeight
     @State private var inputRenderID = UUID()
     @State private var inputGeneration = UUID()
 
@@ -39,50 +56,41 @@ struct ChatInputBar: View {
         .onChange(of: appState.barPhase) {
             syncPhaseFromAppState()
         }
+        .onChange(of: textInput) {
+            draftDidChange()
+        }
         .onDisappear {
             inputGeneration = UUID()
+            translationTask?.cancel()
+            translationTask = nil
             if isCapturing || voiceState.stage == .processing {
                 handleEscape()
             }
         }
     }
 
+    // MARK: - Layout
+
     private func composerBody(width: CGFloat) -> some View {
-        ZStack(alignment: .bottomTrailing) {
-            VStack(alignment: .leading, spacing: 0) {
-                if isVoiceExpanded {
-                    voiceHeader
-                        .padding(.horizontal, TF.spacingMD)
-                        .padding(.top, TF.spacingSM)
-                }
-
-                inputSurface
+        VStack(alignment: .leading, spacing: 0) {
+            if isVoiceExpanded {
+                voiceHeader
+                    .padding(.horizontal, TF.spacingMD)
+                    .frame(height: ChatLayoutMetrics.voiceHeaderHeight)
             }
-            .frame(height: composerHeight)
-            .frame(minWidth: 0, maxWidth: .infinity)
-            .background(RoundedRectangle(cornerRadius: TF.cornerLG).fill(TF.surfaceRaised))
-            .overlay(
-                RoundedRectangle(cornerRadius: TF.cornerLG)
-                    .stroke(isCapturing ? TF.amber.opacity(0.55) : TF.line, lineWidth: isCapturing ? 1.5 : 1)
-            )
 
-            HStack(spacing: 6) {
-                micButton
+            inputSurface
+                .frame(height: textAreaHeight)
 
-                composerIconButton(
-                    systemImage: "arrow.up",
-                    fill: canSend ? TF.accent : Color.secondary.opacity(0.2),
-                    foreground: canSend ? .white : .secondary,
-                    help: L("发送", "Send"),
-                    disabled: !canSend,
-                    action: handleSend
-                )
-            }
-            .fixedSize()
-            .layoutPriority(10)
-            .padding(.trailing, 10)
-            .padding(.bottom, 10)
+            composerToolbar
         }
+        .frame(height: composerHeight)
+        .frame(minWidth: 0, maxWidth: .infinity)
+        .background(RoundedRectangle(cornerRadius: TF.cornerLG).fill(TF.surfaceRaised))
+        .overlay(
+            RoundedRectangle(cornerRadius: TF.cornerLG)
+                .stroke(isCapturing ? TF.amber.opacity(0.55) : TF.line, lineWidth: isCapturing ? 1.5 : 1)
+        )
         .frame(width: width)
     }
 
@@ -91,28 +99,74 @@ struct ChatInputBar: View {
             ChatInputTextView(
                 text: $textInput,
                 fontSize: voiceState.stage == .finalized ? 13 : ChatLayoutMetrics.inputFontSize,
-                isEditable: voiceState.stage == .idle || voiceState.stage == .finalized,
+                isEditable: isEditable,
                 textColor: voiceState.stage == .processing ? .tertiaryLabelColor : .labelColor,
                 onSubmit: handleSend,
-                onEscape: handleEscape
+                onEscape: handleEscape,
+                onContentHeightChange: { height in
+                    if abs(measuredTextHeight - height) > 0.5 {
+                        measuredTextHeight = height
+                    }
+                }
             )
             .id(inputRenderID)
-            .opacity(voiceState.stage == .processing ? 0.45 : 1)
-            .padding(.trailing, ChatLayoutMetrics.inputButtonReserveWidth)
+            .opacity(voiceState.stage == .processing || isTranslating || isPolishing ? 0.45 : 1)
 
             if textInput.isEmpty {
                 Text(inputPlaceholder)
                     .font(.system(size: ChatLayoutMetrics.inputFontSize))
                     .foregroundStyle(.secondary)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .padding(.trailing, ChatLayoutMetrics.inputButtonReserveWidth)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
                     .allowsHitTesting(false)
             }
-
-
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// Bottom row: Translate (left) · status note · model badge, mic, send (right).
+    private var composerToolbar: some View {
+        HStack(spacing: TF.spacingSM) {
+            translateControls
+
+            if let note = toolbarNote {
+                Text(note)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
+
+            if polishFailure != nil {
+                Button(L("直接发送原文", "Send as typed"), action: sendUnpolished)
+                    .buttonStyle(.plain)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(TF.accent)
+                    .help(L("跳过润色，按当前文字发送", "Skip Polish and send the current text"))
+            }
+
+            Spacer(minLength: TF.spacingSM)
+
+            providerBadge
+
+            HStack(spacing: 6) {
+                micButton
+
+                composerIconButton(
+                    systemImage: "arrow.up",
+                    fill: canSend ? TF.accent : Color.secondary.opacity(0.2),
+                    foreground: canSend ? .white : .secondary,
+                    help: sendHelp,
+                    disabled: !canSend,
+                    action: handleSend
+                )
+            }
+            .fixedSize()
+            .layoutPriority(10)
+        }
+        .frame(height: ChatLayoutMetrics.inputToolbarHeight)
+        .padding(.leading, TF.spacingMD)
+        .padding(.trailing, 10)
     }
 
     private var voiceHeader: some View {
@@ -149,13 +203,157 @@ struct ChatInputBar: View {
         ))
     }
 
+    // MARK: - Translate
+
+    @ViewBuilder private var translateControls: some View {
+        Button(action: translateDraft) {
+            Label(
+                isTranslating ? L("翻译中…", "Translating…") : L("翻译", "Translate"),
+                systemImage: "character.bubble"
+            )
+            .labelStyle(.titleAndIcon)
+            .font(.system(size: 12, weight: .medium))
+            .foregroundStyle(canTranslate || isTranslating ? Color.primary : Color.secondary)
+            .padding(.horizontal, TF.spacingSM)
+            .frame(height: 26)
+            .background(RoundedRectangle(cornerRadius: TF.cornerSM).fill(TF.surface))
+            .overlay(RoundedRectangle(cornerRadius: TF.cornerSM).stroke(TF.line))
+        }
+        .buttonStyle(.plain)
+        .disabled(!canTranslate)
+        .help(translateHelp)
+        .accessibilityLabel(L("翻译草稿", "Translate draft"))
+        .accessibilityHint(translateHelp)
+
+        if isTranslating {
+            Button(L("取消", "Cancel"), action: cancelTranslation)
+                .buttonStyle(.plain)
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+        } else if translationOriginal != nil {
+            Button(action: restoreTranslation) {
+                Label(L("还原", "Restore"), systemImage: "arrow.uturn.backward")
+                    .labelStyle(.titleAndIcon)
+            }
+            .buttonStyle(.plain)
+            .font(.system(size: 11))
+            .foregroundStyle(.secondary)
+            .help(L("恢复翻译前的原文", "Restore the text before translation"))
+        }
+    }
+
+    private var translateHelp: String {
+        let target = ComposerTranslationDirection.target(for: textInput)
+        return L(
+            "用 Polish 模型将草稿翻译为\(target.label)；译文留在对话框，发送时不再润色",
+            "Translate the draft to \(target.label) with the Polish model; the result stays here and is sent without polish"
+        )
+    }
+
+    private var canTranslate: Bool {
+        hasText && !isTranslating && !isPolishing
+            && (voiceState.stage == .idle || voiceState.stage == .finalized)
+    }
+
+    private func translateDraft() {
+        guard canTranslate else { return }
+        let original = textInput
+        let generation = inputGeneration
+        isTranslating = true
+        translationNote = nil
+        polishFailure = nil
+        translationTask?.cancel()
+        translationTask = Task { @MainActor in
+            defer { isTranslating = false }
+            do {
+                let result = try await ComposerTranslator.translate(original)
+                guard !Task.isCancelled, inputGeneration == generation, textInput == original else { return }
+                if result.unchanged {
+                    translationNote = L("译文与原文相同，未改动", "Translation matches the original; nothing changed")
+                    return
+                }
+                translationOriginal = original
+                textInput = result.text
+                hasPolished = true
+                translationNote = L(
+                    "已翻译为\(result.target.label) · 发送时不再润色",
+                    "Translated to \(result.target.label) · sent without polish"
+                )
+            } catch is CancellationError {
+                guard inputGeneration == generation else { return }
+                translationNote = TranslationFailure.cancelled.message
+            } catch {
+                guard inputGeneration == generation else { return }
+                translationNote = (error as? TranslationFailure)?.message ?? TranslationFailure.network.message
+            }
+        }
+    }
+
+    private func cancelTranslation() {
+        translationTask?.cancel()
+    }
+
+    private func restoreTranslation() {
+        guard let original = translationOriginal else { return }
+        translationOriginal = nil
+        translationNote = nil
+        hasPolished = false
+        textInput = original
+    }
+
+    // MARK: - Model badge
+
+    /// Shows which provider and model Polish and Translate share. Clicking
+    /// opens the Models settings tab. Re-reads when the saved LLM config changes.
+    @ViewBuilder private var providerBadge: some View {
+        let _ = TranslationSettings.shared.generation
+        let provider = KeychainService.selectedLLMProvider
+        let name = provider == .ollama ? "Ollama" : provider.displayName
+        let config = KeychainService.llmDisplayConfiguration(for: provider)
+        let configured = KeychainService.llmModelConfigured(for: provider)
+        Button(action: openModelSettings) {
+            HStack(spacing: 4) {
+                Image(systemName: configured ? "cpu" : "exclamationmark.circle")
+                    .font(.system(size: 10, weight: .semibold))
+                Text(configured ? "\(name) · \(config.model)" : L("未配置 Polish 模型", "No Polish model"))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 8, weight: .semibold))
+            }
+            .font(.system(size: 11))
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, TF.spacingSM)
+            .frame(height: 26)
+        }
+        .buttonStyle(.plain)
+        .frame(maxWidth: 220)
+        .layoutPriority(5)
+        .help(configured
+            ? L("Polish 与翻译共用此模型 · \(config.endpoint)", "Polish and Translate share this model · \(config.endpoint)")
+            : L("在设置 › 模型配置中填写 LLM 文本处理", "Configure LLM text processing in Settings › Models"))
+        .accessibilityLabel(configured
+            ? L("Polish 模型 \(name) \(config.model)，打开模型设置", "Polish model \(name) \(config.model), open model settings")
+            : L("Polish 模型未配置，打开模型设置", "Polish model not configured, open model settings"))
+    }
+
+    private func openModelSettings() {
+        AppDelegate.openSettingsAction?()
+        NSApp.activate(ignoringOtherApps: true)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            NotificationCenter.default.post(name: .navigateToModels, object: nil)
+        }
+    }
+
+    // MARK: - Mic and buttons
+
     private var micButton: some View {
         composerIconButton(
             systemImage: micSystemImage,
             fill: micFill,
             foreground: isCapturing ? .white : .primary,
             help: micHelp,
-            disabled: voiceState.stage == .processing,
+            disabled: voiceState.stage == .processing || isTranslating || isPolishing,
             action: micTapped
         )
         .overlay {
@@ -187,12 +385,25 @@ struct ChatInputBar: View {
         .help(help)
     }
 
+    // MARK: - Derived state
+
     private var hasText: Bool {
         !textInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
+    private var isEditable: Bool {
+        (voiceState.stage == .idle || voiceState.stage == .finalized) && !isTranslating && !isPolishing
+    }
+
     private var canSend: Bool {
-        hasText && (voiceState.stage == .idle || voiceState.stage == .finalized)
+        hasText && !isTranslating && !isPolishing
+            && (voiceState.stage == .idle || voiceState.stage == .finalized)
+    }
+
+    private var sendHelp: String {
+        if isPolishing { return L("润色中", "Polishing") }
+        if hasPolished || voiceState.stage == .finalized { return L("发送", "Send") }
+        return L("润色后发送", "Polish, then send")
     }
 
     private var isCapturing: Bool {
@@ -203,11 +414,37 @@ struct ChatInputBar: View {
         voiceState.stage != .idle || voiceError != nil
     }
 
-    private var composerHeight: CGFloat {
-        isVoiceExpanded
-            ? ChatLayoutMetrics.voiceInputExpandedHeight
-            : ChatLayoutMetrics.inputRestHeight
+    private var textAreaHeight: CGFloat {
+        min(max(measuredTextHeight, ChatLayoutMetrics.inputTextMinHeight), ChatLayoutMetrics.inputMaxHeight)
     }
+
+    private var composerHeight: CGFloat {
+        textAreaHeight
+            + ChatLayoutMetrics.inputToolbarHeight
+            + (isVoiceExpanded ? ChatLayoutMetrics.voiceHeaderHeight : 0)
+    }
+
+    private var toolbarNote: String? {
+        if isPolishing { return L("润色中…", "Polishing…") }
+        if let polishFailure { return polishFailure }
+        return translationNote
+    }
+
+    /// Any edit clears a stale Polish failure. Emptying the draft ends a
+    /// finalized voice turn and forgets translation/polish state, so the next
+    /// typed draft is polished again.
+    private func draftDidChange() {
+        polishFailure = nil
+        guard textInput.isEmpty else { return }
+        if voiceState.stage == .finalized {
+            voiceState.reset()
+        }
+        hasPolished = false
+        translationOriginal = nil
+        translationNote = nil
+    }
+
+    // MARK: - Voice capture
 
     private func micTapped() {
         switch voiceState.stage {
@@ -231,6 +468,8 @@ struct ChatInputBar: View {
         fixedWordCount = 0
         voiceError = nil
         hasPolished = false
+        polishFailure = nil
+        translationNote = nil
         ownsVoiceSession = true
         inputGeneration = UUID()
         let generation = inputGeneration
@@ -284,6 +523,8 @@ struct ChatInputBar: View {
         }
     }
 
+    // MARK: - Send and Polish
+
     private func handleSend() {
         switch voiceState.stage {
         case .listening, .counting:
@@ -296,22 +537,41 @@ struct ChatInputBar: View {
         }
 
         guard hasText else { return }
+        guard !isTranslating, !isPolishing else { return }
         if voiceState.stage == .finalized || hasPolished {
             sendCurrentText()
             return
         }
 
         let generation = inputGeneration
+        isPolishing = true
+        polishFailure = nil
         Task { @MainActor in
+            defer { isPolishing = false }
             guard inputGeneration == generation else { return }
             let corrected = SnippetStorage.applyEffective(to: textInput)
             if corrected != textInput {
                 textInput = corrected
             }
-            guard await polishInPlace() else { return }
+            let outcome = await polishInPlace()
             guard !Task.isCancelled, inputGeneration == generation else { return }
-            sendCurrentText()
+            switch outcome {
+            case .ready:
+                sendCurrentText()
+            case .failed(let reason):
+                polishFailure = reason
+            case .stale:
+                break
+            }
         }
+    }
+
+    /// Explicit bypass after a Polish failure: the user chose to send the
+    /// draft as typed. Never taken silently.
+    private func sendUnpolished() {
+        polishFailure = nil
+        hasPolished = true
+        sendCurrentText()
     }
 
     private func sendCurrentText() {
@@ -328,6 +588,14 @@ struct ChatInputBar: View {
         fixedWordCount = 0
         voiceError = nil
         hasPolished = false
+        isPolishing = false
+        polishFailure = nil
+        translationTask?.cancel()
+        translationTask = nil
+        isTranslating = false
+        translationOriginal = nil
+        translationNote = nil
+        measuredTextHeight = ChatLayoutMetrics.inputTextMinHeight
         inputRenderID = UUID()
         inputGeneration = UUID()
         voiceState.reset()
@@ -353,6 +621,8 @@ struct ChatInputBar: View {
         case .finalized:
             textInput = voiceInputPrefix
             rawTranscript = ""
+            // The restored prefix was never polished; the next send polishes it.
+            hasPolished = false
             voiceState.reset()
             inputRenderID = UUID()
         case .idle:
@@ -453,16 +723,26 @@ struct ChatInputBar: View {
         return prefix + (prefix.last?.isWhitespace == true ? "" : " ") + voiceText
     }
 
-    private func polishInPlace() async -> Bool {
-        let text = await MainActor.run { textInput }
-        let generation = await MainActor.run { inputGeneration }
-        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
-        guard let cfg = KeychainService.loadSelectedLLMConfig() else { return true }
+    private enum PolishOutcome {
+        case ready
+        case failed(String)
+        case stale
+    }
+
+    /// Runs Polish on the typed draft. `.ready` means the draft may be sent
+    /// (polished, or no Polish model is configured). `.failed` keeps the draft
+    /// and reports why, so an outage never sends unpolished text silently.
+    @MainActor
+    private func polishInPlace() async -> PolishOutcome {
+        let text = textInput
+        let generation = inputGeneration
+        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return .stale }
+        guard let cfg = KeychainService.loadSelectedLLMConfig() else { return .ready }
 
         let llmCfg = cfg.toLLMConfig()
         let client = DoubaoChatClient(provider: KeychainService.selectedLLMProvider)
         let prompt: String
-        if let m = await MainActor.run(body: { appState.availableModes.first(where: { !$0.prompt.isEmpty }) }) {
+        if let m = appState.availableModes.first(where: { !$0.prompt.isEmpty }) {
             prompt = m.prompt.replacingOccurrences(of: "{text}", with: text)
         } else {
             prompt = L(
@@ -474,18 +754,33 @@ struct ChatInputBar: View {
         do {
             let result = try await client.process(text: text, prompt: prompt, config: llmCfg)
             let cleaned = result.trimmingCharacters(in: .whitespacesAndNewlines)
-            return await MainActor.run {
-                guard !Task.isCancelled, inputGeneration == generation, textInput == text else { return false }
-                if !cleaned.isEmpty && cleaned != text {
-                    textInput = cleaned
-                    hasPolished = true
-                }
-                return true
+            guard !Task.isCancelled, inputGeneration == generation, textInput == text else { return .stale }
+            if !cleaned.isEmpty && cleaned != text {
+                textInput = cleaned
             }
+            hasPolished = true
+            return .ready
         } catch {
-            return await MainActor.run { !Task.isCancelled && inputGeneration == generation && textInput == text }
+            guard !Task.isCancelled, inputGeneration == generation, textInput == text else { return .stale }
+            return .failed(Self.polishFailureMessage(error))
         }
     }
+
+    private static func polishFailureMessage(_ error: Error) -> String {
+        let detail: String
+        if let llm = error as? LLMError {
+            detail = llm.errorDescription ?? String(describing: llm)
+        } else if let url = error as? URLError {
+            detail = url.code == .timedOut
+                ? L("请求超时", "request timed out")
+                : L("网络错误 \(url.code.rawValue)", "network error \(url.code.rawValue)")
+        } else {
+            detail = error.localizedDescription
+        }
+        return L("润色失败：\(detail) · 再按发送重试", "Polish failed: \(detail) · press Send to retry")
+    }
+
+    // MARK: - Copy
 
     private var inputPlaceholder: String {
         switch voiceState.stage {
@@ -598,6 +893,9 @@ private struct VoiceCountdownRing: View {
     }
 }
 
+/// AppKit text view bridge. Reports its laid-out content height so the
+/// composer can grow upward; programmatic replacements go through the undo
+/// manager when the view is editable, so Restore and ⌘Z both work.
 private struct ChatInputTextView: NSViewRepresentable {
     @Binding var text: String
     let fontSize: CGFloat
@@ -605,11 +903,12 @@ private struct ChatInputTextView: NSViewRepresentable {
     let textColor: NSColor
     let onSubmit: () -> Void
     let onEscape: () -> Void
+    let onContentHeightChange: (CGFloat) -> Void
 
     func makeNSView(context: Context) -> NSScrollView {
         let scrollView = CompressibleTextScrollView()
         scrollView.drawsBackground = false
-        scrollView.hasVerticalScroller = false
+        scrollView.hasVerticalScroller = true
         scrollView.hasHorizontalScroller = false
         scrollView.autohidesScrollers = true
         scrollView.setContentHuggingPriority(.defaultLow, for: .horizontal)
@@ -640,29 +939,74 @@ private struct ChatInputTextView: NSViewRepresentable {
         textView.setContentHuggingPriority(.defaultLow, for: .horizontal)
         textView.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         textView.string = text
+        textView.postsFrameChangedNotifications = true
+
+        context.coordinator.onContentHeightChange = onContentHeightChange
+        context.coordinator.observeFrame(of: textView)
 
         scrollView.documentView = textView
+        DispatchQueue.main.async { [weak textView] in
+            guard let textView else { return }
+            context.coordinator.reportHeight(of: textView)
+        }
         return scrollView
     }
 
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         guard let textView = scrollView.documentView as? SubmitAwareTextView else { return }
+        let coordinator = context.coordinator
+        coordinator.onContentHeightChange = onContentHeightChange
         textView.onSubmit = onSubmit
         textView.onEscape = onEscape
         textView.font = .systemFont(ofSize: fontSize)
         textView.isEditable = isEditable
         textView.textColor = textColor
         if textView.string != text {
-            textView.string = text
+            coordinator.applyingProgrammaticChange = true
+            let whole = NSRange(location: 0, length: (textView.string as NSString).length)
+            if textView.isEditable, textView.shouldChangeText(in: whole, replacementString: text) {
+                textView.replaceCharacters(in: whole, with: text)
+                textView.didChangeText()
+            } else {
+                textView.string = text
+            }
+            coordinator.applyingProgrammaticChange = false
         }
+        DispatchQueue.main.async { [weak textView] in
+            guard let textView else { return }
+            coordinator.reportHeight(of: textView)
+        }
+    }
+
+    static func dismantleNSView(_ scrollView: NSScrollView, coordinator: Coordinator) {
+        coordinator.stopObserving()
     }
 
     func makeCoordinator() -> Coordinator {
         Coordinator(text: $text)
     }
 
+    /// Laid-out height of the text plus the container insets.
+    static func contentHeight(of textView: NSTextView) -> CGFloat {
+        let insets = textView.textContainerInset.height * 2
+        if let layoutManager = textView.textLayoutManager {
+            layoutManager.ensureLayout(for: layoutManager.documentRange)
+            return ceil(layoutManager.usageBoundsForTextContainer.height) + insets
+        }
+        guard let container = textView.textContainer, let layoutManager = textView.layoutManager else {
+            return ChatLayoutMetrics.inputTextMinHeight
+        }
+        layoutManager.ensureLayout(for: container)
+        return ceil(layoutManager.usedRect(for: container).height) + insets
+    }
+
     final class Coordinator: NSObject, NSTextViewDelegate {
         @Binding var text: String
+        var onContentHeightChange: ((CGFloat) -> Void)?
+        /// Set while `updateNSView` replaces the text, so the binding is not
+        /// written back during a SwiftUI update pass.
+        var applyingProgrammaticChange = false
+        private var frameObserver: NSObjectProtocol?
 
         init(text: Binding<String>) {
             _text = text
@@ -670,7 +1014,35 @@ private struct ChatInputTextView: NSViewRepresentable {
 
         func textDidChange(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
-            text = textView.string
+            if !applyingProgrammaticChange {
+                text = textView.string
+                reportHeight(of: textView)
+            }
+        }
+
+        func reportHeight(of textView: NSTextView) {
+            onContentHeightChange?(ChatInputTextView.contentHeight(of: textView))
+        }
+
+        func observeFrame(of textView: NSTextView) {
+            stopObserving()
+            frameObserver = NotificationCenter.default.addObserver(
+                forName: NSView.frameDidChangeNotification,
+                object: textView,
+                queue: .main
+            ) { [weak self, weak textView] _ in
+                guard let self, let textView else { return }
+                MainActor.assumeIsolated {
+                    self.reportHeight(of: textView)
+                }
+            }
+        }
+
+        func stopObserving() {
+            if let frameObserver {
+                NotificationCenter.default.removeObserver(frameObserver)
+            }
+            frameObserver = nil
         }
     }
 }

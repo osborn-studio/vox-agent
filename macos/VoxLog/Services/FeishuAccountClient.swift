@@ -11,7 +11,95 @@ struct FeishuAccountProfile: Codable, Sendable {
     let orgId: String?
 }
 
-private enum FeishuAccountError: Error { case rejected, unavailable, notConfigured, browserUnavailable }
+private enum FeishuAccountError: Error {
+    case rejected(FeishuRenewalOutcome), unavailable, notConfigured, browserUnavailable, failed(FeishuRenewalOutcome)
+}
+
+/// Fixed classification of a session-renewal attempt. The raw value is a Vox code
+/// shown as read-only diagnostics; raw server text or tokens never reach the UI.
+enum FeishuRenewalOutcome: String, Sendable, Equatable {
+    case renewed = "RENEWED"
+    case membershipCheckUnavailable = "MEMBERSHIP_CHECK_UNAVAILABLE"
+    case rateLimited = "RATE_LIMITED"
+    case inProgress = "IN_PROGRESS"
+    case sessionExpired = "SESSION_EXPIRED"
+    case accountDisabled = "ACCOUNT_DISABLED"
+    case serverUnavailable = "SERVER_UNAVAILABLE"
+    case serverError = "SERVER_ERROR"
+    case unreachable = "UNREACHABLE"
+    case invalidResponse = "INVALID_RESPONSE"
+    case identityMismatch = "IDENTITY_MISMATCH"
+    case storageFailed = "STORAGE_FAILED"
+
+    /// The server's JSON `detail` is matched against an allowlist only.
+    static func classify(status: Int, data: Data) -> FeishuRenewalOutcome {
+        let detail = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])?["detail"] as? String
+        switch (status, detail) {
+        case (200, _): return .renewed
+        case (401, "ACCOUNT_DISABLED"): return .accountDisabled
+        case (401, _): return .sessionExpired
+        case (409, _): return .inProgress
+        case (429, _): return .rateLimited
+        case (503, "MEMBERSHIP_CHECK_UNAVAILABLE"): return .membershipCheckUnavailable
+        case (503, _): return .serverUnavailable
+        default: return .serverError
+        }
+    }
+
+    /// Outcomes that end the session; every other outcome keeps the credential and retries.
+    var endsSession: Bool {
+        switch self {
+        case .sessionExpired, .accountDisabled, .identityMismatch: return true
+        default: return false
+        }
+    }
+
+    var statusLine: String {
+        switch self {
+        case .renewed:
+            return L("飞书登录已自动续期。", "Feishu sign-in renewed automatically.")
+        case .membershipCheckUnavailable:
+            return L("续期失败：服务端无法确认飞书成员状态（请检查应用通讯录权限）。凭据已保留，将自动重试。",
+                     "Renewal failed: the server could not confirm Feishu membership (check the app's contact permissions). Credentials retained; will retry.")
+        case .rateLimited:
+            return L("续期失败：续期请求过于频繁。凭据已保留，稍后自动重试。",
+                     "Renewal failed: renewal requests are too frequent. Credentials retained; will retry shortly.")
+        case .inProgress:
+            return L("续期进行中：上一次续期尚未完成。凭据已保留，稍后自动重试。",
+                     "Renewal in progress: a previous renewal has not finished. Credentials retained; will retry shortly.")
+        case .sessionExpired:
+            return L("飞书登录已失效（会话过期），请重新登录。",
+                     "Feishu sign-in expired (session expired). Please sign in again.")
+        case .accountDisabled:
+            return L("飞书登录已撤销（账户已停用或已离开企业），请重新登录。",
+                     "Feishu sign-in revoked (account disabled or no longer in the organization). Please sign in again.")
+        case .serverUnavailable:
+            return L("续期失败：团队登录服务暂时不可用。凭据与待发送记录已保留，将自动重试。",
+                     "Renewal failed: the team sign-in service is temporarily unavailable. Credentials and pending records retained; will retry.")
+        case .serverError:
+            return L("续期失败：团队登录服务返回服务器错误。凭据已保留，将自动重试。",
+                     "Renewal failed: the team sign-in service returned a server error. Credentials retained; will retry.")
+        case .unreachable:
+            return L("续期失败：无法连接团队登录服务，请检查网络。凭据已保留，将自动重试。",
+                     "Renewal failed: cannot reach the team sign-in service; check the network. Credentials retained; will retry.")
+        case .invalidResponse:
+            return L("续期失败：服务端响应无效。凭据已保留，将自动重试。",
+                     "Renewal failed: the server response was invalid. Credentials retained; will retry.")
+        case .identityMismatch:
+            return L("飞书登录已失效（账户身份不一致），请重新登录。",
+                     "Feishu sign-in expired (account identity mismatch). Please sign in again.")
+        case .storageFailed:
+            return L("续期失败：无法写入本机钥匙串。凭据已保留，将自动重试。",
+                     "Renewal failed: could not write to the local Keychain. Credentials retained; will retry.")
+        }
+    }
+}
+
+/// Read-only record of the latest renewal attempt, shown beside the account line.
+struct FeishuRenewalReport: Sendable, Equatable {
+    let at: Date
+    let outcome: FeishuRenewalOutcome
+}
 
 private struct FeishuLoginStart: Decodable {
     let requestId: String
@@ -153,6 +241,7 @@ final class FeishuAccountClient: FeishuConversationTransport, FeishuSendingTrans
         renewal?.cancel(); renewal = nil; renewalID = nil
         retryRenewalAfter = nil
         savedEnvelope = nil; refreshCredential = nil; accessExpiresAt = nil
+        sessionExpiresAt = nil; lastRenewal = nil
         session = nil; profile = nil; targetIDs = []; origin = nil
         resetAttempt()
         conversations.invalidate(reason)
@@ -174,12 +263,19 @@ final class FeishuAccountClient: FeishuConversationTransport, FeishuSendingTrans
         let deleted = (try? await credential { await self.effects.delete() }) ?? false
         cleanupRequired = !deleted
     }
-    private func expireSession() async {
+    private func expireSession(_ outcome: FeishuRenewalOutcome = .sessionExpired) async {
         invalidate(.expired)
-        status = L("飞书登录已撤销或失效，请重新登录。", "Feishu sign-in was revoked or expired. Please sign in again.")
+        status = outcome.statusLine
         mutations += 1
         defer { mutations -= 1 }
         await removeCredential()
+    }
+    private static func renewalOutcome(_ error: Error) -> FeishuRenewalOutcome {
+        switch error {
+        case FeishuAccountError.rejected(let outcome), FeishuAccountError.failed(let outcome): return outcome
+        case FeishuAccountError.notConfigured: return .serverUnavailable
+        default: return .invalidResponse
+        }
     }
 
     var conversationIdentity: FeishuConversationIdentity? {
@@ -319,6 +415,12 @@ final class FeishuAccountClient: FeishuConversationTransport, FeishuSendingTrans
     private(set) var targetIDs: [String] = []
     private(set) var busy = false
     private(set) var status = ""
+    /// Server-granted access expiry mapped onto this Mac's clock; nil when the
+    /// server did not report one. Distinguishes "connected" from "session valid".
+    private(set) var sessionExpiresAt: Date?
+    /// Latest renewal attempt (time plus fixed outcome code), kept after expiry so
+    /// the reason remains visible; cleared on sign-out or endpoint change.
+    private(set) var lastRenewal: FeishuRenewalReport?
     private var attempt: FeishuLoginStart?
     private var origin: URL?
     private var generation = 0
@@ -332,6 +434,28 @@ final class FeishuAccountClient: FeishuConversationTransport, FeishuSendingTrans
     private var renewalID: UUID?
     private var retryRenewalAfter: Date?
     nonisolated static let teamEndpoint = InputBackupConfiguration.teamEndpoint
+    private static let timeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .none
+        formatter.timeStyle = .short
+        return formatter
+    }()
+
+    var sessionValidityLine: String? {
+        guard profile != nil, let expiry = sessionExpiresAt else { return nil }
+        let time = Self.timeFormatter.string(from: expiry)
+        return expiry > Date()
+            ? L("会话有效期至 \(time)", "Session valid until \(time)")
+            : L("会话已于 \(time) 过期，等待续期", "Session expired at \(time); awaiting renewal")
+    }
+    var lastRenewalLine: String? {
+        guard let lastRenewal else { return nil }
+        let time = Self.timeFormatter.string(from: lastRenewal.at)
+        return L("上次续期 \(time)：\(lastRenewal.outcome.rawValue)", "Last renewal \(time): \(lastRenewal.outcome.rawValue)")
+    }
+    private func recordRenewal(_ outcome: FeishuRenewalOutcome) {
+        lastRenewal = FeishuRenewalReport(at: Date(), outcome: outcome)
+    }
 
     nonisolated static func defaultEndpoint(saved: String? = UserDefaults.standard.string(forKey: "vox_feishu_login_endpoint"),
                                 bundled: String? = Bundle.main.object(forInfoDictionaryKey: "VoxTeamLoginURL") as? String) -> String {
@@ -385,6 +509,7 @@ final class FeishuAccountClient: FeishuConversationTransport, FeishuSendingTrans
         savedEnvelope = raw
         refreshCredential = result.refreshToken
         accessExpiresAt = result.expiresIn.map { Date().addingTimeInterval(max(0, min($0, 3600)) - 30) }
+        sessionExpiresAt = result.expiresIn.map { Date().addingTimeInterval(max(0, min($0, 3600))) }
     }
 
     /// Single flight across timeline, backup, wake-up and periodic maintenance.
@@ -412,22 +537,32 @@ final class FeishuAccountClient: FeishuConversationTransport, FeishuSendingTrans
         do {
             let data = try await request("renew", base: base, token: refresh)
             guard epoch == sessionEpoch, !Task.isCancelled else { return false }
-            let result = try JSONDecoder().decode(FeishuLoginResult.self, from: data)
-            guard try Self.identityKey(result.profile) == Self.identityKey(profile),
-                  let token = result.token, token.hasPrefix("vox_sso_"), result.refreshToken != nil else { throw FeishuAccountError.rejected }
+            guard let result = try? JSONDecoder().decode(FeishuLoginResult.self, from: data),
+                  let token = result.token, token.hasPrefix("vox_sso_"), result.refreshToken != nil else {
+                throw FeishuAccountError.failed(.invalidResponse)
+            }
+            guard try Self.identityKey(result.profile) == Self.identityKey(profile) else { throw FeishuAccountError.rejected(.identityMismatch) }
             let raw = try await envelope(result, token: token, base: base, previous: previous)
             guard epoch == sessionEpoch, !Task.isCancelled else { return false }
-            try await credential { try await self.effects.save(raw) }
+            do { try await credential { try await self.effects.save(raw) } }
+            catch { throw FeishuAccountError.failed(.storageFailed) }
             guard epoch == sessionEpoch, !Task.isCancelled else { await removeCredential(); return false }
             session = token; targetIDs = result.targetIds
             remember(raw, result: result)
-            status = L("飞书登录已自动续期。", "Feishu sign-in renewed automatically.")
+            recordRenewal(.renewed)
+            status = FeishuRenewalOutcome.renewed.statusLine
             return true
         } catch {
             guard epoch == sessionEpoch, !Task.isCancelled else { return false }
-            if case FeishuAccountError.rejected = error { await expireSession(); return false }
+            let outcome = Self.renewalOutcome(error)
+            if outcome.endsSession {
+                await expireSession(outcome)
+                recordRenewal(outcome)
+                return false
+            }
+            recordRenewal(outcome)
             retryRenewalAfter = Date().addingTimeInterval(60)
-            status = L("登录续期暂不可用，凭据与待发送记录已保留，将自动重试。", "Renewal unavailable. Credentials and pending records retained; will retry.")
+            status = outcome.statusLine
             return accessExpiresAt.map { $0 > Date() } ?? false
         }
     }
@@ -469,12 +604,17 @@ final class FeishuAccountClient: FeishuConversationTransport, FeishuSendingTrans
             req.setValue("application/json", forHTTPHeaderField: "Content-Type")
             req.httpBody = try JSONEncoder().encode(body)
         }
-        let (data, response) = try await effects.send(req)
-        if response == 401 { throw FeishuAccountError.rejected }
+        let data: Data, response: Int
+        do { (data, response) = try await effects.send(req) }
+        catch let cancelled as CancellationError { throw cancelled }
+        catch { throw FeishuAccountError.failed(.unreachable) }
+        // Only the HTTP status and an allowlisted detail code are kept; the body is
+        // otherwise discarded so raw server text never reaches status lines.
+        let outcome = FeishuRenewalOutcome.classify(status: response, data: data)
+        if response == 401 { throw FeishuAccountError.rejected(outcome) }
         if response == 503, let detail = try? JSONDecoder().decode([String: String].self, from: data), detail["detail"] == "FEISHU_LOGIN_NOT_CONFIGURED" { throw FeishuAccountError.notConfigured }
-        guard data.count <= 1_048_576, response == 200 else {
-            throw InputBackupError.credential
-        }
+        guard response == 200 else { throw FeishuAccountError.failed(outcome) }
+        guard data.count <= 1_048_576 else { throw FeishuAccountError.failed(.invalidResponse) }
         return data
     }
 
@@ -606,13 +746,15 @@ final class FeishuAccountClient: FeishuConversationTransport, FeishuSendingTrans
         let active = sessionEpoch
         let op = startOperation()
         defer { mutations -= 1; finishOperation(op) }
+        var refresh: String?
+        var renewalFailure: FeishuRenewalOutcome?
         do {
             let base = try baseURL()
             let raw = try await credential { await self.effects.load() }
             guard active == sessionEpoch, operation == op, !Task.isCancelled, let raw,
                   let token = InputBackupClient.credentialToken(raw, for: base), token.hasPrefix("vox_sso_") else { return }
             let stored = try? JSONDecoder().decode([String: String].self, from: Data(raw.utf8))
-            let refresh = stored?["refreshToken"]
+            refresh = stored?["refreshToken"]
             let data: Data
             var renewed = false
             do {
@@ -621,6 +763,7 @@ final class FeishuAccountClient: FeishuConversationTransport, FeishuSendingTrans
             } catch {
                 if case FeishuAccountError.rejected = error { throw error }
                 guard refresh != nil else { throw error }
+                renewalFailure = Self.renewalOutcome(error)
                 // Server, rather than the Mac's wall clock, decides if access still works.
                 do { data = try await request("me", base: base, token: token, method: "GET") }
                 catch { throw FeishuAccountError.unavailable }
@@ -632,10 +775,10 @@ final class FeishuAccountClient: FeishuConversationTransport, FeishuSendingTrans
                 result.refreshExpiresAt = stored?["refreshExpiresAt"].flatMap(Double.init)
             }
             let access = result.token ?? token
-            if let expected = stored?["scopeIdentity"], try Self.identityKey(result.profile) != expected { throw FeishuAccountError.rejected }
+            if let expected = stored?["scopeIdentity"], try Self.identityKey(result.profile) != expected { throw FeishuAccountError.rejected(.identityMismatch) }
             let updated: String
             if renewed {
-                guard result.token?.hasPrefix("vox_sso_") == true, result.refreshToken != nil else { throw FeishuAccountError.rejected }
+                guard result.token?.hasPrefix("vox_sso_") == true, result.refreshToken != nil else { throw FeishuAccountError.failed(.invalidResponse) }
                 updated = try await envelope(result, token: access, base: base, previous: raw)
                 guard active == sessionEpoch, operation == op, !Task.isCancelled else { return }
                 try await credential { try await self.effects.save(updated) }
@@ -644,13 +787,24 @@ final class FeishuAccountClient: FeishuConversationTransport, FeishuSendingTrans
             sessionEpoch += 1
             session = access; origin = base; profile = result.profile; targetIDs = result.targetIds
             remember(updated, result: result)
+            if renewed { recordRenewal(.renewed) }
+            else if let renewalFailure {
+                // Access still works, but renewal does not: say why instead of "connected".
+                recordRenewal(renewalFailure)
+                status = renewalFailure.statusLine
+            }
             bindDiscovery()
         } catch {
             guard active == sessionEpoch, operation == op, !Task.isCancelled else { return }
-            if case FeishuAccountError.rejected = error { await expireSession() }
-            status = (error is FeishuAccountError && { if case FeishuAccountError.rejected = error { return true }; return false }())
-                ? L("飞书登录已失效，请重新登录。", "Feishu sign-in expired. Please sign in again.")
-                : L("暂时无法恢复登录，凭据已保留，将自动重试。", "Sign-in temporarily unavailable. Credentials retained; will retry.")
+            if case FeishuAccountError.rejected(let outcome) = error {
+                await expireSession(outcome)
+                if refresh != nil { recordRenewal(outcome) }
+            } else if let renewalFailure {
+                recordRenewal(renewalFailure)
+                status = renewalFailure.statusLine
+            } else {
+                status = L("暂时无法恢复登录，凭据已保留，将自动重试。", "Sign-in temporarily unavailable. Credentials retained; will retry.")
+            }
         }
     }
 

@@ -69,9 +69,6 @@ enum FeishuReadingFailure: Error { case unavailable, invalid, reset, limit, perm
     private(set) var failure: FeishuReadingFailure?
     private(set) var limitReached = false
     private(set) var historyRestarted = false
-    var onTranslationInvalidated: (() -> Void)?
-    var onTranslationSourcesChanged: (() -> Void)?
-    private(set) var translationGeneration: UInt64 = 0
     private var generation: UInt64 = 0
     private var owner: UUID?
     private var latestIDs: Set<String> = []
@@ -81,9 +78,6 @@ enum FeishuReadingFailure: Error { case unavailable, invalid, reset, limit, perm
     private var pages = 0
 
     private func clear() {
-        translationGeneration &+= 1
-        onTranslationInvalidated?()
-        onTranslationSourcesChanged?()
         generation &+= 1; owner = nil; loading = false
         items = []; latestIDs = []; tombstones = []; nextCursor = nil
         mode = nil; revision = nil; failure = nil; limitReached = false; historyRestarted = false; chainStarted = false; pages = 0
@@ -126,7 +120,6 @@ enum FeishuReadingFailure: Error { case unavailable, invalid, reset, limit, perm
             guard visible, epoch == generation, owner == ticket, self.identity == identity,
                   self.conversation == conversation, !Task.isCancelled else { return }
             if revision != nil && (revision != page.policyRevision || mode != page.mode) {
-                translationGeneration &+= 1; onTranslationInvalidated?(); onTranslationSourcesChanged?()
                 items = []; tombstones = []; latestIDs = []; nextCursor = nil; chainStarted = false; pages = 0
                 // A page from an old chain cannot become the new authorization's first page.
                 if older { revision = nil; mode = nil; failure = .reset; return }
@@ -163,7 +156,6 @@ enum FeishuReadingFailure: Error { case unavailable, invalid, reset, limit, perm
                 clear(); limitReached = true; return
             }
             items = merged.values.sorted { (Int64($0.createdAt)!, $0.id) < (Int64($1.createdAt)!, $1.id) }
-            onTranslationSourcesChanged?()
             if older { historyRestarted = false }
             if older || !chainStarted || (nextCursor == nil && page.nextCursor != nil) {
                 nextCursor = page.nextCursor; chainStarted = true; pages += 1

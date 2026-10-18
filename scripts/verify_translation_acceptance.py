@@ -1,12 +1,13 @@
-"""Compile isolated acceptance runners; live calls require explicit --live authorization.
+"""Compile the isolated live translation acceptance runner; calls require explicit --live authorization.
 
 Uses production transport/Keychain config without launching Vox or starting its engine.
 Only the committed synthetic fixture is accepted. Never prints credentials or raw errors.
+The former --render/--gui timeline runners were removed with the timeline translation
+feature; translation now happens only in the composer (ComposerTranslator).
 """
 
 import argparse
 import hashlib
-import plistlib
 import sys
 from pathlib import Path
 import subprocess
@@ -14,18 +15,12 @@ import subprocess
 p = argparse.ArgumentParser(description=__doc__)
 p.add_argument("--sdk", required=True)
 p.add_argument("--output", type=Path, required=True)
-mode = p.add_mutually_exclusive_group(required=True)
-mode.add_argument("--live", action="store_true")
-mode.add_argument("--render", action="store_true")
-mode.add_argument("--gui", action="store_true", help="Build an isolated interactive GUI; never auto-launch")
-p.add_argument("--ui-language", choices=("zh", "en"), default="zh", help="Language of isolated GUI/render components")
+p.add_argument("--live", action="store_true", required=True)
 p.add_argument("--preferences-domain", default="com.osborn.voxagent")
 p.add_argument(
     "--compile-only", action="store_true", help="Build without running or reading credentials"
 )
 a = p.parse_args()
-if a.live and a.ui_language != "zh":
-    p.error("--ui-language applies only to --gui and --render")
 root = Path(__file__).resolve().parents[1]
 fixture = root / "tests/fixtures/message_translation_quality.json"
 if (
@@ -44,20 +39,6 @@ enum ASRProviderRegistry {
  static func configType(for provider: ASRProvider) -> (any ASRProviderConfig.Type)? { fatalError("ASR is outside acceptance scope") }
 }
 """
-if a.ui_language == "en":
-    stubs = stubs.replace("-> String { zh }", "-> String { en }")
-if a.render or a.gui:
-    progress = (root / "macos/VoxLog/Services/EngineEventHandler.swift").read_text()
-    stubs += progress[
-        progress.index("struct TaskProgressInfo {") : progress.index("struct PermissionApproval:")
-    ]
-    stubs += """enum KeychainService {
- static var selectedLLMProvider: LLMProvider { .openai }
- static func withLLMConfigurationLock<T>(_ action: () throws -> T) rethrows -> T { try action() }
- static func loadLLMCredentials(for provider: LLMProvider) -> [String: String]? { fatalError("no key access in UI fixture") }
- static func llmDisplayConfiguration(for provider: LLMProvider) -> (model: String, endpoint: String) { ("synthetic", "https://fixture.invalid") }
-}
-"""
 (out / "stubs.swift").write_text(stubs)
 sources = [
     "Services/KeychainService.swift",
@@ -72,30 +53,10 @@ sources = [
     "Translation/TranslationProtection.swift",
     "Translation/SelectedLLMConfigurationResolver.swift",
     "Translation/TranslationTransport.swift",
-    "Translation/MessageTranslationStore.swift",
+    "Translation/ComposerTranslation.swift",
 ]
-if a.render or a.gui:
-    sources.remove("Services/KeychainService.swift")
-    sources += [
-        "UI/DesignSystem.swift",
-        "UI/Chat/ChatLayoutMetrics.swift",
-        "Translation/MessageTextActions.swift",
-        "UI/Chat/ChatArea.swift",
-        "UI/Chat/AgentTimelineTurn.swift",
-        "Services/VoiceMessage.swift",
-        "Services/AgentChatMessage.swift",
-        "Agent/AgentModels.swift",
-    ]
-runner = "TranslationGUIAcceptance.swift" if a.gui else ("TranslationLiveAcceptance.swift" if a.live else "TranslationRenderAcceptance.swift")
-exe = out / ("live-acceptance" if a.live else "render-acceptance")
-if a.gui:
-    contents = out / "Vox Translation GUI.app/Contents"
-    (contents / "MacOS").mkdir(parents=True, exist_ok=True)
-    exe = contents / "MacOS/Fixture"
-    with (contents / "Info.plist").open("wb") as stream:
-        plistlib.dump({"CFBundleIdentifier": "com.osborn.voxagent.translation-gui",
-                      "CFBundleName": "Vox Translation GUI", "CFBundleExecutable": "Fixture",
-                      "CFBundlePackageType": "APPL", "NSHighResolutionCapable": True}, stream)
+runner = "TranslationLiveAcceptance.swift"
+exe = out / "live-acceptance"
 subprocess.run(
     [
         "swiftc",
@@ -115,14 +76,12 @@ subprocess.run(
     check=True,
     timeout=180,
 )
-if a.compile_only or a.gui:
+if a.compile_only:
     print("PASS: acceptance runner compiled; execution not requested")
     sys.exit(0)
-args = [str(exe), str(out)]
-if a.live:
-    args += [str(root / "tests/fixtures/message_translation_quality.json"), a.preferences_domain]
+args = [str(exe), str(out), str(root / "tests/fixtures/message_translation_quality.json"), a.preferences_domain]
 try:
-    result = subprocess.run(args, timeout=1000 if a.live else 120)
+    result = subprocess.run(args, timeout=1000)
 except subprocess.TimeoutExpired:
     print("Acceptance runner timed out; inspect partial results before any retry.", file=sys.stderr)
     sys.exit(1)

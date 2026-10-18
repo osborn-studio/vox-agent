@@ -13,9 +13,6 @@ struct ChatArea: View {
     var onCreateTask: (VoiceMessage, String) -> Void = { _, _ in }
     var onRecall: (VoiceMessage) -> Void = { _ in }
 
-    var translationContent: AnyView? = nil
-    var translationActions: AnyView? = nil
-
     @State private var copiedId: String?
 
     var body: some View {
@@ -42,7 +39,6 @@ struct ChatArea: View {
                     .font(.system(size: ChatLayoutMetrics.messageFontSize))
                     .textSelection(.enabled)
                     .fixedSize(horizontal: false, vertical: true)
-                translationContent
             }
         }
         .padding(.horizontal, TF.spacingMD)
@@ -92,7 +88,6 @@ struct ChatArea: View {
             .help(L("复制全文", "Copy full text"))
             .accessibilityLabel(L("复制原文", "Copy original"))
             .accessibilityIdentifier("message.copyOriginal")
-            if message.isMe { translationActions }
         }
     }
 
