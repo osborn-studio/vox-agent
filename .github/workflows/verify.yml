@@ -1,9 +1,10 @@
 # Pull-request and main-branch verification on GitHub-hosted runners only.
 #
 # Restored on 2026-10-18 from the archived source definition in
-# .github/source-workflows/test-engine.yml.txt, trimmed to the jobs that run
-# on the public source snapshot without private infrastructure:
-#   python-lint, python-test, swift-build.
+# .github/source-workflows/test-engine.yml.txt. All seven archived jobs run
+# here: python-lint, python-test, typescript-test, mobile-test,
+# windows-tauri-test, rust-advisory-audit, swift-build. Steps that the public
+# source snapshot cannot satisfy are annotated inline (see SOURCE_SNAPSHOT.md).
 # Self-hosted runners are deliberately not referenced here. This is a public
 # repository: a self-hosted runner reachable from pull_request events would
 # execute fork code on the owner's machines. Main-branch isolated runners can
@@ -80,6 +81,196 @@ jobs:
 
       - name: Verify standalone model archive and small App boundaries
         run: python -m pytest scripts/test_package_model_media.py scripts/test_small_app_bundle.py scripts/test_app_equivalence.py scripts/test_split_model_media.py scripts/test_render_split_media_dmg.py scripts/test_write_app_model_catalog.py scripts/test_prepare_common_asr_app.py -q --tb=short
+
+  typescript-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install workspace dependencies
+        run: npm ci
+
+      - name: Reject high-severity JavaScript advisories
+        run: npm audit --audit-level=high
+
+      - name: Build contracts
+        run: npm run build --workspace packages/contracts
+
+      - name: Check and test API
+        run: |
+          npm run check --workspace services/api-ts
+          npm run test --workspace services/api-ts
+
+      - name: Check desktop cockpit contracts
+        run: npm test --workspace apps/desktop-tauri
+
+      - name: Check, test, and build web console
+        run: |
+          npm run typecheck --workspace apps/web-console
+          npm run test --workspace apps/web-console
+          npm run build --workspace apps/web-console
+
+  mobile-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile/voxagent-companion
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "26.5.0"
+          cache: npm
+          cache-dependency-path: mobile/voxagent-companion/package-lock.json
+
+      - name: Set up deterministic candidate builder Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.14.5"
+
+      - name: Verify reviewed verification entry points before execution
+        working-directory: .
+        run: |
+          sha256sum --check <<'PINS'
+          30e090a3b656c05ab42028bffd941532fe3b811c145e3afd6fa84a2a5a5ae7de  scripts/prepare_mobile_ci_inputs.py
+          84ee16387b24771d2e749c44f3e5746ce580bc0321c416ba754e477e9500dbf6  scripts/prepare_mobile_delivery_fixture.py
+          05fdbf710d235143229ec4afabaa912d5580fcd5ca0c27a89f1cc3d30a692a3a  scripts/verify_mobile_canonical_ci.py
+          aef9e911b35d601b473abc494861ad63d316aba5d251adcb865e79003ed08e94  scripts/verify_mobile_delivery_install.cjs
+          e3e0e6cdecbbc3e9e4b56d5f910e7867cea56f629f895772aa8370952e24438a  security/mobile-candidate/provenance.cjs
+          8c1267ce8bc55d27b42ee7fd29fb68c929f0807cc670a32a93f67399b1d7340f  security/mobile-candidate/safety-verifiers.json
+          PINS
+
+      - name: Test canonical report acceptance and refusal
+        working-directory: .
+        run: |
+          python3 scripts/test_mobile_canonical_ci.py
+          python3 scripts/test_mobile_archive_compression.py
+
+      - name: Pin candidate builder npm
+        run: npm install --global npm@11.17.0 --ignore-scripts
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify pinned dependency defenses
+        run: npm run security:provenance
+
+      - name: Reject high-severity JavaScript advisories
+        run: npm audit --audit-level=high
+
+      - name: Typecheck and test mobile companion
+        run: |
+          npm run fixtures:check
+          npm run typecheck
+          npm test
+
+      - name: Prepare pinned offline canonical verification inputs
+        working-directory: .
+        run: >-
+          python3 scripts/prepare_mobile_ci_inputs.py
+          --table-sha256 8c1267ce8bc55d27b42ee7fd29fb68c929f0807cc670a32a93f67399b1d7340f
+          --output build/qualified-mobile-inputs
+
+      - name: Prepare exact committed target-layout fixture
+        working-directory: .
+        run: >-
+          python3 scripts/prepare_mobile_delivery_fixture.py
+          --output build/qualified-mobile-delivery
+          --legacy-dir build/qualified-mobile-inputs/legacy
+
+      - name: Verify normal target-layout install lifecycle
+        working-directory: build/qualified-mobile-delivery/mobile/voxagent-companion
+        run: npm ci
+
+      - name: Verify complete explicit canonical contract
+        working-directory: .
+        run: >-
+          python3 scripts/verify_mobile_canonical_ci.py
+          --runner-sha256 c204cafd467f4d3aaf966126e77b4d3f69f2561263b056151036ee5afa7c9722
+          --node-bin "$(command -v node)"
+          --app-root build/qualified-mobile-delivery/mobile/voxagent-companion
+          --upstream-dir build/qualified-mobile-inputs
+          --oracle-root build/qualified-mobile-inputs/oracle/mobile/voxagent-companion
+
+  windows-tauri-test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Verify SQLite WAL and Windows file locking
+        run: python scripts/verify_windows_sqlite.py --require-windows
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - name: Check canonical Tauri shell
+        run: |
+          cargo fmt --manifest-path apps/desktop-tauri/src-tauri/Cargo.toml --all -- --check
+          cargo test --manifest-path apps/desktop-tauri/src-tauri/Cargo.toml --locked
+
+  rust-advisory-audit:
+    name: RustSec advisory audit (pinned)
+    runs-on: ubuntu-24.04
+    env:
+      CARGO_AUDIT_URL: https://github.com/rustsec/rustsec/releases/download/cargo-audit/v0.22.2/cargo-audit-x86_64-unknown-linux-gnu-v0.22.2.tgz
+      CARGO_AUDIT_SHA256: ab28a1bdb54db4d5d8ad5981cf1f959410370b3d28250dbd35f6a44248620e39
+      # Pin refreshed from the archived ef036051 (2026-09-28): the policy's 14-day
+      # age gate had already expired. Keep in sync with security/rust-audit-policy.json.
+      RUSTSEC_ADVISORY_DB_COMMIT: 999ec89d5d3f10f20be14750ec8c2d8b44e0ac9b
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install checksum-pinned cargo-audit
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/cargo-audit-bin"
+          curl --fail --location --retry 3 \
+            --output "$RUNNER_TEMP/cargo-audit.tgz" \
+            "$CARGO_AUDIT_URL"
+          echo "$CARGO_AUDIT_SHA256  $RUNNER_TEMP/cargo-audit.tgz" | sha256sum --check
+          tar -xzf "$RUNNER_TEMP/cargo-audit.tgz" \
+            --strip-components=1 \
+            -C "$RUNNER_TEMP/cargo-audit-bin"
+          echo "$RUNNER_TEMP/cargo-audit-bin" >> "$GITHUB_PATH"
+
+      - name: Checkout pinned RustSec advisory database
+        shell: bash
+        run: |
+          git init "$RUNNER_TEMP/rustsec-advisory-db"
+          git -C "$RUNNER_TEMP/rustsec-advisory-db" remote add origin \
+            https://github.com/RustSec/advisory-db.git
+          git -C "$RUNNER_TEMP/rustsec-advisory-db" fetch --depth 1 origin \
+            "$RUSTSEC_ADVISORY_DB_COMMIT"
+          git -C "$RUNNER_TEMP/rustsec-advisory-db" checkout --detach FETCH_HEAD
+
+      - name: Audit canonical Rust lockfiles
+        run: >-
+          python scripts/rust_audit_gate.py
+          --database "$RUNNER_TEMP/rustsec-advisory-db"
+          --repo-root "$GITHUB_WORKSPACE"
 
   swift-build:
     # macOS 26 image: Package.swift needs swift-tools-version 6.2 (Xcode 26).

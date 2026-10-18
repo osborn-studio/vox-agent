@@ -31,7 +31,7 @@ python scripts/rust_audit_gate.py \
 ## Updating the database or audit tool
 
 Use a dedicated pull request. Update the matching pinned environment values in
-`.github/workflows/test-engine.yml` together with the policy. Record the new official release version, artifact
+`.github/workflows/verify.yml` together with the policy. Record the new official release version, artifact
 URL and SHA-256 digest, or the new RustSec commit and its commit date. Run policy
 unit tests and the live audit before requesting review. A version or database
 change must never be mixed into an unrelated feature PR.
