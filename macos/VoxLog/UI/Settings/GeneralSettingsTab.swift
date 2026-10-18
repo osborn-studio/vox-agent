@@ -38,25 +38,6 @@ struct GeneralSettingsTab: View, SettingsCardHelpers {
                 description: L("偏好设置与系统权限。快捷键请在「处理模式」中配置。", "Preferences and permissions. Hotkeys are configured in Modes.")
             )
 
-            settingsGroupCard(L("消息翻译（研发预览）", "Message translation (development preview)"), icon: "character.bubble") {
-                Toggle(L("启用消息就地中文翻译", "Enable inline Chinese translation"), isOn: Binding(
-                    get: { TranslationSettings.shared.enabled },
-                    set: { TranslationSettings.shared.setEnabled($0) }
-                ))
-                let _ = TranslationSettings.shared.generation
-                let provider = KeychainService.selectedLLMProvider
-                let name = provider == .ollama ? "Ollama" : provider.displayName
-                let config = KeychainService.llmDisplayConfiguration(for: provider)
-                if !TranslationProtocol.supports(provider, model: config.model) {
-                    Text(TranslationFailure.unsupported.message).font(.caption).foregroundStyle(.secondary)
-                }
-                Text(L("所选原文将发送给 Polish 模型；不发送飞书。关闭会清空译文。", "Selected text is sent to the Polish model; no Feishu send. Disabling clears translations."))
-                    .font(.caption).foregroundStyle(.secondary)
-                Text(verbatim: "\(name) / \(config.model) · \(config.endpoint)")
-                    .font(.caption).textSelection(.enabled)
-            }
-            .padding(.bottom, TF.spacingLG)
-
             // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
             // CARD 1: 录音行为
             // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

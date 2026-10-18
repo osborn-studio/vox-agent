@@ -78,6 +78,9 @@ struct SettingsView: View {
         .onReceive(NotificationCenter.default.publisher(for: .navigateToVocabulary)) { _ in
             selectedTab = .vocabulary
         }
+        .onReceive(NotificationCenter.default.publisher(for: .navigateToModels)) { _ in
+            selectedTab = .models
+        }
         .onReceive(NotificationCenter.default.publisher(for: .navigateToAbout)) { _ in
             selectedTab = .about
             UpdateChecker.shared.markAsSeen(appState: appState)

@@ -1,12 +1,16 @@
 import XCTest
 
 final class ChatInputBarSourceTests: XCTestCase {
-    func testComposerUsesRecognitionSessionAsItsOnlyAudioOwner() throws {
+    private func source() throws -> String {
         let sourceURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
             .appendingPathComponent("VoxLog/UI/Chat/ChatInputBar.swift")
-        let source = try String(contentsOf: sourceURL, encoding: .utf8)
+        return try String(contentsOf: sourceURL, encoding: .utf8)
+    }
+
+    func testComposerUsesRecognitionSessionAsItsOnlyAudioOwner() throws {
+        let source = try source()
 
         XCTAssertTrue(source.contains("delegate.session.startRecording("))
         XCTAssertTrue(source.contains("outputDestination: .composer"))
@@ -22,11 +26,7 @@ final class ChatInputBarSourceTests: XCTestCase {
     }
 
     func testChatInputSupportsShiftEnterNewlineAndEnterSubmit() throws {
-        let sourceURL = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .appendingPathComponent("VoxLog/UI/Chat/ChatInputBar.swift")
-        let source = try String(contentsOf: sourceURL, encoding: .utf8)
+        let source = try source()
 
         XCTAssertTrue(source.contains("SubmitAwareTextView"))
         XCTAssertTrue(source.contains("event.keyCode == 36 || event.keyCode == 76"))
@@ -37,13 +37,16 @@ final class ChatInputBarSourceTests: XCTestCase {
         XCTAssertTrue(source.contains("super.keyDown(with: event)"))
     }
 
-    func testComposerKeepsMicAndSendButtonsInsideInputAtNarrowWidths() throws {
-        let sourceURL = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .appendingPathComponent("VoxLog/UI/Chat/ChatInputBar.swift")
-        let source = try String(contentsOf: sourceURL, encoding: .utf8)
+    /// The text area grows upward with its content and stops at the shared
+    /// maximum; the control row keeps mic and send inside the surface.
+    func testComposerGrowsWithContentAndKeepsControlsInsideInput() throws {
+        let source = try source()
 
+        XCTAssertTrue(source.contains("onContentHeightChange"))
+        XCTAssertTrue(source.contains("static func contentHeight(of textView: NSTextView) -> CGFloat"))
+        XCTAssertTrue(source.contains("min(max(measuredTextHeight, ChatLayoutMetrics.inputTextMinHeight), ChatLayoutMetrics.inputMaxHeight)"))
+        XCTAssertTrue(source.contains("ChatLayoutMetrics.inputToolbarHeight"))
+        XCTAssertTrue(source.contains("scrollView.hasVerticalScroller = true"))
         XCTAssertTrue(source.contains("VoiceWaveform("))
         XCTAssertTrue(source.contains("VoiceCountdownRing("))
         XCTAssertTrue(source.contains("accessibilityReduceMotion"))
@@ -53,8 +56,6 @@ final class ChatInputBarSourceTests: XCTestCase {
         XCTAssertTrue(source.contains("GeometryReader { geometry in"))
         XCTAssertTrue(source.contains("composerBody(width: max(0, geometry.size.width - ChatLayoutMetrics.inputHorizontalInset * 2))"))
         XCTAssertTrue(source.contains(".frame(width: width)"))
-        XCTAssertTrue(source.contains("ChatLayoutMetrics.voiceInputExpandedHeight"))
-        XCTAssertTrue(source.contains(".padding(.trailing, ChatLayoutMetrics.inputButtonReserveWidth)"))
         XCTAssertTrue(source.contains(".fixedSize()"))
         XCTAssertTrue(source.contains(".layoutPriority(10)"))
         XCTAssertTrue(source.contains(".padding(.trailing, 10)"))
@@ -67,6 +68,41 @@ final class ChatInputBarSourceTests: XCTestCase {
         XCTAssertTrue(source.contains("NSView.noIntrinsicMetric"))
         XCTAssertTrue(source.contains("setContentCompressionResistancePriority(.defaultLow, for: .horizontal)"))
         XCTAssertFalse(source.contains("inputComposerHeight"))
-        XCTAssertFalse(source.contains(".disabled(!hasText && !isRecording)"))
+        XCTAssertFalse(source.contains("inputButtonReserveWidth"))
+    }
+
+    /// Translate shares the Polish provider/model, keeps the original for
+    /// restore, and marks the draft so sending skips Polish.
+    func testComposerTranslateSharesPolishModelAndSkipsPolishAfterwards() throws {
+        let source = try source()
+
+        XCTAssertTrue(source.contains("ComposerTranslator.translate(original)"))
+        XCTAssertTrue(source.contains("ComposerTranslationDirection.target(for: textInput)"))
+        XCTAssertTrue(source.contains("translationOriginal = original"))
+        XCTAssertTrue(source.contains("KeychainService.selectedLLMProvider"))
+        XCTAssertTrue(source.contains("KeychainService.llmDisplayConfiguration(for: provider)"))
+        XCTAssertTrue(source.contains("KeychainService.llmModelConfigured(for: provider)"))
+        XCTAssertTrue(source.contains("TranslationSettings.shared.generation"))
+        XCTAssertTrue(source.contains(".navigateToModels"))
+        XCTAssertFalse(source.contains("DoubaoChatClient(provider:").description.isEmpty)
+        // The translation result is applied once and never re-polished.
+        let translated = source.range(of: "textInput = result.text")
+        XCTAssertNotNil(translated)
+        XCTAssertTrue(source[translated!.upperBound...].hasPrefix("\n                hasPolished = true"))
+    }
+
+    /// A Polish failure never sends silently: the draft stays, the reason is
+    /// shown inline, and only the explicit action sends the original.
+    func testPolishFailureKeepsDraftAndNeverSendsSilently() throws {
+        let source = try source()
+
+        XCTAssertTrue(source.contains("case .failed(let reason):\n                polishFailure = reason"))
+        XCTAssertTrue(source.contains("return .failed(Self.polishFailureMessage(error))"))
+        XCTAssertTrue(source.contains("private func sendUnpolished()"))
+        XCTAssertFalse(source.contains("} catch {\n            return await MainActor.run { !Task.isCancelled"))
+        // Escape from a finalized voice turn restores unpolished text.
+        let escape = source.range(of: "textInput = voiceInputPrefix")
+        XCTAssertNotNil(escape)
+        XCTAssertTrue(source[escape!.upperBound...].contains("hasPolished = false"))
     }
 }

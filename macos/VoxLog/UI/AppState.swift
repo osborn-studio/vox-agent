@@ -555,5 +555,6 @@ extension Notification.Name {
     static let selectMode = Notification.Name("VoxLogSelectMode")
     static let navigateToVocabulary = Notification.Name("VoxLogNavigateToVocabulary")
     static let navigateToAbout = Notification.Name("VoxLogNavigateToAbout")
+    static let navigateToModels = Notification.Name("VoxLogNavigateToModels")
     static let focusPermissionApproval = Notification.Name("VoxAgentFocusPermissionApproval")
 }
