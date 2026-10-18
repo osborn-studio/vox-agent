@@ -1,6 +1,6 @@
 [package]
 name = "vox-agent-desktop-tauri"
-version = "4.2.9"
+version = "4.2.10"
 edition = "2021"
 description = "Cross-platform desktop shell for Vox Agent"
 

@@ -8,7 +8,8 @@ This repository publishes a reviewed **source snapshot**, not an installer or a
 qualified product release. It starts with a new root commit and does not inherit
 private development history, pull requests, release assets, credentials, models,
 operator audit reports, or backups. Product/module identifiers such as `VoxLog`
-and the development version `4.2.9` remain unchanged for compatibility.
+and the development version at snapshot time (`4.2.9`) were kept unchanged
+for compatibility; the current version is in `docs/RELEASE.md`.
 
 ## Source layout
 
