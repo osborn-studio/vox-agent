@@ -1,7 +1,7 @@
 # Source snapshot and future release qualification
 
 - Product: `Vox Agent`
-- Version: `4.2.9` (development metadata, not a release announcement)
+- Version: `4.2.10` (development metadata, not a release announcement)
 
 This public repository provides source, not a signed application or installed
 service. Native builds need their platform SDKs, model/runtime packaging,

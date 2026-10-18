@@ -10,7 +10,7 @@ from engine import __version__
 ROOT = Path(__file__).resolve().parents[1]
 
 
-RELEASE_VERSION = "4.2.9"
+RELEASE_VERSION = "4.2.10"
 
 
 def test_release_version_is_one_product_version_across_engine_desktop_and_app_bundle():

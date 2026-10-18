@@ -278,10 +278,10 @@ class StageTests(unittest.TestCase):
             self.assertEqual(qualify(Path(temp), '4.2.8', 'Windows', sku='full', stages=('sku',))['status'], 'PASS')
 
     def test_cli_source_stage_passes_for_this_repository_on_any_host(self):
-        self.assertEqual(main(['--version', '4.2.9', '--sku', 'preview', '--stage', 'source']), 0)
+        self.assertEqual(main(['--version', '4.2.10', '--sku', 'preview', '--stage', 'source']), 0)
 
     def test_cli_defaults_to_every_stage_and_the_full_sku(self):
-        result = qualify(Path(__file__).resolve().parents[1], '4.2.9', 'Darwin')
+        result = qualify(Path(__file__).resolve().parents[1], '4.2.10', 'Darwin')
         self.assertEqual(result['sku'], 'full')
         self.assertEqual(set(result['stages']), {'source', 'host', 'sku'})
         self.assertEqual(result['status'], 'BLOCKED')
