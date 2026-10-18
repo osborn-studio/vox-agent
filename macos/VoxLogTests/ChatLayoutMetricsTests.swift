@@ -1,10 +1,16 @@
+import AppKit
 import XCTest
 @testable import VoxLog
 
 final class ChatLayoutMetricsTests: XCTestCase {
 
+    /// The text area must show at least eight lines of the composer font
+    /// before it starts scrolling, measured with the real system line height.
     func testInputAllowsAtLeastEightVisibleLines() {
-        XCTAssertGreaterThanOrEqual(ChatLayoutMetrics.inputMaxVisibleLines, 8)
+        let font = NSFont.systemFont(ofSize: ChatLayoutMetrics.inputFontSize)
+        let lineHeight = NSLayoutManager().defaultLineHeight(for: font)
+        let visibleTextHeight = ChatLayoutMetrics.inputMaxHeight - ChatLayoutMetrics.inputTextInsetVertical * 2
+        XCTAssertGreaterThanOrEqual(Int(visibleTextHeight / lineHeight), 8)
     }
 
     func testChatWindowDoesNotShrinkBelowStableComposerWidth() {
