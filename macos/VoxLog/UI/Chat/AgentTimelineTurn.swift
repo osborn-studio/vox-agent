@@ -7,9 +7,6 @@ struct AgentTimelineTurn: View {
     var agentEmoji: String = "🤖"
     var agentName: String = "Agent"
 
-    var translationContent: AnyView? = nil
-    var translationActions: AnyView? = nil
-
     @State private var isToolOutputExpanded = false
 
     var body: some View {
@@ -27,7 +24,7 @@ struct AgentTimelineTurn: View {
                             .foregroundStyle(.tertiary)
                     }
                     Spacer(minLength: TF.spacingSM)
-                    if message.type == .text { translationActions }
+                    if message.type == .text { CopyOriginalButton(text: message.content) }
                     Text(message.timestamp, style: .time)
                         .font(.system(size: ChatLayoutMetrics.metadataFontSize, design: .monospaced))
                         .foregroundStyle(.secondary)
@@ -37,7 +34,6 @@ struct AgentTimelineTurn: View {
             switch message.type {
             case .text:
                 textTurn
-                translationContent
             case .toolUse:
                 toolUseTurn
             case .toolResult:

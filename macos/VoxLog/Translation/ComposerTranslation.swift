@@ -1,8 +1,20 @@
 import Foundation
 
-/// Target language of a translation request. Message translation (the inline
-/// timeline feature) always targets Simplified Chinese; the composer picks a
-/// target from the draft's script so one button covers both directions.
+/// One limiter shared by every translation caller. Admission is immediate, with no queue.
+@MainActor final class TranslationAdmission {
+    static let shared = TranslationAdmission()
+    private var tickets: Set<UUID> = []
+    var count: Int { tickets.count }
+    func acquire() -> UUID? {
+        guard tickets.count < 2 else { return nil }
+        let ticket = UUID(); tickets.insert(ticket); return ticket
+    }
+    func release(_ ticket: UUID) { tickets.remove(ticket) }
+}
+
+/// Target language of a translation request. The protocol default is Simplified
+/// Chinese; the composer picks a target from the draft's script so one button
+/// covers both directions.
 enum TranslationTarget: String, Sendable, Equatable, CaseIterable {
     case simplifiedChinese
     case english

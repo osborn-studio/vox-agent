@@ -14,14 +14,13 @@ import Foundation
     @MainActor static func run(_ sample: Sample, _ config: TranslationConfiguration) async -> Result {
         let start = Date()
         do {
-            let service = MessageTranslationService(snapshot: { config }, completion: {
-                try await TranslationTransport.complete(source: $0, config: $1)
-            })
-            let protection = try service.validate(sample.source)
+            guard sample.source.utf8.count <= ComposerTranslator.maxBytes else { throw TranslationFailure.inputLimit }
+            guard !sample.source.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw TranslationFailure.empty }
+            let protection = try TranslationProtection(sample.source)
             if protection.onlyCode {
                 return Result(id: sample.id, source: sample.source, reference: sample.reference_zh, review: sample.review, output: nil, status: "code_only_no_request", seconds: 0)
             }
-            let response = try await service.completion(sample.source, try service.snapshot())
+            let response = try await TranslationTransport.complete(source: sample.source, config: config)
             try protection.validate(response.text)
             return Result(id: sample.id, source: sample.source, reference: sample.reference_zh, review: sample.review, output: response.text, status: "complete_pending_semantic_review", seconds: Date().timeIntervalSince(start))
         } catch {

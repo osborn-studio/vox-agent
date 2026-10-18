@@ -53,19 +53,6 @@ final class TranslationWire: URLProtocol, @unchecked Sendable {
     static var requestCount: Int { lock.lock(); defer { lock.unlock() }; return requests.count }
 }
 
-@MainActor final class CompletionGate {
-    var pending: [CheckedContinuation<TranslationCompletion, Error>] = []
-    var calls = 0
-    var configurations: [TranslationConfiguration] = []
-    func complete(_ source: String, _ config: TranslationConfiguration) async throws -> TranslationCompletion {
-        calls += 1; configurations.append(config)
-        return try await withCheckedThrowingContinuation { pending.append($0) }
-    }
-    func finish(_ text: String = "译文") {
-        pending.removeFirst().resume(returning: TranslationCompletion(text: text, finishReason: "stop", complete: true))
-    }
-}
-
 @main struct MessageTranslationHarness {
     @MainActor static func wait(_ condition: () -> Bool) async {
         let deadline = Date().addingTimeInterval(3)
@@ -208,202 +195,33 @@ final class TranslationWire: URLProtocol, @unchecked Sendable {
         do { _ = try await already.value; preconditionFailure("cancel before start") } catch {}
         print("PASS request/finish/refusal/body/redirect/timeout/URLSession cancellation")
     }
-    @MainActor static func stores() async throws {
-        let defaults = UserDefaults(suiteName: "message-translation-harness-\(UUID())")!
-        let settings = TranslationSettings(defaults: defaults)
-        check(!settings.enabled, "development default off")
-        settings.setEnabled(true)
+    @MainActor static func configuration() throws {
         var selectedCalls = 0, loads: [LLMProvider] = []
         let captured = try SelectedLLMConfigurationResolver.snapshot(selected: { selectedCalls += 1; return .claude }, load: { provider in
             loads.append(provider); return ["model": "claude-sonnet-4-6", "apiKey": "synthetic-claude", "baseURL": "https://fixture.test/v1"]
         }, generation: { 4 }, bypass: { false })
         check(selectedCalls == 1 && loads == [.claude] && captured.credential == "synthetic-claude" && captured.generation == 4, "atomic selection and matching credentials")
-        let gate = CompletionGate(), admission = TranslationAdmission()
-        let service = MessageTranslationService(snapshot: { try config(generation: settings.generation) }, completion: gate.complete)
-        let store = MessageTranslationStore(service: service, admission: admission, settings: settings)
-        let otherWindow = MessageTranslationStore(service: service, admission: admission, settings: settings)
-        store.setVisible(true); otherWindow.setVisible(true)
-        var source = TranslationSource(kind: .local, id: "one", scope: "window/session1", text: "original", allowed: true)
-        store.translate(current: { source }); store.translate(current: { source })
-        otherWindow.translate(current: { TranslationSource(kind: .agent, id: "two", scope: "w2", text: "agent", allowed: true) })
-        store.translate(current: { TranslationSource(kind: .local, id: "three", scope: "w1", text: "third", allowed: true) })
-        await wait { gate.pending.count == 2 }
-        check(gate.calls == 2 && admission.count == 2 && store.state("local:three") == .failure(.busy), "global two, no queue, double-click coalescing")
-        source = TranslationSource(kind: .local, id: "one", scope: "window/session1", text: "edited", allowed: true)
-        store.reconcile()
-        check(store.state("local:one") == nil, "synchronous edit invalidation")
-        gate.finish(); gate.finish()
-        await wait { admission.count == 0 }
-        check(store.state("local:one") == nil, "late result rejected")
-        store.translate(current: { source }); await wait { !gate.pending.isEmpty }
-        gate.finish("译文"); await wait { admission.count == 0 }
-        let calls = gate.calls
-        store.collapse(source.key); store.translate(current: { source })
-        check(gate.calls == calls, "collapse and expand do not charge")
-        var copied: [String] = []
-        store.copyOriginal(current: { source }, copy: { copied.append($0) })
-        store.copyResult(source.key, copy: { copied.append($0) })
-        check(copied == ["edited", "译文"], "explicit independent copy")
-        store.translate(current: { source }, retry: true); await wait { !gate.pending.isEmpty }
-        settings.configurationChanged()
-        check(store.count == 0 && otherWindow.count == 0, "credential/config change clears synchronously")
-        gate.finish(); await wait { admission.count == 0 }
-        check(store.count == 0, "old config late result rejected")
-        store.translate(current: { source }); await wait { !gate.pending.isEmpty }
-        store.cancel(source.key)
-        check(store.state(source.key) == nil, "cancel immediately clears UI")
-        gate.finish(); await wait { admission.count == 0 }
-        let forbidden = TranslationSource(kind: .feishu, id: "other", scope: "policy", text: "private", allowed: false)
-        store.translate(current: { forbidden })
-        check(store.state(forbidden.key) == .failure(.denied), "policy before credential/network")
-        let huge = TranslationSource(kind: .local, id: "huge", scope: "local", text: String(repeating: "中", count: 30_000), allowed: true)
-        store.translate(current: { huge })
-        check(store.state(huge.key) == .failure(.inputLimit) && store.bytes < 1_000, "explicit entire-source input bound")
-        let code = TranslationSource(kind: .local, id: "code", scope: "local", text: "```\nx\n```", allowed: true)
-        store.translate(current: { code }); check(store.state(code.key) == .onlyCode, "pure code avoids request")
-        for i in 0..<150 {
-            let s = TranslationSource(kind: .local, id: "code\(i)", scope: "local", text: "`x`", allowed: true)
-            store.translate(current: { s })
-        }
-        check(store.count == 100 && store.bytes <= 4 * 1024 * 1024, "bounded states including failures")
-        store.setVisible(false); check(store.count == 0, "window hidden clears")
-        store.setVisible(true)
-        store.translate(current: { source }); await wait { !gate.pending.isEmpty }
-        settings.setEnabled(false); check(store.count == 0, "disable clears synchronously")
-        gate.finish(); await wait { admission.count == 0 }
-        check(store.count == 0, "disable rejects old result")
-        settings.setEnabled(true)
-        store.translate(current: { source }); await wait { !gate.pending.isEmpty }
-        store.cancel(source.key)
-        store.translate(current: { source }); await wait { gate.pending.count == 2 }
-        gate.finish("old")
-        await wait { admission.count == 1 }
-        check(store.state(source.key) == .running, "old request cannot erase new request ownership")
-        gate.finish("new"); await wait { admission.count == 0 }
-        check(store.state(source.key) == .result("new", expanded: true, identical: false), "new request owns result")
-        let bounded = MessageTranslationStore(service: MessageTranslationService(snapshot: { try config() }, completion: { _, _ in
-            TranslationCompletion(text: String(repeating: "文", count: 21_800), finishReason: "stop", complete: true)
-        }), admission: admission, settings: settings)
-        bounded.setVisible(true)
-        for i in 0..<90 {
-            let row = TranslationSource(kind: .local, id: "large\(i)", scope: "cache", text: "test", allowed: true)
-            bounded.translate(current: { row })
-            await wait { admission.count == 0 }
-            check(bounded.bytes <= 4 * 1024 * 1024 && bounded.count <= 100, "actual 4 MiB result-cache bound")
-        }
-        check(bounded.count < 90, "byte pressure evicts entries")
         var epochReads = 0
         rejects("configuration changed during snapshot") {
             _ = try SelectedLLMConfigurationResolver.snapshot(selected: { .openai }, load: { _ in ["model": "gpt-4.1", "apiKey": "synthetic"] }, generation: { epochReads += 1; return UInt64(epochReads) }, bypass: { false })
         }
-        print("PASS configuration, concurrency, races, explicit copy, bounds, lifecycle")
-    }
-    @MainActor static func sourceOwners() async throws {
-        let settings = TranslationSettings(defaults: UserDefaults(suiteName: "translation-owner-\(UUID())")!)
-        settings.setEnabled(true)
-        let gate = CompletionGate(), admission = TranslationAdmission()
-        let store = MessageTranslationStore(service: MessageTranslationService(snapshot: { try config() }, completion: gate.complete), admission: admission, settings: settings)
-        store.setVisible(true)
-        let dataset = LocalTranslationDataset(); dataset.translations = store
-        let local = VoiceMessage(id: "visible", text: "visible final", rawText: "raw must not leave", agent: "a", createdAt: Date(), durationSeconds: 0, latencyMs: 0, asrProvider: nil, isMe: true)
-        dataset.replace([local])
-        check(dataset.source(local: local.id)?.text == "visible final", "visible final not raw ASR")
-        let agent = AgentChatMessage(taskId: "active", agentId: "a", type: .text, content: "complete immutable event", seq: 0, timestamp: Date())
-        let agent2 = AgentChatMessage(taskId: "active", agentId: "a", type: .text, content: "another event", seq: 0, timestamp: Date())
-        let tool = AgentChatMessage(taskId: "active", agentId: "a", type: .toolResult, content: "private tool", seq: 0, timestamp: Date())
-        dataset.agentMessages = [agent, agent2, tool]
-        check(dataset.source(agent: agent.id)?.key != dataset.source(agent: agent2.id)?.key, "UUID not task/seq source identity")
-        check(dataset.source(agent: tool.id) == nil, "tools never eligible")
-        store.translate(current: { [weak dataset] in dataset?.source(local: local.id) })
-        await wait { !gate.pending.isEmpty }
-        dataset.refresh([local]); check(store.count == 1, "unchanged refresh preserves running request")
-        dataset.replace([local]); check(store.count == 0, "same IDs in rebuilt dataset invalidate synchronously")
-        gate.finish(); await wait { admission.count == 0 }
-        store.translate(current: { [weak dataset] in dataset?.source(agent: agent.id) })
-        await wait { !gate.pending.isEmpty }
-        dataset.agentMessages.append(AgentChatMessage(taskId: "active", agentId: "a", type: .status, content: "done", seq: 0, timestamp: Date()))
-        check(store.count == 1, "new event does not mutate immutable source")
-        dataset.agentMessages = []; check(store.count == 0, "removed Agent events invalidate")
-        gate.finish(); await wait { admission.count == 0 }
-
-        var pageText: String? = "authorized text", revision = String(repeating: "a", count: 64)
-        var mode = "shared_policy", allowed: Bool? = nil, deleted = false
-        var readCalls = 0, writeCalls = 0
-        let outbox = FeishuConversationOutbox(persistence: FeishuOutboxPersistence(load: { _ in
-            [FeishuPendingText(eventId: "own", conversationId: "fc_dm", text: "own visible original", status: "pending", accepted: false, messageId: nil, attempted: false)]
-        }, save: { _, _ in writeCalls += 1; preconditionFailure("translation persisted outbox") }))
-        let effects = FeishuAccountEffects(send: { request in
-            guard request.httpMethod == "GET" else { writeCalls += 1; preconditionFailure("translation sent a message") }
-            if request.url!.lastPathComponent == "me" {
-                return (Data(#"{"profile":{"name":"Alice","tenantKey":"team","openId":"ou_alice","appId":"cli_test","userId":"alice"},"targetIds":[]}"#.utf8), 200)
-            }
-            guard request.url!.path == "/v1/conversations/fc_dm/messages" else { preconditionFailure("unexpected message fetch") }
-            readCalls += 1
-            var item: [String: Any] = ["messageId": "om_one", "eventId": NSNull(), "source": "feishu", "text": pageText as Any? ?? NSNull(), "createdAt": "1000", "updatedAt": "1000", "deleted": deleted, "updated": false, "placeholder": false, "authorKind": "feishu_user", "authorId": "ou_other", "authorName": NSNull(), "status": NSNull()]
-            if let allowed { item["modelTranslationAllowed"] = allowed }
-            return (try JSONSerialization.data(withJSONObject: ["conversationId": "fc_dm", "mode": mode, "policyRevision": revision, "items": [item], "nextCursor": NSNull(), "hasMore": false]), 200)
-        }, load: { try! InputBackupClient.bindCredential("vox_sso_synthetic", to: URL(string: "https://fixture.test")!) }, save: { _ in preconditionFailure("credential write") }, delete: { true }, pauseBackup: {}, resetLogin: {}, completeLogin: { _ in }, persistEndpoint: { _ in }, browser: { _, _ in preconditionFailure("browser") })
-        let nav = FeishuConversationStore()
-        let account = FeishuAccountClient(conversations: nav, outbox: outbox, endpoint: "https://fixture.test", effects: effects)
-        let timeline = account.timeline
-        TranslationSourceLifecycle.connect(store, timeline: timeline, outbox: outbox)
-        await account.restore(); timeline.select("fc_dm"); timeline.setVisible(true)
-        await timeline.refresh(using: account)
-        check(timeline.translationSource("m:om_one")?.allowed == false, "old server shared default deny")
-        check(timeline.translationSource("m:om_forged") == nil, "unissued message cannot translate")
-        outbox.select(FeishuConversation(id: "fc_dm", kind: "personal", name: "mirror", capability: "text_send"))
-        check(outbox.translationSource("own", timeline: timeline)?.text == "own visible original", "own original adapter uses visible text")
-        store.translate(current: { [weak outbox, weak timeline] in
-            guard let timeline else { return nil }; return outbox?.translationSource("own", timeline: timeline)
-        })
-        await wait { !gate.pending.isEmpty }
-        gate.finish(); await wait { admission.count == 0 }
-        var ownCopy = ""
-        store.copyResult("original:own", copy: { ownCopy = $0 })
-        check(ownCopy == "译文" && writeCalls == 0, "own original translate and copy have no persistence/send")
-        outbox.select(nil); check(store.count == 0, "outbox selection invalidates synchronously")
-        allowed = true; await timeline.refresh(using: account)
-        store.translate(current: { [weak timeline] in timeline?.translationSource("m:om_one") })
-        await wait { !gate.pending.isEmpty }
-        let before = readCalls
-        gate.finish(); await wait { admission.count == 0 }
-        store.collapse("feishu:m:om_one")
-        store.translate(current: { [weak timeline] in timeline?.translationSource("m:om_one") })
-        store.copyResult("feishu:m:om_one", copy: { _ in })
-        check(readCalls == before && writeCalls == 0, "translate/expand/copy have no Feishu fetch/send/persistence effects")
-        pageText = "edit"; await timeline.refresh(using: account)
-        check(store.count == 0, "timeline owner edit clears derived result")
-        store.translate(current: { [weak timeline] in timeline?.translationSource("m:om_one") })
-        await wait { !gate.pending.isEmpty }
-        revision = String(repeating: "b", count: 64); allowed = false
-        await timeline.refresh(using: account)
-        check(store.count == 0, "policy revision invalidates in-flight result")
-        gate.finish(); await wait { admission.count == 0 }
-        mode = "personal"; allowed = nil
-        await timeline.refresh(using: account)
-        check(timeline.translationSource("m:om_one")?.allowed == true, "old server bound bot DM allowed")
-        store.translate(current: { [weak timeline] in timeline?.translationSource("m:om_one") })
-        await wait { !gate.pending.isEmpty }
-        deleted = true; pageText = nil; await timeline.refresh(using: account)
-        check(store.count == 0 && timeline.translationSource("m:om_one") == nil, "withdrawal cannot be restored by cache")
-        gate.finish(); await wait { admission.count == 0 }
-        timeline.invalidate(); timeline.bind(account.conversationIdentity); timeline.select("fc_dm")
-        deleted = false; pageText = "new login same ID"
-        await timeline.refresh(using: account)
-        store.translate(current: { [weak timeline] in timeline?.translationSource("m:om_one") })
-        await wait { !gate.pending.isEmpty }
-        account.endpoint = "https://other.test"
-        check(store.count == 0, "account origin clears before awaits")
-        gate.finish(); await wait { admission.count == 0 }
-        check(writeCalls == 0, "source-owner workflow never persists/sends")
-        print("PASS production local/Agent/Feishu owner invalidation and effect isolation")
+        let settings = TranslationSettings()
+        let before = settings.generation
+        settings.configurationChanged()
+        check(settings.generation == before &+ 1, "configuration change bumps the epoch")
+        let admission = TranslationAdmission()
+        guard let first = admission.acquire(), let second = admission.acquire() else { preconditionFailure("two admissions") }
+        check(admission.acquire() == nil && admission.count == 2, "global two, no queue")
+        admission.release(first); check(admission.count == 1, "release frees a slot")
+        admission.release(second); admission.release(second); check(admission.count == 0, "double release is idempotent")
+        check(ComposerTranslationDirection.target(for: "Hello there") == .simplifiedChinese && ComposerTranslationDirection.target(for: "今天讨论设计") == .english, "composer direction follows the draft script")
+        print("PASS configuration snapshot, epoch, admission and composer direction")
     }
     @MainActor static func main() async throws {
         try protection()
         try await protocols()
-        try await stores()
-        try await sourceOwners()
-        print("PASS all message translation regression groups (offline production source)")
+        try configuration()
+        print("PASS all translation regression groups (offline production source)")
     }
 }
 #endif

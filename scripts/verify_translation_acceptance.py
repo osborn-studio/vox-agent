@@ -53,7 +53,6 @@ sources = [
     "Translation/TranslationProtection.swift",
     "Translation/SelectedLLMConfigurationResolver.swift",
     "Translation/TranslationTransport.swift",
-    "Translation/MessageTranslationStore.swift",
     "Translation/ComposerTranslation.swift",
 ]
 runner = "TranslationLiveAcceptance.swift"

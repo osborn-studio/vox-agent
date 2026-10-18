@@ -4,11 +4,7 @@ import SwiftUI
 struct FeishuTextComposer: View {
     @Bindable var outbox: FeishuConversationOutbox
     let account: FeishuAccountClient
-    var translationContent: (FeishuPendingText) -> AnyView = { _ in AnyView(EmptyView()) }
-    var translationActions: (FeishuPendingText) -> AnyView = { _ in AnyView(EmptyView()) }
     var voiceControls: () -> AnyView = { AnyView(EmptyView()) }
-
-    @State private var visibleTranslationAnchor: String?
 
     private func label(_ record: FeishuPendingText) -> String {
         if record.status == "unknown" && record.stopped {
@@ -37,18 +33,15 @@ struct FeishuTextComposer: View {
                         HStack(alignment: .top, spacing: TF.spacingSM) {
                             Rectangle().fill(TF.accent).frame(width: TF.spacingXS / 2)
                             VStack(alignment: .leading, spacing: TF.spacingXS) {
-                                HStack { Spacer(minLength: TF.spacingSM); translationActions(record) }
+                                HStack { Spacer(minLength: TF.spacingSM); CopyOriginalButton(text: record.text) }
                                 Text(record.text).textSelection(.enabled)
-                                translationContent(record)
                                 Label(label(record), systemImage: record.status == "sent" ? "checkmark.circle" : "clock")
                                     .font(.caption).foregroundStyle(.secondary)
                             }
                         }
                     }
                 }
-                .scrollTargetLayout()
             }
-            .scrollPosition(id: $visibleTranslationAnchor, anchor: .top)
             Text(L("本机传输记录：", "Local transport records: ") + "\(outbox.records.count)/200")
                 .font(.caption).monospacedDigit().foregroundStyle(.secondary)
             if outbox.capacityFull {

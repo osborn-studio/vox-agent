@@ -140,8 +140,8 @@ struct FeishuRecoveredDraft: Identifiable {
 
 @MainActor @Observable final class FeishuConversationOutbox {
     private(set) var identity: FeishuConversationIdentity?
-    private(set) var records: [FeishuPendingText] = [] { didSet { onTranslationSourcesChanged?() } }
-    private(set) var destination: FeishuConversation? { didSet { onTranslationSourcesChanged?() } }
+    private(set) var records: [FeishuPendingText] = []
+    private(set) var destination: FeishuConversation?
     private(set) var recoveredDrafts: [FeishuRecoveredDraft] = []
     var draft = ""
     private(set) var voiceDraftID: UUID?
@@ -156,7 +156,6 @@ struct FeishuRecoveredDraft: Identifiable {
     private var storageReady = false
     private var uncertainCapture: FeishuPendingText?
     private var nextBatch = 0
-    var onTranslationSourcesChanged: (() -> Void)?
     var onForbidden: ((String) -> Void)?
 
     init(persistence: FeishuOutboxPersistence, now: @escaping () -> Date = Date.init) {
