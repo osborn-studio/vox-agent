@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from scripts.verify_mobile_device import (
     CheckResult,
     build_evidence,
@@ -51,10 +53,16 @@ def test_evidence_keeps_hardware_only_work_visibly_pending():
 
 
 def test_product_decisions_name_required_release_dimensions():
-    org_adr = "docs/decisions/2026-07-17-org-collab-mainline.md"
-    roadmap = "docs/product/2026-07-17-phase3-5-execution-roadmap.md"
+    org_adr = Path("docs/decisions/2026-07-17-org-collab-mainline.md")
+    roadmap = Path("docs/product/2026-07-17-phase3-5-execution-roadmap.md")
+    headings = ("Scope", "Compatibility", "Migration", "Security", "Exit criteria")
 
-    for path in (org_adr, roadmap):
-        content = Path(path).read_text(encoding="utf-8")
-        for heading in ("Scope", "Compatibility", "Migration", "Security", "Exit criteria"):
-            assert heading in content
+    org_content = org_adr.read_text(encoding="utf-8")
+    for heading in headings:
+        assert heading in org_content
+
+    if not roadmap.exists():
+        pytest.skip(f"{roadmap} is a private product plan omitted from the public source snapshot (SOURCE_SNAPSHOT.md)")
+    roadmap_content = roadmap.read_text(encoding="utf-8")
+    for heading in headings:
+        assert heading in roadmap_content

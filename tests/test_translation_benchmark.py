@@ -178,6 +178,8 @@ def test_release_corpus_covers_each_chinese_japanese_english_direction():
         / "benchmarks"
         / "realtime-translation-corpus-v1.json"
     )
+    if not path.exists():
+        pytest.skip("docs/benchmarks/realtime-translation-corpus-v1.json is the release corpus omitted from the public source snapshot (SOURCE_SNAPSHOT.md)")
 
     corpus = load_translation_benchmark_corpus(path)
     pairs = {(item["sourceLanguage"], item["targetLanguage"]) for item in corpus}

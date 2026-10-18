@@ -58,7 +58,12 @@ final class ChatInputBarSourceTests: XCTestCase {
         XCTAssertTrue(source.contains(".frame(width: width)"))
         XCTAssertTrue(source.contains(".fixedSize()"))
         XCTAssertTrue(source.contains(".layoutPriority(10)"))
-        XCTAssertTrue(source.contains(".padding(.trailing, 10)"))
+        XCTAssertTrue(source.contains(".padding(.trailing, ChatLayoutMetrics.inputToolbarTrailingInset)"))
+        XCTAssertTrue(source.contains(".frame(height: ChatLayoutMetrics.inputChipHeight)"))
+        XCTAssertTrue(source.contains(".frame(maxWidth: ChatLayoutMetrics.inputModelBadgeMaxWidth)"))
+        XCTAssertTrue(source.contains(".frame(width: ChatLayoutMetrics.inputIconButtonSize, height: ChatLayoutMetrics.inputIconButtonSize)"))
+        XCTAssertTrue(source.contains(".frame(width: ChatLayoutMetrics.voiceCountdownRingSize, height: ChatLayoutMetrics.voiceCountdownRingSize)"))
+        XCTAssertTrue(source.contains("width: ChatLayoutMetrics.inputTextInsetHorizontal,\n            height: ChatLayoutMetrics.inputTextInsetVertical"))
         XCTAssertTrue(source.contains("composerIconButton("))
         XCTAssertTrue(source.contains("systemImage: micSystemImage"))
         XCTAssertTrue(source.contains("systemImage: \"arrow.up\""))
@@ -69,6 +74,14 @@ final class ChatInputBarSourceTests: XCTestCase {
         XCTAssertTrue(source.contains("setContentCompressionResistancePriority(.defaultLow, for: .horizontal)"))
         XCTAssertFalse(source.contains("inputComposerHeight"))
         XCTAssertFalse(source.contains("inputButtonReserveWidth"))
+        // Composer geometry comes from ChatLayoutMetrics and TF, not literals.
+        XCTAssertFalse(source.contains(".frame(height: 26)"))
+        XCTAssertFalse(source.contains(".frame(width: 30, height: 30)"))
+        XCTAssertFalse(source.contains(".frame(width: 36, height: 36)"))
+        XCTAssertFalse(source.contains(".frame(maxWidth: 220)"))
+        XCTAssertFalse(source.contains(".padding(.trailing, 10)"))
+        XCTAssertFalse(source.contains(".padding(.vertical, 10)"))
+        XCTAssertFalse(source.contains("NSSize(width: 10, height: 8)"))
     }
 
     /// Translate shares the Polish provider/model, keeps the original for
