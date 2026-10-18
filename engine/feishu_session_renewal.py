@@ -2,14 +2,29 @@
 
 from __future__ import annotations
 
+import logging
+import re
 import secrets
 from fastapi import HTTPException
 
 from hashlib import sha256
 
+from .feishu_client import DiscoveryError
+
+logger = logging.getLogger(__name__)
+
 
 def digest(value: str) -> str:
     return sha256(value.encode()).hexdigest()
+
+
+def _upstream_class(error):
+    """Fixed failure class only; a Feishu response body never reaches the log."""
+    if isinstance(error, DiscoveryError):
+        code = error.args[0] if error.args else None
+        if isinstance(code, str) and re.fullmatch(r"[A-Z_]{1,64}", code):
+            return code
+    return type(error).__name__
 
 
 class RenewableSessions:
@@ -129,10 +144,13 @@ class RenewableSessions:
                 )
             self.db.execute("UPDATE login_session SET revoked=1 WHERE hash=?", (digest(token),))
 
-    def _renewable(self, token):
+    def _renewable(self, token, context=None):
         row = self.db.execute(
             "SELECT * FROM login_device WHERE refresh_hash=?", (digest(token),)
         ).fetchone()
+        if row is not None and context is not None:
+            context["user"] = digest(row["user_id"])[:12]
+            context["device"] = row["id"][:8]
         if not row or row["revoked"] or row["expires"] <= self.clock():
             raise HTTPException(401, "SESSION_EXPIRED")
         user = self.auth.org_store.get_user(row["user_id"])
@@ -153,11 +171,32 @@ class RenewableSessions:
         return row, user, identity
 
     def renew(self, token):
+        # One structured line per outcome: hashed user prefix, device prefix,
+        # outcome code and upstream failure class. Never open_id, tokens or bodies.
+        context = {"user": "-", "device": "-", "upstream": "none"}
+        try:
+            result = self._renew(token, context)
+        except HTTPException as error:
+            self._log_renewal(context, error.detail, logging.WARNING)
+            raise
+        self._log_renewal(context, "RENEWED", logging.INFO)
+        return result
+
+    @staticmethod
+    def _log_renewal(context, outcome, level):
+        logger.log(
+            level,
+            "Feishu session renewal: outcome=%s user=%s device=%s upstream=%s",
+            outcome, context["user"], context["device"], context["upstream"],
+        )
+
+    def _renew(self, token, context):
         # This implementation uses a custom app's tenant token, never a multi-tenant
         # store-app token. Unsupported configuration cannot grant a renewal.
         with self.auth.identity_lock, self.lock:
-            device, user, identity = self._renewable(token)
+            device, user, identity = self._renewable(token, context)
             if len(self.settings.tenant_orgs) != 1:
+                context["upstream"] = "TENANT_CONFIG"
                 raise HTTPException(503, "MEMBERSHIP_CHECK_UNAVAILABLE")
             now = self.clock()
             self.renew_starts = [(key, t) for key, t in self.renew_starts if t > now - 60]
@@ -173,7 +212,8 @@ class RenewableSessions:
         try:
             try:
                 active = self.provider.member_active(identity["tenant"], identity["open_id"])
-            except Exception:
+            except Exception as error:
+                context["upstream"] = _upstream_class(error)
                 raise HTTPException(503, "MEMBERSHIP_CHECK_UNAVAILABLE") from None
             with self.auth.identity_lock, self.lock:
                 current, user, identity = self._renewable(token)

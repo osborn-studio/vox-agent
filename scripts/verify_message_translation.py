@@ -20,6 +20,7 @@ enum KeychainService {
  static func loadLLMCredentials(for p: LLMProvider) -> [String: String]? { fatalError("real credential read") }
  static func llmDisplayConfiguration(for p: LLMProvider) -> (model: String, endpoint: String) { ("synthetic", "https://fixture.test/v1") }
  static func load(key: String) -> String? { fatalError("real credential read") }
+ static func loadScalarWithoutInteraction(key: String) -> String? { fatalError("real credential read") }
  static func save(key: String, value: String) throws { fatalError("real credential write") }
  static func delete(key: String) -> Bool { fatalError("real credential delete") }
 }

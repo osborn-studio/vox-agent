@@ -324,3 +324,127 @@ def test_pruning_preserves_current_family_and_removes_old_proof(service):
     assert service.db.execute(
         "SELECT hash FROM login_session_identity WHERE hash=?", (digest(recent["token"]),)
     ).fetchone()
+
+
+def test_each_renewal_outcome_logs_one_structured_line_without_identifiers(service, caplog):
+    import logging
+
+    from engine.feishu_login import digest
+
+    setup_clock(service)
+    first = login(service)
+    refresh = first["refreshToken"]
+    user_id = first["profile"]["userId"]
+    device_id = service.db.execute(
+        "SELECT id FROM login_device WHERE user_id=?", (user_id,)
+    ).fetchone()[0]
+    logger = "engine.feishu_session_renewal"
+
+    def lines():
+        return [
+            r for r in caplog.records
+            if r.name == logger and r.getMessage().startswith("Feishu session renewal")
+        ]
+
+    def only_line():
+        records = lines()
+        assert len(records) == 1
+        message = records[0].getMessage()
+        for secret in (refresh, user_id, device_id, "ou_alice", "team", "private"):
+            assert secret not in message
+        return records[0], message
+
+    def attempt():
+        caplog.clear()
+        try:
+            service.renew(refresh)
+        except HTTPException as error:
+            return error.detail
+        return "RENEWED"
+
+    with caplog.at_level(logging.INFO, logger=logger):
+        assert attempt() == "RENEWED"
+        record, message = only_line()
+        assert record.levelno == logging.INFO
+        assert f"user={digest(user_id)[:12]}" in message
+        assert f"device={device_id[:8]}" in message
+        assert "outcome=RENEWED" in message and "upstream=none" in message
+
+        def denied(*_):
+            raise DiscoveryError("PERMISSION_DENIED")
+
+        service.provider.member_active = denied
+        assert attempt() == "MEMBERSHIP_CHECK_UNAVAILABLE"
+        record, message = only_line()
+        assert record.levelno == logging.WARNING
+        assert "outcome=MEMBERSHIP_CHECK_UNAVAILABLE" in message
+        assert "upstream=PERMISSION_DENIED" in message
+
+        def crashed(*_):
+            raise RuntimeError('{"code": 99991663, "msg": "private upstream body ou_alice"}')
+
+        service.provider.member_active = crashed
+        assert attempt() == "MEMBERSHIP_CHECK_UNAVAILABLE"
+        _, message = only_line()
+        assert "upstream=RuntimeError" in message
+
+        service.provider.member_active = lambda *_: True
+        service.settings.tenant_orgs = {"team": "default-org", "another": "default-org"}
+        assert attempt() == "MEMBERSHIP_CHECK_UNAVAILABLE"
+        _, message = only_line()
+        assert "upstream=TENANT_CONFIG" in message
+        service.settings.tenant_orgs = {"team": "default-org"}
+
+        for _ in range(3):
+            assert attempt() == "RENEWED"
+        assert attempt() == "RENEWAL_RATE_LIMIT"
+        _, message = only_line()
+        assert "outcome=RENEWAL_RATE_LIMIT" in message and "upstream=none" in message
+
+        service.renew_starts = []
+        service.provider.member_active = lambda *_: False
+        assert attempt() == "ACCOUNT_DISABLED"
+        _, message = only_line()
+        assert "outcome=ACCOUNT_DISABLED" in message and "upstream=none" in message
+        assert f"user={digest(user_id)[:12]}" in message
+
+        assert attempt() == "SESSION_EXPIRED"
+        _, message = only_line()
+        assert "outcome=SESSION_EXPIRED" in message
+
+        caplog.clear()
+        with pytest.raises(HTTPException) as e:
+            service.renew("vox_refresh_" + "x" * 43)
+        assert e.value.detail == "SESSION_EXPIRED"
+        _, message = only_line()
+        assert "user=- device=-" in message
+
+
+def test_concurrent_renewal_logs_in_progress(service, caplog):
+    import logging
+
+    setup_clock(service)
+    first = login(service)
+    entered, release = threading.Event(), threading.Event()
+
+    def remote(*_):
+        entered.set()
+        assert release.wait(2)
+        return True
+
+    service.provider.member_active = remote
+    thread = threading.Thread(target=lambda: service.renew(first["refreshToken"]))
+    with caplog.at_level(logging.INFO, logger="engine.feishu_session_renewal"):
+        thread.start()
+        assert entered.wait(2)
+        with pytest.raises(HTTPException) as e:
+            service.renew(first["refreshToken"])
+        assert e.value.status_code == 409
+        release.set()
+        thread.join(2)
+    outcomes = [
+        r.getMessage().split("outcome=")[1].split()[0]
+        for r in caplog.records
+        if r.getMessage().startswith("Feishu session renewal")
+    ]
+    assert sorted(outcomes) == ["RENEWAL_IN_PROGRESS", "RENEWED"]
