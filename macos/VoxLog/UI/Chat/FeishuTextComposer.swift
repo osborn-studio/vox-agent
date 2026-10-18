@@ -1,10 +1,21 @@
 import SwiftUI
 
 /// Isolated entry: optional voice controls produce drafts; only explicit send enqueues.
+/// Translate rewrites the draft in place through `ComposerTranslator` (the same
+/// audited path as the agent composer) but, unlike the agent composer, there is
+/// no Polish step and nothing here ever sends: the translated draft waits for
+/// the explicit "发送文字" action.
 struct FeishuTextComposer: View {
     @Bindable var outbox: FeishuConversationOutbox
     let account: FeishuAccountClient
     var voiceControls: () -> AnyView = { AnyView(EmptyView()) }
+
+    @State private var isTranslating = false
+    @State private var translationTask: Task<Void, Never>?
+    /// Draft text before the last translation, for one-click restore.
+    @State private var translationOriginal: String?
+    /// Inline outcome of the last translation (result, cancellation or failure).
+    @State private var translationNote: String?
 
     private func label(_ record: FeishuPendingText) -> String {
         if record.status == "unknown" && record.stopped {
@@ -67,18 +78,110 @@ struct FeishuTextComposer: View {
                     .frame(minHeight: ChatLayoutMetrics.inputMinHeight, maxHeight: ChatLayoutMetrics.inputMaxHeight)
                     .accessibilityLabel(L("飞书文字草稿", "Feishu text draft"))
                     .overlay(RoundedRectangle(cornerRadius: TF.cornerSM).stroke(TF.line))
-                HStack {
-                    Text(L("不支持真实 @；发送后目标固定。", "Mentions are plain text; sending freezes the destination."))
-                        .font(.caption).foregroundStyle(.secondary)
-                    Spacer()
+                    .disabled(isTranslating)
+                    .opacity(isTranslating ? 0.45 : 1)
+                HStack(spacing: TF.spacingSM) {
+                    ComposerTranslateControls(
+                        isTranslating: isTranslating,
+                        canTranslate: canTranslate,
+                        canRestore: translationOriginal != nil,
+                        help: translateHelp,
+                        onTranslate: translateDraft,
+                        onCancel: cancelTranslation,
+                        onRestore: restoreTranslation
+                    )
+                    if let translationNote {
+                        Text(translationNote)
+                            .font(.caption).foregroundStyle(.secondary)
+                            .lineLimit(1).truncationMode(.tail)
+                            .help(translationNote)
+                            .accessibilityLabel(translationNote)
+                    }
+                    Spacer(minLength: TF.spacingSM)
                     Button(L("发送文字", "Send text")) {
                         if outbox.enqueue() { Task { await outbox.flush(using: account) } }
-                    }.disabled(!outbox.canSend)
+                    }.disabled(!outbox.canSend || isTranslating)
                 }
+                Text(L("不支持真实 @；发送后目标固定。", "Mentions are plain text; sending freezes the destination."))
+                    .font(.caption).foregroundStyle(.secondary)
             } else {
                 Label(L("此服务仅支持会话发现，尚未启用发送。", "This service supports discovery only; sending is unavailable."), systemImage: "info.circle")
                     .foregroundStyle(.secondary)
             }
+        }
+        .onChange(of: outbox.draft) {
+            draftDidChange()
+        }
+        .onDisappear {
+            translationTask?.cancel()
+            translationTask = nil
+        }
+    }
+
+    // MARK: - Translate
+
+    private var canTranslate: Bool {
+        !outbox.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isTranslating
+    }
+
+    private var translateHelp: String {
+        let target = ComposerTranslationDirection.target(for: outbox.draft)
+        return L(
+            "用 Polish 模型将草稿翻译为\(target.label)；译文留在发送框，仍需点击“发送文字”",
+            "Translate the draft to \(target.label) with the Polish model; the result stays here until you press Send text"
+        )
+    }
+
+    /// Replaces the draft with its translation and keeps the original for
+    /// Restore. The outbox is never touched: no enqueue, no flush.
+    private func translateDraft() {
+        guard canTranslate else { return }
+        let original = outbox.draft
+        isTranslating = true
+        translationNote = nil
+        translationTask?.cancel()
+        translationTask = Task { @MainActor in
+            defer { isTranslating = false }
+            do {
+                let result = try await ComposerTranslator.translate(original)
+                guard !Task.isCancelled, outbox.draft == original else { return }
+                if result.unchanged {
+                    translationNote = L("译文与原文相同，未改动", "Translation matches the original; nothing changed")
+                    return
+                }
+                translationOriginal = original
+                outbox.draft = result.text
+                translationNote = L(
+                    "已翻译为\(result.target.label) · 点击“发送文字”后才会发出",
+                    "Translated to \(result.target.label) · nothing is sent until you press Send text"
+                )
+            } catch is CancellationError {
+                guard outbox.draft == original else { return }
+                translationNote = TranslationFailure.cancelled.message
+            } catch {
+                guard outbox.draft == original else { return }
+                translationNote = (error as? TranslationFailure)?.message ?? TranslationFailure.network.message
+            }
+        }
+    }
+
+    private func cancelTranslation() {
+        translationTask?.cancel()
+    }
+
+    private func restoreTranslation() {
+        guard let original = translationOriginal else { return }
+        translationOriginal = nil
+        translationNote = nil
+        outbox.draft = original
+    }
+
+    /// Sending or clearing the draft forgets the translation; typing (or ⌘Z)
+    /// back to the exact original counts as a restore.
+    private func draftDidChange() {
+        if outbox.draft.isEmpty || outbox.draft == translationOriginal {
+            translationOriginal = nil
+            translationNote = nil
         }
     }
 }

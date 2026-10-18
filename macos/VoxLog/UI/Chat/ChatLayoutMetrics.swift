@@ -38,6 +38,8 @@ enum ChatLayoutMetrics {
     static let inputMaxHeight: CGFloat = 176
     /// Bottom control row: Translate on the left; model badge, mic and send on the right.
     static let inputToolbarHeight: CGFloat = 36
+    /// Height of the chip-style controls in the composer rows (Translate, model badge).
+    static let inputChipHeight: CGFloat = 26
     static let inputLineHeight: CGFloat = 18
 
     static var inputMaxVisibleLines: Int {
