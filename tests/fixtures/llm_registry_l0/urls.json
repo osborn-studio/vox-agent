@@ -1,0 +1,93 @@
+[
+ {
+  "provider": "deepseek",
+  "endpoint": "openai-chat-completions",
+  "which": "chat",
+  "model": "deepseek-chat",
+  "url": "https://api.deepseek.com/chat/completions"
+ },
+ {
+  "provider": "deepseek",
+  "endpoint": "openai-chat-completions",
+  "which": "discovery",
+  "model": null,
+  "url": "https://api.deepseek.com/models"
+ },
+ {
+  "provider": "dashscope_cn",
+  "endpoint": "openai-chat-completions",
+  "which": "chat",
+  "model": "qwen-flash",
+  "url": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
+ },
+ {
+  "provider": "gemini",
+  "endpoint": "gemini-generate-content",
+  "which": "chat",
+  "model": "gemini-2.5-flash",
+  "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
+ },
+ {
+  "provider": "gemini",
+  "endpoint": "gemini-generate-content",
+  "which": "stream_chat",
+  "model": "gemini-2.5-flash",
+  "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse"
+ },
+ {
+  "provider": "gemini",
+  "endpoint": "gemini-generate-content",
+  "which": "discovery",
+  "model": null,
+  "url": "https://generativelanguage.googleapis.com/v1beta/models?pageSize=200"
+ },
+ {
+  "provider": "gemini",
+  "endpoint": "openai-chat-completions",
+  "which": "chat",
+  "model": "gemini-2.5-flash",
+  "url": "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+ },
+ {
+  "provider": "minimax_cn",
+  "endpoint": "anthropic-messages",
+  "which": "chat",
+  "model": "MiniMax-M2",
+  "url": "https://api.minimaxi.com/anthropic/v1/messages"
+ },
+ {
+  "provider": "minimax_cn",
+  "endpoint": "anthropic-messages",
+  "which": "discovery",
+  "model": null,
+  "url": "https://api.minimaxi.com/anthropic/v1/models"
+ },
+ {
+  "provider": "zhipu",
+  "endpoint": "anthropic-messages",
+  "which": "discovery",
+  "model": null,
+  "url": "https://open.bigmodel.cn/api/anthropic/v1/models"
+ },
+ {
+  "provider": "claude",
+  "endpoint": "anthropic-messages",
+  "which": "chat",
+  "model": "claude-sonnet-4-5",
+  "url": "https://api.anthropic.com/v1/messages"
+ },
+ {
+  "provider": "openai",
+  "endpoint": "openai-responses",
+  "which": "chat",
+  "model": "gpt-5-mini",
+  "url": "https://api.openai.com/v1/responses"
+ },
+ {
+  "provider": "ollama",
+  "endpoint": "openai-chat-completions",
+  "which": "discovery",
+  "model": null,
+  "url": "http://localhost:11434/v1/models"
+ }
+]
