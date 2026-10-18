@@ -238,7 +238,9 @@ jobs:
     env:
       CARGO_AUDIT_URL: https://github.com/rustsec/rustsec/releases/download/cargo-audit/v0.22.2/cargo-audit-x86_64-unknown-linux-gnu-v0.22.2.tgz
       CARGO_AUDIT_SHA256: ab28a1bdb54db4d5d8ad5981cf1f959410370b3d28250dbd35f6a44248620e39
-      RUSTSEC_ADVISORY_DB_COMMIT: ef03605143a913024f864d2edf476adad5720c93
+      # Pin refreshed from the archived ef036051 (2026-09-28): the policy's 14-day
+      # age gate had already expired. Keep in sync with security/rust-audit-policy.json.
+      RUSTSEC_ADVISORY_DB_COMMIT: 999ec89d5d3f10f20be14750ec8c2d8b44e0ac9b
     steps:
       - uses: actions/checkout@v7
         with:
