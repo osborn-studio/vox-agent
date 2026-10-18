@@ -11,6 +11,16 @@ struct FeishuAccountView: View {
                 if let profile = account.profile {
                     Text(profile.name).font(.headline)
                     Text(L("已绑定飞书账户", "Linked to Feishu")).font(.caption).foregroundStyle(.secondary)
+                    // Read-only session diagnostics: "linked" is not "session valid".
+                    // Fixed Vox outcome codes only; raw server text and tokens never render.
+                    if let validity = account.sessionValidityLine {
+                        Text(validity).font(.caption).foregroundStyle(.secondary).monospacedDigit()
+                            .accessibilityLabel(validity)
+                    }
+                    if let renewal = account.lastRenewalLine {
+                        Text(renewal).font(.caption).foregroundStyle(.secondary).monospacedDigit()
+                            .accessibilityLabel(renewal)
+                    }
                     Button(L("退出登录", "Sign out")) { Task { await account.logout(backup: appState.inputBackup) } }
                         .disabled(account.busy)
                 } else {
