@@ -69,15 +69,12 @@ jobs:
         # The Claude CLI end-to-end test requires an authenticated external service.
         # Every deterministic unit, contract, org-collab, voice-memory, and retry
         # test runs here.
-        # The three deselected tests read files that the public source snapshot
-        # deliberately omits (private product plans, the release benchmark
-        # corpus, the private README wording); see SOURCE_SNAPSHOT.md.
+        # Tests that read files the public source snapshot deliberately omits
+        # (private product plans, the release benchmark corpus, the private
+        # README wording) skip themselves with a reason naming SOURCE_SNAPSHOT.md.
         run: >-
           python -m pytest tests
           --ignore=tests/test_engine_e2e_claude.py
-          --deselect tests/test_instruction_contract.py::test_claude_records_intentional_asymmetry_and_design_contract
-          --deselect tests/test_mobile_release_readiness.py::test_product_decisions_name_required_release_dimensions
-          --deselect tests/test_translation_benchmark.py::test_release_corpus_covers_each_chinese_japanese_english_direction
           -W error::DeprecationWarning
           -q --tb=short
 

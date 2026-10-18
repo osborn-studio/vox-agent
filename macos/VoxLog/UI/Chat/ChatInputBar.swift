@@ -45,9 +45,9 @@ struct ChatInputBar: View {
         GeometryReader { geometry in
             composerBody(width: max(0, geometry.size.width - ChatLayoutMetrics.inputHorizontalInset * 2))
                 .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.vertical, 10)
+                .padding(.vertical, ChatLayoutMetrics.inputVerticalInset)
         }
-        .frame(height: composerHeight + 20)
+        .frame(height: composerHeight + ChatLayoutMetrics.inputVerticalInset * 2)
         .frame(minWidth: 0, maxWidth: .infinity)
         .animation(accessibilityReduceMotion ? nil : TF.springSnappy, value: voiceState.stage)
         .onChange(of: appState.transcriptionText) {
@@ -116,8 +116,8 @@ struct ChatInputBar: View {
                 Text(inputPlaceholder)
                     .font(.system(size: ChatLayoutMetrics.inputFontSize))
                     .foregroundStyle(.secondary)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 8)
+                    .padding(.horizontal, ChatLayoutMetrics.inputTextInsetHorizontal)
+                    .padding(.vertical, ChatLayoutMetrics.inputTextInsetVertical)
                     .allowsHitTesting(false)
             }
         }
@@ -135,6 +135,7 @@ struct ChatInputBar: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .truncationMode(.tail)
+                    .help(note)
             }
 
             if polishFailure != nil {
@@ -149,7 +150,7 @@ struct ChatInputBar: View {
 
             providerBadge
 
-            HStack(spacing: 6) {
+            HStack(spacing: ChatLayoutMetrics.inputControlSpacing) {
                 micButton
 
                 composerIconButton(
@@ -166,7 +167,7 @@ struct ChatInputBar: View {
         }
         .frame(height: ChatLayoutMetrics.inputToolbarHeight)
         .padding(.leading, TF.spacingMD)
-        .padding(.trailing, 10)
+        .padding(.trailing, ChatLayoutMetrics.inputToolbarTrailingInset)
     }
 
     private var voiceHeader: some View {
@@ -215,7 +216,7 @@ struct ChatInputBar: View {
             .font(.system(size: 12, weight: .medium))
             .foregroundStyle(canTranslate || isTranslating ? Color.primary : Color.secondary)
             .padding(.horizontal, TF.spacingSM)
-            .frame(height: 26)
+            .frame(height: ChatLayoutMetrics.inputChipHeight)
             .background(RoundedRectangle(cornerRadius: TF.cornerSM).fill(TF.surface))
             .overlay(RoundedRectangle(cornerRadius: TF.cornerSM).stroke(TF.line))
         }
@@ -312,7 +313,7 @@ struct ChatInputBar: View {
         let config = KeychainService.llmDisplayConfiguration(for: provider)
         let configured = KeychainService.llmModelConfigured(for: provider)
         Button(action: openModelSettings) {
-            HStack(spacing: 4) {
+            HStack(spacing: TF.spacingXS) {
                 Image(systemName: configured ? "cpu" : "exclamationmark.circle")
                     .font(.system(size: 10, weight: .semibold))
                 Text(configured ? "\(name) · \(config.model)" : L("未配置 Polish 模型", "No Polish model"))
@@ -324,10 +325,10 @@ struct ChatInputBar: View {
             .font(.system(size: 11))
             .foregroundStyle(.secondary)
             .padding(.horizontal, TF.spacingSM)
-            .frame(height: 26)
+            .frame(height: ChatLayoutMetrics.inputChipHeight)
         }
         .buttonStyle(.plain)
-        .frame(maxWidth: 220)
+        .frame(maxWidth: ChatLayoutMetrics.inputModelBadgeMaxWidth)
         .layoutPriority(5)
         .help(configured
             ? L("Polish 与翻译共用此模型 · \(config.endpoint)", "Polish and Translate share this model · \(config.endpoint)")
@@ -359,7 +360,7 @@ struct ChatInputBar: View {
         .overlay {
             if voiceState.stage == .counting {
                 VoiceCountdownRing(progress: voiceState.countdownProgress)
-                    .frame(width: 36, height: 36)
+                    .frame(width: ChatLayoutMetrics.voiceCountdownRingSize, height: ChatLayoutMetrics.voiceCountdownRingSize)
                     .accessibilityHidden(true)
             }
         }
@@ -377,7 +378,7 @@ struct ChatInputBar: View {
             Image(systemName: systemImage)
                 .font(.system(size: 13, weight: .bold))
                 .foregroundStyle(foreground)
-                .frame(width: 30, height: 30)
+                .frame(width: ChatLayoutMetrics.inputIconButtonSize, height: ChatLayoutMetrics.inputIconButtonSize)
                 .background(Circle().fill(fill))
         }
         .buttonStyle(.plain)
@@ -430,11 +431,19 @@ struct ChatInputBar: View {
         return translationNote
     }
 
-    /// Any edit clears a stale Polish failure. Emptying the draft ends a
-    /// finalized voice turn and forgets translation/polish state, so the next
-    /// typed draft is polished again.
+    /// Any edit clears a stale Polish failure. Undoing a translation (⌘Z)
+    /// brings the original back without the Restore button, so it is treated
+    /// as a restore. Emptying the draft ends a finalized voice turn and
+    /// forgets translation/polish state, so the next typed draft is polished
+    /// again.
     private func draftDidChange() {
         polishFailure = nil
+        if let original = translationOriginal, textInput == original {
+            translationOriginal = nil
+            translationNote = nil
+            hasPolished = false
+            return
+        }
         guard textInput.isEmpty else { return }
         if voiceState.stage == .finalized {
             voiceState.reset()
@@ -768,12 +777,14 @@ struct ChatInputBar: View {
 
     private static func polishFailureMessage(_ error: Error) -> String {
         let detail: String
+        let nsError = error as NSError
         if let llm = error as? LLMError {
             detail = llm.errorDescription ?? String(describing: llm)
-        } else if let url = error as? URLError {
-            detail = url.code == .timedOut
-                ? L("请求超时", "request timed out")
-                : L("网络错误 \(url.code.rawValue)", "network error \(url.code.rawValue)")
+        } else if let url = error as? URLError, url.code == .timedOut {
+            detail = L("请求超时", "request timed out")
+        } else if nsError.domain == NSURLErrorDomain || nsError.domain == NSPOSIXErrorDomain {
+            // Transport-level failures: keep the line short and readable.
+            detail = L("网络不可用（\(nsError.code)）", "network unavailable (\(nsError.code))")
         } else {
             detail = error.localizedDescription
         }
@@ -928,7 +939,10 @@ private struct ChatInputTextView: NSViewRepresentable {
         textView.font = .systemFont(ofSize: fontSize)
         textView.textColor = textColor
         textView.insertionPointColor = .controlAccentColor
-        textView.textContainerInset = NSSize(width: 10, height: 8)
+        textView.textContainerInset = NSSize(
+            width: ChatLayoutMetrics.inputTextInsetHorizontal,
+            height: ChatLayoutMetrics.inputTextInsetVertical
+        )
         textView.textContainer?.lineFragmentPadding = 0
         textView.textContainer?.widthTracksTextView = true
         textView.isHorizontallyResizable = false
