@@ -1,0 +1,131 @@
+# Manual macOS DMG build on a GitHub-hosted runner.
+#
+# Restored on 2026-10-18 from the archived source definition in
+# .github/source-workflows/release-dmg.yml.txt, reduced to what the public
+# source snapshot can run without private credentials:
+#   - workflow_dispatch only; the tag-push trigger and the draft GitHub Release
+#     publication stay archived until they get their own permissions review.
+#   - the token stays read-only (`contents: read`); nothing is published.
+#   - the app is ad-hoc code-signed (scripts/build_voxagent_dmg.sh signs with
+#     `-` unless CODESIGN_IDENTITY is set). No Developer ID certificate or
+#     notarization credential exists in this repository, so Gatekeeper asks for
+#     right-click > Open on first launch of the installed app.
+# Self-hosted runners are deliberately not referenced: this is a public
+# repository.
+#
+# The DMG and its SHA256SUMS.txt are uploaded as a workflow artifact named
+# vox-agent-v<version>-dmg on the run's summary page (Actions > Release DMG).
+name: Release DMG
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: >-
+          App version (X.Y.Z). Must equal CFBundleShortVersionString in
+          macos/VoxLog/Resources/Info.plist; leave empty to use it.
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-dmg-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-macos:
+    name: Build Vox Agent DMG (ad-hoc signed)
+    # macOS 26 image: Package.swift needs swift-tools-version 6.2 (Xcode 26).
+    runs-on: macos-26
+    timeout-minutes: 90
+    env:
+      # Public configuration only; it is written into the bundle's Info.plist.
+      VOX_TEAM_LOGIN_URL: https://api.osbornvox.com
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+          python --version
+
+      - name: Resolve version
+        id: release
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          source_version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' macos/VoxLog/Resources/Info.plist)"
+          version="${INPUT_VERSION:-$source_version}"
+          if [ "$version" != "$source_version" ]; then
+            echo "Requested version $version differs from Info.plist version $source_version; bump the source first." >&2
+            exit 1
+          fi
+          RELEASE_VERSION="$version" python scripts/prepare_dmg_release.py
+
+      - name: Install engine build dependencies
+        run: python -m pip install . pyinstaller
+
+      - name: Build DMG
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: bash ./scripts/build_voxagent_dmg.sh
+
+      - name: Verify packaged version and cloud login origin
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          python - <<'PYVERIFY'
+          import os, plistlib
+          from pathlib import Path
+          path = Path('build/voxagent-release/Vox Agent.app/Contents/Info.plist')
+          with path.open('rb') as source:
+              info = plistlib.load(source)
+          if info.get('CFBundleShortVersionString') != os.environ['VERSION']:
+              raise SystemExit('Packaged version differs from release version')
+          if info.get('VoxTeamLoginURL') != os.environ['VOX_TEAM_LOGIN_URL']:
+              raise SystemExit('Packaged cloud login origin is missing or incorrect')
+          PYVERIFY
+
+      - name: Reject legacy updater assets
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: python scripts/verify_update_assets.py --dist dist --version "$VERSION"
+
+      - name: Record signature and checksum
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          set -euo pipefail
+          codesign --display --verbose=2 "build/voxagent-release/Vox Agent.app" 2>&1 | sed -n '1,12p'
+          {
+            echo "## Vox Agent ${VERSION} DMG (ad-hoc signed)"
+            echo
+            echo "Not notarized: right-click the installed app and choose Open on first launch."
+            echo
+            echo '```'
+            cat dist/SHA256SUMS.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: vox-agent-v${{ steps.release.outputs.version }}-dmg
+          path: |
+            dist/VoxAgent-v${{ steps.release.outputs.version }}-cloud.dmg
+            dist/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 30
