@@ -18,12 +18,6 @@
 name: Release DMG
 
 on:
-  # TEMPORARY proof run for PR #4: GitHub only dispatches workflows that
-  # exist on the default branch, so this branch push stands in for
-  # workflow_dispatch. Remove before merge.
-  push:
-    branches: ["claude/eager-liskov-3c23f4"]
-    paths: [".github/workflows/release-dmg.yml"]
   workflow_dispatch:
     inputs:
       version:
