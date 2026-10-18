@@ -135,6 +135,7 @@ struct ChatInputBar: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .truncationMode(.tail)
+                    .help(note)
             }
 
             if polishFailure != nil {
@@ -430,11 +431,19 @@ struct ChatInputBar: View {
         return translationNote
     }
 
-    /// Any edit clears a stale Polish failure. Emptying the draft ends a
-    /// finalized voice turn and forgets translation/polish state, so the next
-    /// typed draft is polished again.
+    /// Any edit clears a stale Polish failure. Undoing a translation (⌘Z)
+    /// brings the original back without the Restore button, so it is treated
+    /// as a restore. Emptying the draft ends a finalized voice turn and
+    /// forgets translation/polish state, so the next typed draft is polished
+    /// again.
     private func draftDidChange() {
         polishFailure = nil
+        if let original = translationOriginal, textInput == original {
+            translationOriginal = nil
+            translationNote = nil
+            hasPolished = false
+            return
+        }
         guard textInput.isEmpty else { return }
         if voiceState.stage == .finalized {
             voiceState.reset()
@@ -768,12 +777,14 @@ struct ChatInputBar: View {
 
     private static func polishFailureMessage(_ error: Error) -> String {
         let detail: String
+        let nsError = error as NSError
         if let llm = error as? LLMError {
             detail = llm.errorDescription ?? String(describing: llm)
-        } else if let url = error as? URLError {
-            detail = url.code == .timedOut
-                ? L("请求超时", "request timed out")
-                : L("网络错误 \(url.code.rawValue)", "network error \(url.code.rawValue)")
+        } else if let url = error as? URLError, url.code == .timedOut {
+            detail = L("请求超时", "request timed out")
+        } else if nsError.domain == NSURLErrorDomain || nsError.domain == NSPOSIXErrorDomain {
+            // Transport-level failures: keep the line short and readable.
+            detail = L("网络不可用（\(nsError.code)）", "network unavailable (\(nsError.code))")
         } else {
             detail = error.localizedDescription
         }
