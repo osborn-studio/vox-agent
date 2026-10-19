@@ -293,3 +293,14 @@ jobs:
       - name: Swift release build
         working-directory: macos
         run: swift build -c release -Xswiftc -warnings-as-errors
+
+      - name: Set up Python for the LLM provider inventory check
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install engine runtime dependencies
+        run: python -m pip install -e .
+
+      - name: LLM provider inventory matches the Swift sources (compiled runner)
+        run: python scripts/export_llm_provider_inventory.py --check --swift-mode compile

@@ -57,10 +57,11 @@ sources change.
 
 ### How the Swift surface is extracted
 
-This Mac has no Xcode, and Linux CI has no Swift at all, so the exporter has two
-paths that must agree:
+This Mac has no Xcode, and the Linux CI runners have a `swiftc` but no `xcrun`
+or SDK, so the exporter has two paths that must agree:
 
-1. **compile** (default where `swiftc` exists): a tiny `@main` runner is built
+1. **compile** (default on macOS when `swiftc` and `xcrun --show-sdk-path`
+   both work; the `swift-build` CI job on macos-26 runs it): a tiny `@main` runner is built
    with `swiftc -parse-as-library -sdk $(xcrun --show-sdk-path)` against the two
    real Swift files plus stubs for UI-only symbols (`L`, `FieldOption`,
    `TranslationConfiguration`, …) and executed. This is the authoritative path.
@@ -69,7 +70,9 @@ paths that must agree:
    other shape raises an error instead of silently dropping a rule.
 
 `tests/test_llm_registry_reconcile.py::test_compiled_swift_runner_agrees_with_regex_fallback`
-asserts both paths produce identical JSON wherever `swiftc` runs.
+asserts both paths produce identical JSON wherever the compiled path can run and
+skips itself with the reason elsewhere; the regex path is what the Linux
+`python-test` jobs exercise.
 
 ## Running
 

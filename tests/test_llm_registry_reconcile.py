@@ -779,6 +779,18 @@ def test_inventory_covers_both_surfaces(inventory):
     assert "timestamp" not in json.dumps(inventory)
 
 
+def test_auto_mode_uses_regex_when_compile_is_unavailable(monkeypatch):
+    monkeypatch.setattr(exporter.sys, "platform", "linux")
+    assert exporter.compile_available() is not None
+    assert "macOS" in exporter.compile_available()
+    monkeypatch.setattr(exporter, "swiftc_available", lambda: True)
+    monkeypatch.setattr(exporter, "default_sdk_path", lambda: None)
+    monkeypatch.setattr(exporter.sys, "platform", "darwin")
+    assert "xcrun" in exporter.compile_available()
+    inventory = exporter.build_inventory(ROOT, "auto")
+    assert exporter.check_snapshot(SNAPSHOT, inventory) == []
+
+
 def test_regex_fallback_refuses_unknown_shapes(tmp_path):
     root = tmp_path / "repo"
     for rel in (
@@ -807,7 +819,10 @@ def test_regex_fallback_refuses_unknown_shapes(tmp_path):
         exporter.macos_chat_path_rule(root)
 
 
-@pytest.mark.skipif(not exporter.swiftc_available(), reason="swiftc not installed")
+@pytest.mark.skipif(
+    exporter.compile_available() is not None,
+    reason=exporter.compile_available() or "compiled Swift path available",
+)
 def test_compiled_swift_runner_agrees_with_regex_fallback():
     compiled = exporter.extract_swift_by_compile(ROOT, None)
     regex = exporter.extract_swift_by_regex(ROOT)

@@ -163,6 +163,22 @@ def swiftc_available() -> bool:
     return shutil.which("swiftc") is not None
 
 
+def compile_available() -> str | None:
+    """Why the compiled Swift path cannot run here, or None when it can.
+
+    GitHub's ubuntu runners ship ``swiftc`` but no ``xcrun``/SDK, so the gate
+    needs all three: macOS, a compiler, and a resolvable SDK path.
+    """
+
+    if sys.platform != "darwin":
+        return f"compiled Swift extraction needs macOS (platform is {sys.platform})"
+    if not swiftc_available():
+        return "swiftc is not installed"
+    if default_sdk_path() is None:
+        return "xcrun --show-sdk-path failed; install Xcode or the Command Line Tools"
+    return None
+
+
 def default_sdk_path() -> str | None:
     xcrun = shutil.which("xcrun")
     if xcrun is None:
@@ -691,7 +707,7 @@ def build_engine_surface(root: Path) -> dict:
 
 def build_inventory(root: Path, swift_mode: str = "auto", sdk: str | None = None) -> dict:
     if swift_mode == "auto":
-        swift_mode = "compile" if swiftc_available() else "regex"
+        swift_mode = "compile" if compile_available() is None else "regex"
     if swift_mode == "compile":
         swift = extract_swift_by_compile(root, sdk)
     elif swift_mode == "regex":
@@ -758,7 +774,10 @@ def main(argv: list[str] | None = None) -> int:
 
     mode = args.swift_mode
     if mode == "auto":
-        mode = "compile" if swiftc_available() else "regex"
+        reason = compile_available()
+        mode = "compile" if reason is None else "regex"
+        if reason is not None:
+            print(f"swift extraction: regex fallback ({reason})", file=sys.stderr)
     try:
         inventory = build_inventory(args.root, mode, args.sdk)
     except InventoryError as exc:
