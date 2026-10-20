@@ -134,8 +134,8 @@ impl ContextState {
     /// turns the label to `unsafe-acl` and blocks delivery from here on
     /// (the next sign-in refuses the journal outright).
     fn journal_still_private(&self) -> bool {
-        if self.journal_label() != JournalOpenReport::NotSupported.key_store_label()
-            && self.journal_label() != JournalOpenReport::UnsafeAcl.key_store_label()
+        const OPENED: &str = "dpapi-user";
+        if self.journal_label() == OPENED
             && !journal_dirs_private(&crate::state::vox_agent_data_dir())
         {
             self.set_journal_label(JournalOpenReport::UnsafeAcl.key_store_label());
@@ -1372,8 +1372,9 @@ mod tests {
         assert!(!state.journal_still_private(), "unsafe stays unsafe");
         assert_eq!(state.journal_label(), "unsafe-acl");
         let dir = tempfile::tempdir().unwrap();
-        // On this platform the directories always verify.
-        assert!(journal_dirs_private(dir.path()));
+        // Where no journal can exist the directories always verify; on
+        // Windows an empty data directory has nothing to verify yet.
+        assert_eq!(journal_dirs_private(dir.path()), !cfg!(windows));
     }
 
     #[test]
