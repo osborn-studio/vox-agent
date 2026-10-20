@@ -80,6 +80,14 @@ def download_missing(manifest: dict, model_dir: Path, status: dict[str, str]) ->
             with urllib.request.urlopen(base + entry["path"], timeout=60) as response, tmp.open("wb") as out:
                 for block in iter(lambda: response.read(CHUNK), b""):
                     out.write(block)
+            # Verify the private temp file before it can replace anything in the shared
+            # directory: a bad download never overwrites bytes another run already verified.
+            if tmp.stat().st_size != entry["size"]:
+                print(f"download size mismatch for {entry['path']}", file=sys.stderr)
+                continue
+            if sha256_file(tmp) != entry["sha256"]:
+                print(f"download sha256 mismatch for {entry['path']}", file=sys.stderr)
+                continue
             os.replace(tmp, target)
         finally:
             tmp.unlink(missing_ok=True)

@@ -216,3 +216,32 @@ def test_load_model_forces_cpu_even_when_cuda_is_available(tmp_path, monkeypatch
     assert device == "cpu"
     assert calls == [{"path": str(tmp_path), "dtype": "float32", "device_map": "cpu"}]
     assert load_ms >= 0
+
+
+def test_download_verifies_before_publishing(tmp_path, monkeypatch):
+    """Codex adversarial finding: a bad download must never replace the destination."""
+    import io
+    import urllib.request
+
+    manifest = _manifest(tmp_path, {"a.bin": b"aaa", "b.bin": b"bbb"})
+    model_dir = tmp_path / "model"
+    model_dir.mkdir()
+    (model_dir / "a.bin").write_bytes(b"aaa")
+    bodies = {"https://example.invalid/b.bin": b"bbc"}  # right size, wrong bytes
+
+    class _Response(io.BytesIO):
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+    monkeypatch.setattr(urllib.request, "urlopen", lambda url, timeout: _Response(bodies[url]))
+    loaded = probe.load_manifest(manifest)
+    status = probe.verify_files(loaded, model_dir)
+    assert probe.download_missing(loaded, model_dir, status) == {"a.bin": "ok", "b.bin": "missing"}
+    assert sorted(p.name for p in model_dir.iterdir()) == ["a.bin"]
+
+    bodies["https://example.invalid/b.bin"] = b"bb"  # short read
+    assert probe.download_missing(loaded, model_dir, status) == {"a.bin": "ok", "b.bin": "missing"}
+    assert sorted(p.name for p in model_dir.iterdir()) == ["a.bin"]
