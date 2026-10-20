@@ -184,3 +184,35 @@ def test_download_uses_a_private_temp_file_and_leaves_none_behind(tmp_path, monk
     assert (model_dir / "b.bin").read_bytes() == b"bbb"
     assert (model_dir / "b.bin.part").read_bytes() == b"stale"
     assert sorted(p.name for p in model_dir.iterdir()) == ["a.bin", "b.bin", "b.bin.part"]
+
+
+def test_load_model_forces_cpu_even_when_cuda_is_available(tmp_path, monkeypatch):
+    """Codex review finding: a CUDA-capable PC must still measure the CPU route."""
+    import sys
+    import types
+
+    calls: list[dict] = []
+
+    class _Device:
+        type = "cpu"
+
+    class _Model:
+        device = _Device()
+
+    class _Qwen3ASRModel:
+        @classmethod
+        def from_pretrained(cls, path, **kwargs):
+            calls.append({"path": path, **kwargs})
+            return _Model()
+
+    fake_torch = types.SimpleNamespace(
+        float32="float32", cuda=types.SimpleNamespace(is_available=lambda: True)
+    )
+    monkeypatch.setitem(sys.modules, "torch", fake_torch)
+    monkeypatch.setitem(sys.modules, "qwen_asr", types.SimpleNamespace(Qwen3ASRModel=_Qwen3ASRModel))
+
+    model, device, load_ms = probe.load_model(tmp_path)
+    assert isinstance(model, _Model)
+    assert device == "cpu"
+    assert calls == [{"path": str(tmp_path), "dtype": "float32", "device_map": "cpu"}]
+    assert load_ms >= 0

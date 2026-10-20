@@ -116,13 +116,19 @@ def _peak_rss_sampler(stop: threading.Event, samples: list[float]) -> None:
 
 
 def load_model(model_dir: Path) -> tuple[object, str, int]:
-    """Load from the pinned directory only; the hub must never be contacted."""
+    """Load from the pinned directory only; the hub must never be contacted.
+
+    CPU is forced even where CUDA is available: this probe measures the CPU
+    route the spec's latency rule is about, and the owner's PC may have a GPU.
+    The device reported comes from the loaded model, not from the request.
+    """
     import torch
     from qwen_asr import Qwen3ASRModel
 
-    device = "cuda" if torch.cuda.is_available() else "cpu"
     started = time.perf_counter()
-    model = Qwen3ASRModel.from_pretrained(str(model_dir), dtype=torch.float32, device_map=device)
+    model = Qwen3ASRModel.from_pretrained(str(model_dir), dtype=torch.float32, device_map="cpu")
+    loaded = getattr(getattr(model, "device", None), "type", None)
+    device = loaded if isinstance(loaded, str) else "unknown"
     return model, device, int((time.perf_counter() - started) * 1000)
 
 
