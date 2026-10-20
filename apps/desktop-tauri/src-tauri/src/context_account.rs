@@ -462,19 +462,22 @@ impl<S: TokenStore> AccountSlot<S> {
     }
 
     /// End the account only if `service` is still current: a late refusal
-    /// for an old session never signs out a newer one.
-    pub fn end_if(&self, service: &Arc<ContextService<S>>) {
+    /// for an old session never signs out a newer one. Returns whether this
+    /// call ended it, decided under the slot lock, so callers can tie their
+    /// own follow-up (views, schedules, events) to the real transition.
+    pub fn end_if(&self, service: &Arc<ContextService<S>>) -> bool {
         let mut inner = self.lock();
-        if inner
+        let current = inner
             .service
             .as_ref()
-            .is_some_and(|current| Arc::ptr_eq(current, service))
-        {
+            .is_some_and(|current| Arc::ptr_eq(current, service));
+        if current {
             self.gate.end();
             inner.service = None;
             inner.display_name = None;
             let _ = service.with_session(|s| s.sign_out());
         }
+        current
     }
 }
 

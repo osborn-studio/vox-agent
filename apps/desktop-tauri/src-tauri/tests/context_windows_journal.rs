@@ -19,6 +19,13 @@ fn open_journal_reports_platform_support() {
         assert_eq!(report.key_store_label(), "dpapi-user");
         assert!(root.path().join("context").join("journal").is_dir());
         assert!(root.path().join("context").join("keys").is_dir());
+        // Every directory under context/ carries its own protected DACL,
+        // including the ones the journal itself would otherwise create.
+        for sub in ["keys", "journal", "journal\\db", "journal\\isolated"] {
+            let dir = root.path().join("context").join(sub);
+            assert!(dir.is_dir(), "{sub}");
+            vox_agent_desktop_tauri_lib::context_acl::verify_private_dir(&dir).unwrap();
+        }
     } else {
         assert!(matches!(report, JournalOpenReport::NotSupported));
         assert_eq!(report.key_store_label(), "not-available-in-this-build");
@@ -107,4 +114,24 @@ fn open_journal_reopens_the_same_key_set_and_reports_busy_while_open() {
         .filter(|e| e.path().extension().is_some_and(|x| x == "dpapi"))
         .collect();
     assert_eq!(keys.len(), 1, "one key set is reused across opens");
+}
+
+#[cfg(windows)]
+#[test]
+fn open_journal_refuses_a_widened_database_directory() {
+    let root = tempfile::tempdir().unwrap();
+    let first = open_journal(root.path());
+    assert!(matches!(first, JournalOpenReport::Opened(_)), "{first:?}");
+    drop(first);
+    let db = root.path().join("context").join("journal").join("db");
+    let status = std::process::Command::new("icacls")
+        .arg(&db)
+        .args(["/grant", "Everyone:(OI)(CI)R"])
+        .status()
+        .unwrap();
+    assert!(status.success());
+    assert!(matches!(
+        open_journal(root.path()),
+        JournalOpenReport::UnsafeAcl
+    ));
 }

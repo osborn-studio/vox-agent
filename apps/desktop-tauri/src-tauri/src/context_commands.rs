@@ -16,7 +16,7 @@ use crate::context_wire::ContextEndpoint;
 use crate::secrets::NativeSecretStore;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
-use std::sync::{Arc, Mutex, OnceLock};
+use std::sync::{Arc, Mutex, OnceLock, Weak};
 use std::time::{Duration, SystemTime};
 use tauri::{AppHandle, Emitter, Manager, State};
 use zeroize::Zeroizing;
@@ -47,12 +47,20 @@ pub struct ContextState {
 /// When the current access token was issued and for how long. Wall-clock
 /// time, so a token that expired while the machine slept is due at once.
 #[derive(Debug, Clone, Copy)]
-pub struct RenewalSchedule {
+pub struct RenewalTimer {
     expires_in: u64,
     issued_at: SystemTime,
 }
 
-impl RenewalSchedule {
+/// The timer plus the session it belongs to: a result or sign-out for one
+/// service can never clear or replace the schedule of a newer one.
+#[derive(Clone)]
+struct RenewalSchedule {
+    timer: RenewalTimer,
+    service: Weak<ContextService<NativeSecretStore>>,
+}
+
+impl RenewalTimer {
     pub fn new(expires_in: u64, issued_at: SystemTime) -> Self {
         Self {
             expires_in,
@@ -98,6 +106,10 @@ impl Default for ContextState {
 
 /// How long the loopback listener waits for the browser (plan C-12: 60 s).
 const SIGN_IN_TIMEOUT: Duration = Duration::from_secs(60);
+/// `Busy` on the journal at sign-in is retried this often, this many times
+/// (a record step in flight holds it for at most one request timeout).
+const JOURNAL_BUSY_ATTEMPTS: u32 = 6;
+const JOURNAL_BUSY_RETRY: Duration = Duration::from_secs(5);
 
 impl ContextState {
     pub fn configure(&self, service: ContextService<NativeSecretStore>) {
@@ -129,15 +141,21 @@ impl ContextState {
             .unwrap_or_else(|p| p.into_inner())
             .clone()
     }
-    /// After a sign-in: schedule renewal of the access token just issued, if
-    /// the server offered a refresh token (without a reported lifetime the
-    /// server's documented hour applies).
-    pub fn schedule_renewal(&self, expires_in: Option<u64>, offered: bool) {
-        let schedule = offered.then(|| {
-            RenewalSchedule::new(
+    /// After a sign-in: schedule renewal of the access token just issued for
+    /// `service`, if the server offered a refresh token (without a reported
+    /// lifetime the server's documented hour applies).
+    pub fn schedule_renewal(
+        &self,
+        service: &Arc<ContextService<NativeSecretStore>>,
+        expires_in: Option<u64>,
+        offered: bool,
+    ) {
+        let schedule = offered.then(|| RenewalSchedule {
+            timer: RenewalTimer::new(
                 expires_in.unwrap_or(DEFAULT_ACCESS_SECONDS),
                 SystemTime::now(),
-            )
+            ),
+            service: Arc::downgrade(service),
         });
         let label = if schedule.is_some() {
             "scheduled"
@@ -147,24 +165,72 @@ impl ContextState {
         *self.renewal.lock().unwrap_or_else(|p| p.into_inner()) = schedule;
         self.set_renewal_label(label.to_string());
     }
-    fn clear_renewal(&self, label: &str) {
-        *self.renewal.lock().unwrap_or_else(|p| p.into_inner()) = None;
-        self.set_renewal_label(label.to_string());
+    /// After a renewal: restart the timer, but only while the schedule still
+    /// belongs to `service` (a newer sign-in's schedule is never replaced).
+    fn reschedule_for(&self, service: &Arc<ContextService<NativeSecretStore>>, expires_in: u64) {
+        let mut slot = self.renewal.lock().unwrap_or_else(|p| p.into_inner());
+        if let Some(schedule) = slot.as_mut() {
+            if Weak::ptr_eq(&schedule.service, &Arc::downgrade(service)) {
+                schedule.timer = RenewalTimer::new(expires_in, SystemTime::now());
+            }
+        }
     }
-    /// What a due renewal needs, captured before any await: the current
-    /// service, its lease (so a later result applies only to this session)
-    /// and the schedule. `None` when nothing is due.
+    fn renewal_belongs_to(&self, service: &Arc<ContextService<NativeSecretStore>>) -> bool {
+        self.renewal
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .as_ref()
+            .is_some_and(|s| Weak::ptr_eq(&s.service, &Arc::downgrade(service)))
+    }
+    /// Drop the schedule. With `only_for`, only a schedule belonging to that
+    /// service is dropped, and the label changes only when it was.
+    fn clear_renewal(
+        &self,
+        only_for: Option<&Arc<ContextService<NativeSecretStore>>>,
+        label: &str,
+    ) -> bool {
+        let mut slot = self.renewal.lock().unwrap_or_else(|p| p.into_inner());
+        let matches = match (&*slot, only_for) {
+            (_, None) => true,
+            (Some(schedule), Some(service)) => {
+                Weak::ptr_eq(&schedule.service, &Arc::downgrade(service))
+            }
+            (None, Some(_)) => false,
+        };
+        if matches {
+            *slot = None;
+            drop(slot);
+            self.set_renewal_label(label.to_string());
+        }
+        matches
+    }
+    /// What a due renewal needs, captured before any await: the scheduled
+    /// service (which must still be the account) and its lease (so a later
+    /// result applies only to this session). `None` when nothing is due. A
+    /// schedule whose service is gone or no longer the account is dropped.
     fn due_renewal(
         &self,
     ) -> Option<(
         Arc<ContextService<NativeSecretStore>>,
         crate::context_session::SessionLease,
     )> {
-        let schedule = (*self.renewal.lock().unwrap_or_else(|p| p.into_inner()))?;
-        if !schedule.due_at(SystemTime::now()) {
+        let schedule = self
+            .renewal
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .clone()?;
+        let scheduled = schedule.service.upgrade();
+        let current = self.account.current();
+        let service = match (scheduled, current) {
+            (Some(scheduled), Some(current)) if Arc::ptr_eq(&scheduled, &current) => current,
+            _ => {
+                self.clear_renewal(None, "none");
+                return None;
+            }
+        };
+        if !schedule.timer.due_at(SystemTime::now()) {
             return None;
         }
-        let service = self.account.current()?;
         let lease = service.with_session(|s| s.lease()).ok()?;
         Some((service, lease))
     }
@@ -183,7 +249,7 @@ pub async fn maintain_session(app: &AppHandle) {
     let refresh = match service.with_session(|s| s.refresh_token_for(&lease)) {
         Ok(Some(token)) => Zeroizing::new(token),
         Ok(None) => {
-            state.clear_renewal("not-offered");
+            state.clear_renewal(Some(&service), "not-offered");
             return;
         }
         Err(crate::context_session::SessionError::StaleLease) => return,
@@ -195,52 +261,51 @@ pub async fn maintain_session(app: &AppHandle) {
     let outcome = crate::context_login::renew(service.endpoint(), &refresh).await;
     drop(refresh);
     let applied = apply_renewal(&service, &lease, outcome);
-    // Everything below applies only while this service is still the account:
-    // a late result never reschedules or ends a newer sign-in.
-    let still_current = state
-        .account
-        .current()
-        .is_some_and(|current| Arc::ptr_eq(&current, &service));
-    if !still_current {
-        return;
-    }
+    // Everything below is tied to `service`: the schedule is only touched
+    // while it still belongs to this service, and the account is ended only
+    // if it still is this service (decided under the slot lock in `end_if`).
     match applied {
         RenewalApplied::Renewed {
             expires_in,
             refresh_stored,
         } => {
-            state.schedule_renewal(Some(expires_in), true);
-            state.set_renewal_label(
-                if refresh_stored {
-                    "renewed"
-                } else {
-                    "renewal-unavailable:STORE"
-                }
-                .to_string(),
-            );
+            state.reschedule_for(&service, expires_in);
+            if state.renewal_belongs_to(&service) {
+                state.set_renewal_label(
+                    if refresh_stored {
+                        "renewed"
+                    } else {
+                        "renewal-unavailable:STORE"
+                    }
+                    .to_string(),
+                );
+            }
         }
         RenewalApplied::Stale => {}
         RenewalApplied::SignOut(code) => {
-            // Visible private plaintext goes with the account (T23b), as on
-            // any other server-side sign-out; the WebView is told with a code
-            // it already words (`AccountError`), never the server body.
-            app.state::<crate::context_private_commands::PrivateState>()
-                .clear_view();
-            app.state::<crate::context_weekly_commands::WeeklyState>()
-                .clear();
-            state.account.end_if(&service);
-            state.clear_renewal(&format!("signed-out:{code}"));
-            let _ = app.emit_to(
-                "main",
-                ACCOUNT_EVENT,
-                AccountEvent {
-                    signed_in: false,
-                    code: account_event_code(code),
-                },
-            );
+            if state.account.end_if(&service) {
+                // Visible private plaintext goes with the account (T23b), as
+                // on any other server-side sign-out; the WebView is told with
+                // a code it already words (`AccountError`), never the body.
+                app.state::<crate::context_private_commands::PrivateState>()
+                    .clear_view();
+                app.state::<crate::context_weekly_commands::WeeklyState>()
+                    .clear();
+                state.clear_renewal(Some(&service), &format!("signed-out:{code}"));
+                let _ = app.emit_to(
+                    "main",
+                    ACCOUNT_EVENT,
+                    AccountEvent {
+                        signed_in: false,
+                        code: account_event_code(code),
+                    },
+                );
+            }
         }
         RenewalApplied::RetryLater(code) => {
-            state.set_renewal_label(format!("renewal-unavailable:{code}"));
+            if state.renewal_belongs_to(&service) {
+                state.set_renewal_label(format!("renewal-unavailable:{code}"));
+            }
         }
     }
 }
@@ -333,7 +398,12 @@ pub fn open_journal_with(
         let root = data_dir.join("context");
         let keys = root.join("keys");
         let journal = root.join("journal");
-        for dir in [&root, &keys, &journal] {
+        // `db/` and `isolated/` are created by `Journal::open` otherwise;
+        // creating them here gives each its own protected DACL instead of an
+        // inherited one, and a later widening of any of them is refused.
+        let db = journal.join("db");
+        let isolated = journal.join("isolated");
+        for dir in [&root, &keys, &journal, &db, &isolated] {
             match ensure_private_dir(dir).and_then(|_| verify_private_dir(dir)) {
                 Ok(()) => {}
                 Err(AclError::TooPermissive) => return JournalOpenReport::UnsafeAcl,
@@ -505,18 +575,25 @@ pub fn parse_submission(input: SubmitRecordInput) -> Result<BackupPayload, Comma
 
 /// Step a record until it stops, waits for the user, or fails; the caller
 /// registered it in `drivers` and it is removed here when the task ends.
+/// The service is held only while a step runs: across a sleep (up to
+/// minutes) the task keeps a `Weak`, so a sign-out releases the service, and
+/// with it the journal lock, as soon as the step in flight finishes.
 async fn drive(
     app: AppHandle,
-    service: Arc<ContextService<NativeSecretStore>>,
+    service: Weak<ContextService<NativeSecretStore>>,
     drivers: Arc<Mutex<HashSet<String>>>,
     event_id: String,
 ) {
     loop {
-        let next = service.step(&event_id).await;
-        if let Ok(status) = service.status(&event_id) {
+        let Some(current) = service.upgrade() else {
+            break; // signed out meanwhile
+        };
+        let next = current.step(&event_id).await;
+        if let Ok(status) = current.status(&event_id) {
             let dto = record_dto(&event_id, &status, next.as_ref().ok());
             let _ = app.emit_to("main", RECORD_EVENT, dto);
         }
+        drop(current);
         match next {
             Ok(Next::PollAfter(after) | Next::ResendAfter(after) | Next::PollAndAsk(after, _)) => {
                 tokio::time::sleep(after).await;
@@ -548,7 +625,12 @@ pub async fn context_submit_record(
         .insert(event_id.clone());
     if fresh {
         let drivers = state.drivers.clone();
-        tauri::async_runtime::spawn(drive(app, service, drivers, event_id.clone()));
+        tauri::async_runtime::spawn(drive(
+            app,
+            Arc::downgrade(&service),
+            drivers,
+            event_id.clone(),
+        ));
     }
     Ok(record_dto(&event_id, &status, None))
 }
@@ -864,10 +946,23 @@ pub async fn context_sign_in(
             .map_err(|_| ())
     };
     let signed = crate::context_login::sign_in(&endpoint, opener, SIGN_IN_TIMEOUT).await?;
-    let report =
-        tauri::async_runtime::spawn_blocking(|| open_journal(&crate::state::vox_agent_data_dir()))
-            .await
-            .unwrap_or(JournalOpenReport::Failed);
+    // A record step of the previous session may still hold the journal for a
+    // moment after sign-out (`drive` releases it when the step finishes);
+    // `Busy` is retried briefly before the session is published without one.
+    let mut report = JournalOpenReport::Busy;
+    for attempt in 0..JOURNAL_BUSY_ATTEMPTS {
+        if attempt > 0 {
+            tokio::time::sleep(JOURNAL_BUSY_RETRY).await;
+        }
+        report = tauri::async_runtime::spawn_blocking(|| {
+            open_journal(&crate::state::vox_agent_data_dir())
+        })
+        .await
+        .unwrap_or(JournalOpenReport::Failed);
+        if !matches!(report, JournalOpenReport::Busy) {
+            break;
+        }
+    }
     state.set_journal_label(report.key_store_label());
     let journal = match report {
         JournalOpenReport::Opened(journal) => Some(journal),
@@ -882,7 +977,9 @@ pub async fn context_sign_in(
         NativeSecretStore::default(),
         journal,
     )?;
-    state.schedule_renewal(expires_in, renewal_offered);
+    if let Some(service) = state.account.current() {
+        state.schedule_renewal(&service, expires_in, renewal_offered);
+    }
     Ok(AccountDto {
         signed_in: true,
         display_name,
@@ -913,7 +1010,7 @@ pub async fn context_sign_out(
     // completed before this point or is refused.
     private.clear_view();
     weekly.clear();
-    state.clear_renewal("none");
+    state.clear_renewal(None, "none");
     let ended = state.account.end(NativeSecretStore::default);
     let server_confirmed = match &ended.logout {
         Some((endpoint, token)) => crate::context_account::logout(endpoint, token).await,
@@ -1103,9 +1200,10 @@ mod tests {
         state.set_journal_label(JournalOpenReport::UnsafeAcl.key_store_label());
         assert_eq!(diagnostics(&state).key_store, "unsafe-acl");
         assert_eq!(dto.renewal, "none");
-        state.schedule_renewal(Some(3600), true);
+        let service = idle_service();
+        state.schedule_renewal(&service, Some(3600), true);
         assert_eq!(diagnostics(&state).renewal, "scheduled");
-        state.schedule_renewal(Some(3600), false);
+        state.schedule_renewal(&service, Some(3600), false);
         assert_eq!(diagnostics(&state).renewal, "not-offered");
         state.set_renewal_label("renewal-unavailable:RENEWAL_RATE_LIMIT".into());
         let json = serde_json::to_string(&diagnostics(&state)).unwrap();
@@ -1122,7 +1220,7 @@ mod tests {
     #[test]
     fn renewal_schedule_uses_wall_clock_time_and_treats_clock_jumps_as_due() {
         let issued = SystemTime::UNIX_EPOCH + Duration::from_secs(1_000_000);
-        let schedule = RenewalSchedule::new(3600, issued);
+        let schedule = RenewalTimer::new(3600, issued);
         assert!(!schedule.due_at(issued));
         assert!(!schedule.due_at(issued + Duration::from_secs(3600 - 301)));
         assert!(schedule.due_at(issued + Duration::from_secs(3600 - 300)));
@@ -1134,27 +1232,71 @@ mod tests {
             schedule.due_at(issued - Duration::from_secs(1)),
             "clock went backwards"
         );
+    }
+
+    fn idle_service() -> Arc<ContextService<NativeSecretStore>> {
+        // Never signed in, so the credential store is never touched.
+        Arc::new(ContextService::new(
+            ContextEndpoint::parse("https://api.example.test").unwrap(),
+            Vec::new(),
+            crate::context_session::SessionAuthority::new(NativeSecretStore::default()),
+            None,
+        ))
+    }
+
+    fn scheduled_expiry(state: &ContextState) -> Option<u64> {
+        state
+            .renewal
+            .lock()
+            .unwrap()
+            .as_ref()
+            .map(|s| s.timer.expires_in)
+    }
+
+    #[test]
+    fn the_renewal_schedule_belongs_to_one_service() {
         let state = ContextState::default();
-        state.schedule_renewal(None, true);
+        let first = idle_service();
+        let second = idle_service();
+        state.schedule_renewal(&first, None, true);
         assert_eq!(state.renewal_label(), "scheduled");
-        assert_eq!(
-            state.renewal.lock().unwrap().map(|s| s.expires_in),
-            Some(DEFAULT_ACCESS_SECONDS)
-        );
-        state.schedule_renewal(Some(10), false);
-        assert!(state.renewal.lock().unwrap().is_none());
+        assert_eq!(scheduled_expiry(&state), Some(DEFAULT_ACCESS_SECONDS));
+        assert!(state.renewal_belongs_to(&first) && !state.renewal_belongs_to(&second));
+        // A late result for another service neither restarts nor clears it.
+        state.reschedule_for(&second, 10);
+        assert_eq!(scheduled_expiry(&state), Some(DEFAULT_ACCESS_SECONDS));
+        assert!(!state.clear_renewal(Some(&second), "signed-out:X"));
+        assert_eq!(state.renewal_label(), "scheduled");
+        state.reschedule_for(&first, 10);
+        assert_eq!(scheduled_expiry(&state), Some(10));
+        assert!(state.clear_renewal(Some(&first), "signed-out:SESSION_EXPIRED"));
+        assert_eq!(state.renewal_label(), "signed-out:SESSION_EXPIRED");
+        assert!(scheduled_expiry(&state).is_none());
+        // Not offered: nothing scheduled.
+        state.schedule_renewal(&first, Some(10), false);
+        assert!(scheduled_expiry(&state).is_none());
         assert_eq!(state.renewal_label(), "not-offered");
         assert!(
             state.due_renewal().is_none(),
             "nothing scheduled, nothing due"
         );
-        state.schedule_renewal(Some(0), true);
-        assert!(
-            state.due_renewal().is_none(),
-            "due, but no account to renew"
-        );
-        state.clear_renewal("none");
-        assert!(state.renewal.lock().unwrap().is_none());
+        // Scheduled for a service that is not the account: dropped, not renewed.
+        state.schedule_renewal(&first, Some(0), true);
+        assert!(state.due_renewal().is_none());
+        assert!(scheduled_expiry(&state).is_none());
+        assert_eq!(state.renewal_label(), "none");
+        // Scheduled for the account itself, but it is not signed in: no lease,
+        // and the schedule is kept for when it is.
+        state.account.configure(ContextService::new(
+            ContextEndpoint::parse("https://api.example.test").unwrap(),
+            Vec::new(),
+            crate::context_session::SessionAuthority::new(NativeSecretStore::default()),
+            None,
+        ));
+        let account = state.account.current().unwrap();
+        state.schedule_renewal(&account, Some(0), true);
+        assert!(state.due_renewal().is_none());
+        assert!(state.renewal_belongs_to(&account));
     }
 
     #[test]
