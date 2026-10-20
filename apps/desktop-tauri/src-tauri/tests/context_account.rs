@@ -509,8 +509,14 @@ fn a_second_sign_in_never_replaces_an_active_account() {
         slot.begin_sign_in().err(),
         Some(AccountError::SignInInProgress)
     );
-    slot.publish(&first, endpoint(), signed("alice", TOKEN_A), store.clone())
-        .unwrap();
+    slot.publish(
+        &first,
+        endpoint(),
+        signed("alice", TOKEN_A),
+        store.clone(),
+        None,
+    )
+    .unwrap();
     drop(first);
     assert_eq!(
         slot.begin_sign_in().err(),
@@ -528,8 +534,14 @@ fn signing_out_during_a_sign_in_cancels_it_and_stores_nothing() {
     let ended = slot.end(|| store.clone());
     assert!(ended.store_cleared);
     assert_eq!(
-        slot.publish(&ticket, endpoint(), signed("alice", TOKEN_A), store.clone())
-            .err(),
+        slot.publish(
+            &ticket,
+            endpoint(),
+            signed("alice", TOKEN_A),
+            store.clone(),
+            None
+        )
+        .err(),
         Some(AccountError::Cancelled)
     );
     assert_eq!(store.token(), None);
@@ -541,8 +553,14 @@ fn sign_out_clears_the_store_before_a_new_sign_in_can_write_it() {
     let store = MemoryStore::default();
     let slot = AccountSlot::default();
     let ticket = slot.begin_sign_in().unwrap();
-    slot.publish(&ticket, endpoint(), signed("alice", TOKEN_A), store.clone())
-        .unwrap();
+    slot.publish(
+        &ticket,
+        endpoint(),
+        signed("alice", TOKEN_A),
+        store.clone(),
+        None,
+    )
+    .unwrap();
     drop(ticket);
     let old = slot.current().unwrap();
     let ended = slot.end(|| store.clone());
@@ -555,8 +573,14 @@ fn sign_out_clears_the_store_before_a_new_sign_in_can_write_it() {
     assert_eq!(store.token(), None, "cleared inside the sign-out itself");
 
     let ticket = slot.begin_sign_in().unwrap();
-    slot.publish(&ticket, endpoint(), signed("bob", TOKEN_B), store.clone())
-        .unwrap();
+    slot.publish(
+        &ticket,
+        endpoint(),
+        signed("bob", TOKEN_B),
+        store.clone(),
+        None,
+    )
+    .unwrap();
     // A late refusal for the old session must not touch the new one.
     slot.end_if(&old);
     assert_eq!(store.token().as_deref(), Some(TOKEN_B));
@@ -591,8 +615,14 @@ fn a_store_that_cannot_save_leaves_no_account() {
     let slot = AccountSlot::default();
     let ticket = slot.begin_sign_in().unwrap();
     assert_eq!(
-        slot.publish(&ticket, endpoint(), signed("alice", TOKEN_A), store.clone())
-            .err(),
+        slot.publish(
+            &ticket,
+            endpoint(),
+            signed("alice", TOKEN_A),
+            store.clone(),
+            None
+        )
+        .err(),
         Some(AccountError::StoreUnavailable)
     );
     assert!(slot.current().is_none());

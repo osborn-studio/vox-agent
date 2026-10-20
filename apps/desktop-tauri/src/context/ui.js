@@ -661,6 +661,14 @@ export function initContextUi({ document: doc, invoke, listen, storage, onAgentS
     renderDiagnostics();
   }
 
+  // `key_store` labels from Rust (context_commands::JournalOpenReport).
+  const KEY_STORE_COPY = Object.freeze({
+    "dpapi-user": "diagnostics.ready",
+    "unsafe-acl": "diagnostics.unsafeAcl",
+    unavailable: "diagnostics.unavailable",
+    "not-available-in-this-build": "diagnostics.notAvailable",
+  });
+
   function renderDiagnostics() {
     if (!diagnostics) {
       el.diagnostics.replaceChildren();
@@ -673,7 +681,7 @@ export function initContextUi({ document: doc, invoke, listen, storage, onAgentS
       ["diagnostics.platform", `${d.os} · ${d.arch}`],
       ["diagnostics.setup", t(d.configured ? "diagnostics.ready" : "diagnostics.notSetUp", lang)],
       ["diagnostics.signIn", t(d.signedIn ? "diagnostics.yes" : "diagnostics.no", lang)],
-      ["diagnostics.keyStore", t(d.keyStore === "available" ? "diagnostics.ready" : "diagnostics.notAvailable", lang)],
+      ["diagnostics.keyStore", t(KEY_STORE_COPY[d.keyStore] ?? "diagnostics.notAvailable", lang)],
       [
         "diagnostics.journal",
         t({ normal: "diagnostics.normal", "verify-only": "diagnostics.verifyOnly" }[d.journal] ?? "diagnostics.unavailable", lang),

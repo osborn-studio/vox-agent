@@ -7,7 +7,7 @@
 //! command answers `not-configured`.
 use crate::context_account::{discover_for, AccountError, AccountSlot, ConversationKind};
 use crate::context_delivery::{BackupPayload, DeliveryState, ProjectSnapshot};
-use crate::context_journal::{DispatchPhase, JournalError, RecoveryAction};
+use crate::context_journal::{DispatchPhase, Journal, JournalError, RecoveryAction};
 use crate::context_policy::{Next, Stop, UserAction};
 use crate::context_service::{ContextService, RecordStatus, ServiceError};
 use crate::context_wire::ContextEndpoint;
@@ -23,12 +23,25 @@ pub const RECORD_EVENT: &str = "vox-agent://context-record";
 /// Tauri state: empty until Rust configures a service for a verified session.
 /// `drivers` holds the records that already have a polling task, so each
 /// record has at most one, sleeps included.
-#[derive(Default)]
 pub struct ContextState {
     account: AccountSlot<NativeSecretStore>,
     drivers: Arc<Mutex<HashSet<String>>>,
     /// The Context server, set once by Rust at startup; never from IPC.
     endpoint: OnceLock<ContextEndpoint>,
+    /// Why the last sign-in did or did not get an encrypted journal
+    /// (`JournalOpenReport::key_store_label`), for diagnostics only.
+    journal_label: Mutex<&'static str>,
+}
+
+impl Default for ContextState {
+    fn default() -> Self {
+        Self {
+            account: AccountSlot::default(),
+            drivers: Arc::default(),
+            endpoint: OnceLock::new(),
+            journal_label: Mutex::new(JournalOpenReport::NotSupported.key_store_label()),
+        }
+    }
 }
 
 /// How long the loopback listener waits for the browser (plan C-12: 60 s).
@@ -48,6 +61,83 @@ impl ContextState {
     /// The verified session's service, for other Rust command modules.
     pub(crate) fn current_service(&self) -> Option<Arc<ContextService<NativeSecretStore>>> {
         self.account.current()
+    }
+    pub fn set_journal_label(&self, label: &'static str) {
+        *self.journal_label.lock().unwrap_or_else(|p| p.into_inner()) = label;
+    }
+    pub fn journal_label(&self) -> &'static str {
+        *self.journal_label.lock().unwrap_or_else(|p| p.into_inner())
+    }
+}
+
+/// Why a build has (or lacks) an encrypted journal. Labels only: no paths.
+pub enum JournalOpenReport {
+    /// A DPAPI-backed journal in an owner-only directory.
+    Opened(Journal),
+    /// This platform has no key provider; delivery stays blocked.
+    NotSupported,
+    /// A Context directory exists with a DACL that is not owner-only. It is
+    /// never repaired: the journal stays `None` and delivery stays blocked.
+    UnsafeAcl,
+    /// Another process holds the journal.
+    Busy,
+    /// The directories or the journal could not be created or opened.
+    Failed,
+}
+
+// `Journal` has no `Debug` (it holds a live SQLite connection); the label only.
+impl std::fmt::Debug for JournalOpenReport {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.key_store_label())
+    }
+}
+
+impl JournalOpenReport {
+    /// The `key_store` diagnostics label.
+    pub fn key_store_label(&self) -> &'static str {
+        match self {
+            Self::Opened(_) => "dpapi-user",
+            Self::NotSupported => "not-available-in-this-build",
+            Self::UnsafeAcl => "unsafe-acl",
+            Self::Busy | Self::Failed => "unavailable",
+        }
+    }
+}
+
+/// Open (or create) the encrypted journal under `<data_dir>/context`:
+/// `keys/` (DPAPI-wrapped key files), `journal/` (database and lock) and
+/// `anchors/` (outside the journal directory, as `Journal::open` requires).
+/// Every directory is created with, or verified to have, an owner-only DACL
+/// before anything is written; a widened directory is refused, not repaired.
+pub fn open_journal(data_dir: &std::path::Path) -> JournalOpenReport {
+    #[cfg(not(windows))]
+    {
+        let _ = data_dir;
+        JournalOpenReport::NotSupported
+    }
+    #[cfg(windows)]
+    {
+        use crate::context_acl::{ensure_private_dir, verify_private_dir, AclError};
+        use crate::context_journal::FileAnchorStore;
+        use crate::context_keys::dpapi::DpapiKeyProvider;
+        use crate::context_keys::KeyRing;
+        let root = data_dir.join("context");
+        let keys = root.join("keys");
+        let journal = root.join("journal");
+        let anchors = root.join("anchors");
+        for dir in [&root, &keys, &journal, &anchors] {
+            match ensure_private_dir(dir).and_then(|_| verify_private_dir(dir)) {
+                Ok(()) => {}
+                Err(AclError::TooPermissive) => return JournalOpenReport::UnsafeAcl,
+                Err(AclError::Io) => return JournalOpenReport::Failed,
+            }
+        }
+        let ring = KeyRing::new(&keys, DpapiKeyProvider::new());
+        match Journal::open(&journal, &ring, Box::new(FileAnchorStore::new(&anchors))) {
+            Ok(opened) => JournalOpenReport::Opened(opened.into_journal()),
+            Err(JournalError::Busy) => JournalOpenReport::Busy,
+            Err(_) => JournalOpenReport::Failed,
+        }
     }
 }
 
@@ -499,7 +589,8 @@ pub struct DiagnosticsDto {
     pub arch: &'static str,
     pub configured: bool,
     pub signed_in: bool,
-    /// Windows key store (DPAPI) availability for the encrypted journal.
+    /// Windows key store (DPAPI) availability for the encrypted journal:
+    /// `dpapi-user`, `unsafe-acl`, `unavailable` or `not-available-in-this-build`.
     pub key_store: &'static str,
     /// "unavailable", "normal" or "verify-only".
     pub journal: &'static str,
@@ -507,8 +598,10 @@ pub struct DiagnosticsDto {
 }
 
 /// Labels only: no paths, tokens, record text or server bodies.
-pub fn diagnostics(service: Option<&ContextService<NativeSecretStore>>) -> DiagnosticsDto {
+pub fn diagnostics(state: &ContextState) -> DiagnosticsDto {
     use crate::context_journal::RecoveryMode;
+    let service = state.service().ok();
+    let service = service.as_deref();
     let journal = service.and_then(|s| s.journal_mode());
     DiagnosticsDto {
         app_version: env!("CARGO_PKG_VERSION"),
@@ -516,8 +609,7 @@ pub fn diagnostics(service: Option<&ContextService<NativeSecretStore>>) -> Diagn
         arch: std::env::consts::ARCH,
         configured: service.is_some(),
         signed_in: service.is_some_and(|s| s.signed_in()),
-        // The DPAPI provider is task T07b; until then no build has one.
-        key_store: "not-available-in-this-build",
+        key_store: state.journal_label(),
         journal: match journal {
             None => "unavailable",
             Some(RecoveryMode::Normal) => "normal",
@@ -538,8 +630,9 @@ pub struct AccountDto {
 
 /// Feishu sign-in through the loopback callback (T24a/T24). The browser URL
 /// is validated in Rust and opened by Rust; the WebView passes nothing.
-/// Until the journal key provider exists (T07b) records stay unavailable,
-/// but the session and conversation discovery work.
+/// On Windows the session gets the DPAPI-backed journal (T07b); elsewhere,
+/// or when the Context directory is not owner-only, records stay unavailable
+/// while the session and conversation discovery still work.
 #[tauri::command]
 pub async fn context_sign_in(
     app: AppHandle,
@@ -558,10 +651,22 @@ pub async fn context_sign_in(
             .map_err(|_| ())
     };
     let signed = crate::context_login::sign_in(&endpoint, opener, SIGN_IN_TIMEOUT).await?;
-    let display_name =
-        state
-            .account
-            .publish(&ticket, endpoint, signed, NativeSecretStore::default())?;
+    let report =
+        tauri::async_runtime::spawn_blocking(|| open_journal(&crate::state::vox_agent_data_dir()))
+            .await
+            .unwrap_or(JournalOpenReport::Failed);
+    state.set_journal_label(report.key_store_label());
+    let journal = match report {
+        JournalOpenReport::Opened(journal) => Some(journal),
+        _ => None,
+    };
+    let display_name = state.account.publish(
+        &ticket,
+        endpoint,
+        signed,
+        NativeSecretStore::default(),
+        journal,
+    )?;
     Ok(AccountDto {
         signed_in: true,
         display_name,
@@ -668,7 +773,7 @@ pub async fn context_conversations(
 
 #[tauri::command]
 pub fn context_diagnostics(state: State<'_, ContextState>) -> DiagnosticsDto {
-    diagnostics(state.service().ok().as_deref())
+    diagnostics(&state)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -771,12 +876,15 @@ mod tests {
 
     #[test]
     fn diagnostics_report_the_real_version_and_no_secrets() {
-        let dto = diagnostics(None);
+        let state = ContextState::default();
+        let dto = diagnostics(&state);
         assert_eq!(dto.app_version, env!("CARGO_PKG_VERSION"));
         assert_eq!(
-            (dto.configured, dto.signed_in, dto.journal),
-            (false, false, "unavailable")
+            (dto.configured, dto.signed_in, dto.journal, dto.key_store),
+            (false, false, "unavailable", "not-available-in-this-build")
         );
+        state.set_journal_label(JournalOpenReport::UnsafeAcl.key_store_label());
+        assert_eq!(diagnostics(&state).key_store, "unsafe-acl");
         let json = serde_json::to_string(&dto).unwrap();
         for forbidden in ["token", "path", "/Users", "\\"] {
             assert!(!json.contains(forbidden), "{forbidden}");

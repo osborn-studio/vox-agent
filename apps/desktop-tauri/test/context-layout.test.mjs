@@ -216,6 +216,18 @@ test("Context settings show diagnostics and a language choice", () => {
   assert.match(ui, /invoke\("context_diagnostics"\)/);
 });
 
+test("diagnostics map every Rust key_store label to fixed copy (PR-A)", () => {
+  const block = ui.slice(ui.indexOf("const KEY_STORE_COPY"), ui.indexOf("function renderDiagnostics"));
+  for (const label of ["dpapi-user", "unsafe-acl", "unavailable", "not-available-in-this-build"]) {
+    assert.ok(block.includes(`"${label}"`) || block.includes(`${label}:`), label);
+  }
+  assert.match(block, /"unsafe-acl": "diagnostics\.unsafeAcl"/);
+  assert.match(block, /"dpapi-user": "diagnostics\.ready"/);
+  assert.match(ui, /KEY_STORE_COPY\[d\.keyStore\] \?\? "diagnostics\.notAvailable"/);
+  const i18n = read("../src/context/i18n.js");
+  assert.match(i18n, /"diagnostics\.unsafeAcl": L\(\s*"Local encrypted directory permissions are unsafe; delivery disabled",\s*"本机加密目录权限不安全，已停用投递",/);
+});
+
 test("Windows high contrast keeps status edges, badges and focus visible (T40b)", () => {
   const block = css.slice(css.indexOf("@media (forced-colors: active)"));
   assert.ok(block.length > 0, "forced-colors block");

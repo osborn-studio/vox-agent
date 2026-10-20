@@ -85,6 +85,10 @@ export const STRINGS = Object.freeze({
   "diagnostics.yes": L("signed in", "已登录"),
   "diagnostics.no": L("not signed in", "未登录"),
   "diagnostics.notAvailable": L("not available in this build", "当前版本不可用"),
+  "diagnostics.unsafeAcl": L(
+    "Local encrypted directory permissions are unsafe; delivery disabled",
+    "本机加密目录权限不安全，已停用投递",
+  ),
   "diagnostics.normal": L("normal", "正常"),
   "diagnostics.verifyOnly": L("verifying after a restore", "恢复后核对中"),
   "diagnostics.unavailable": L("unavailable", "不可用"),

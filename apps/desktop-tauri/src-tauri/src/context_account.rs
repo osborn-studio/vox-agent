@@ -7,6 +7,7 @@
 //! * Refusals become codes. Server bodies are never shown or kept.
 //! * Only server-issued conversation ids (`fc_…`) are accepted; raw Feishu
 //!   chat ids never reach the WebView.
+use crate::context_journal::Journal;
 use crate::context_login::{refusal_code, LoginError, SignedIn};
 use crate::context_service::{ContextService, ServiceError};
 use crate::context_session::{SessionAuthority, TokenStore};
@@ -390,12 +391,16 @@ impl<S: TokenStore> AccountSlot<S> {
 
     /// Store the session and make it current, unless a sign-out happened
     /// since `begin_sign_in` or another account is active.
+    ///
+    /// `journal` is the encrypted journal this session may deliver from
+    /// (`context_commands::open_journal`); `None` keeps delivery blocked.
     pub fn publish(
         &self,
         ticket: &SignInTicket<'_>,
         endpoint: ContextEndpoint,
         signed: SignedIn,
         store: S,
+        journal: Option<Journal>,
     ) -> Result<Option<String>, AccountError> {
         let mut inner = self.lock();
         if !self.gate.current(ticket) {
@@ -413,7 +418,7 @@ impl<S: TokenStore> AccountSlot<S> {
             endpoint,
             signed.destinations,
             session,
-            None,
+            journal,
         )));
         inner.display_name = name.clone();
         Ok(name)
