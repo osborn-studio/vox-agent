@@ -140,3 +140,47 @@ def test_dir_bytes_sums_files_only(tmp_path):
     assert probe.dir_bytes(tmp_path) == 8
     assert probe.dir_bytes(None) == 0
     assert probe.dir_bytes(tmp_path / "nope") == 0
+
+
+def test_load_manifest_rejects_an_empty_file_list(tmp_path):
+    """Codex adversarial finding: an empty list verified as ok and --verify-only exited 0."""
+    import pytest
+
+    path = tmp_path / "m.json"
+    path.write_text(json.dumps({"schema": 1, "files": []}))
+    with pytest.raises(SystemExit):
+        probe.load_manifest(path)
+
+
+def test_download_uses_a_private_temp_file_and_leaves_none_behind(tmp_path, monkeypatch):
+    """Codex adversarial finding: two probes sharing <name>.part could clobber each other."""
+    import io
+    import urllib.request
+
+    manifest = _manifest(tmp_path, {"a.bin": b"aaa", "b.bin": b"bbb"})
+    model_dir = tmp_path / "model"
+    model_dir.mkdir()
+    (model_dir / "a.bin").write_bytes(b"aaa")
+    (model_dir / "b.bin.part").write_bytes(b"stale")  # another process's temp file must survive
+    seen_urls: list[str] = []
+
+    class _Response(io.BytesIO):
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+    def fake_urlopen(url, timeout):
+        seen_urls.append(url)
+        return _Response(b"bbb")
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    loaded = probe.load_manifest(manifest)
+    status = probe.verify_files(loaded, model_dir)
+    assert status == {"a.bin": "ok", "b.bin": "missing"}
+    assert probe.download_missing(loaded, model_dir, status) == {"a.bin": "ok", "b.bin": "ok"}
+    assert seen_urls == ["https://example.invalid/b.bin"]
+    assert (model_dir / "b.bin").read_bytes() == b"bbb"
+    assert (model_dir / "b.bin.part").read_bytes() == b"stale"
+    assert sorted(p.name for p in model_dir.iterdir()) == ["a.bin", "b.bin", "b.bin.part"]

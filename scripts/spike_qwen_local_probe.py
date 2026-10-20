@@ -18,6 +18,7 @@ import hashlib
 import json
 import os
 import re
+import secrets
 import sys
 import time
 import urllib.request
@@ -35,6 +36,8 @@ def load_manifest(path: Path) -> dict:
     manifest = json.loads(path.read_text(encoding="utf-8"))
     if manifest.get("schema") != 1 or not isinstance(manifest.get("files"), list):
         raise SystemExit(f"unsupported manifest: {path}")
+    if not manifest["files"]:
+        raise SystemExit(f"manifest lists no files: {path}")
     return manifest
 
 
@@ -69,12 +72,17 @@ def download_missing(manifest: dict, model_dir: Path, status: dict[str, str]) ->
         if status[entry["path"]] == "ok":
             continue
         target = model_dir / entry["path"]
-        tmp = target.with_suffix(target.suffix + ".part")
+        # A private temp name per process: two probes sharing the directory must not
+        # truncate or rename each other's partial download.
+        tmp = target.with_name(f"{target.name}.{os.getpid()}-{secrets.token_hex(4)}.part")
         started = time.perf_counter()
-        with urllib.request.urlopen(base + entry["path"], timeout=60) as response, tmp.open("wb") as out:
-            for block in iter(lambda: response.read(CHUNK), b""):
-                out.write(block)
-        os.replace(tmp, target)
+        try:
+            with urllib.request.urlopen(base + entry["path"], timeout=60) as response, tmp.open("wb") as out:
+                for block in iter(lambda: response.read(CHUNK), b""):
+                    out.write(block)
+            os.replace(tmp, target)
+        finally:
+            tmp.unlink(missing_ok=True)
         print(f"downloaded {entry['path']} in {time.perf_counter() - started:.1f}s", file=sys.stderr)
     return verify_files(manifest, model_dir)
 
