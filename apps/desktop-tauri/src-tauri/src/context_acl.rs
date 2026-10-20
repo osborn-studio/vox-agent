@@ -60,6 +60,11 @@ pub fn verify_private_dir(dir: &Path) -> Result<(), AclError> {
     }
 }
 
+#[cfg(not(windows))]
+pub fn verify_private_child(dir: &Path) -> Result<(), AclError> {
+    verify_private_dir(dir)
+}
+
 #[cfg(windows)]
 mod win {
     use super::{is_reparse_point, AclError};
@@ -72,9 +77,10 @@ mod win {
         GetNamedSecurityInfoW, SetNamedSecurityInfoW, SDDL_REVISION_1, SE_FILE_OBJECT,
     };
     use windows_sys::Win32::Security::{
-        GetAce, GetSecurityDescriptorDacl, GetTokenInformation, IsValidSid, TokenUser,
-        ACCESS_ALLOWED_ACE, ACE_HEADER, ACL, DACL_SECURITY_INFORMATION, OWNER_SECURITY_INFORMATION,
-        PROTECTED_DACL_SECURITY_INFORMATION, TOKEN_QUERY, TOKEN_USER,
+        GetAce, GetSecurityDescriptorControl, GetSecurityDescriptorDacl, GetTokenInformation,
+        IsValidSid, TokenUser, ACCESS_ALLOWED_ACE, ACE_HEADER, ACL, DACL_SECURITY_INFORMATION,
+        OWNER_SECURITY_INFORMATION, PROTECTED_DACL_SECURITY_INFORMATION, SE_DACL_PROTECTED,
+        TOKEN_QUERY, TOKEN_USER,
     };
     // windows-sys 0.61: the ACE type constants are plain u32 values here.
     use windows_sys::Win32::System::SystemServices::{
@@ -255,9 +261,24 @@ mod win {
 
     /// Re-read owner and DACL: the owner must be the current user, SYSTEM or
     /// Administrators (an elevated process creates objects owned by that
-    /// group), and only non-inherited allow ACEs for the current user and
-    /// SYSTEM may exist (deny ACEs only narrow access and are ignored).
+    /// group); the DACL must be protected (`SE_DACL_PROTECTED`, so a later
+    /// inheritable grant on the parent cannot reach it); and only
+    /// non-inherited allow ACEs for the current user and SYSTEM may exist
+    /// (deny ACEs only narrow access and are ignored).
     pub fn verify_private_dir(dir: &Path) -> Result<(), AclError> {
+        verify(dir, false)
+    }
+
+    /// Like `verify_private_dir` for a directory the journal creates inside
+    /// an already verified private directory (`db/`, `isolated/`): ACEs it
+    /// inherited from that parent are accepted as long as every ACE still
+    /// names only the current user or SYSTEM. An explicit grant added later
+    /// is refused like anywhere else.
+    pub fn verify_private_child(dir: &Path) -> Result<(), AclError> {
+        verify(dir, true)
+    }
+
+    fn verify(dir: &Path, allow_inherited: bool) -> Result<(), AclError> {
         if is_reparse_point(dir) {
             return Err(AclError::TooPermissive);
         }
@@ -293,13 +314,28 @@ mod win {
                 // Another owner holds implicit WRITE_DAC and could widen it later.
                 return Err(AclError::TooPermissive);
             }
-            walk_dacl(dacl, &user)
+            if !allow_inherited {
+                let mut control = 0u16;
+                let mut revision = 0u32;
+                // SAFETY: `descriptor` is the live descriptor from the call above.
+                if unsafe { GetSecurityDescriptorControl(descriptor, &mut control, &mut revision) }
+                    == 0
+                {
+                    return Err(AclError::Io);
+                }
+                if control & SE_DACL_PROTECTED == 0 {
+                    // Inheritance is enabled: a future grant on the parent
+                    // would widen this directory without touching it.
+                    return Err(AclError::TooPermissive);
+                }
+            }
+            walk_dacl(dacl, &user, allow_inherited)
         })();
         unsafe { LocalFree(descriptor as _) };
         result
     }
 
-    fn walk_dacl(dacl: *mut ACL, user: &str) -> Result<(), AclError> {
+    fn walk_dacl(dacl: *mut ACL, user: &str, allow_inherited: bool) -> Result<(), AclError> {
         if dacl.is_null() {
             // A NULL DACL grants everyone full access.
             return Err(AclError::TooPermissive);
@@ -312,7 +348,7 @@ mod win {
                 return Err(AclError::Io);
             }
             let header = unsafe { &*(ace as *const ACE_HEADER) };
-            if header.AceFlags & INHERITED_ACE != 0 {
+            if header.AceFlags & INHERITED_ACE != 0 && !allow_inherited {
                 // Inherited permissions change with the parent; the journal
                 // directory must carry its own protected DACL.
                 return Err(AclError::TooPermissive);
@@ -342,7 +378,7 @@ mod win {
 }
 
 #[cfg(windows)]
-pub use win::{current_user_sid, ensure_private_dir, verify_private_dir};
+pub use win::{current_user_sid, ensure_private_dir, verify_private_child, verify_private_dir};
 
 #[cfg(test)]
 mod tests {

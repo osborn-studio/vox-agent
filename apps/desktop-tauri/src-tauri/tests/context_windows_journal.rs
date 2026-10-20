@@ -19,12 +19,21 @@ fn open_journal_reports_platform_support() {
         assert_eq!(report.key_store_label(), "dpapi-user");
         assert!(root.path().join("context").join("journal").is_dir());
         assert!(root.path().join("context").join("keys").is_dir());
-        // Every directory under context/ carries its own protected DACL,
-        // including the ones the journal itself would otherwise create.
-        for sub in ["keys", "journal", "journal\\db", "journal\\isolated"] {
+        // The Context directories carry their own protected DACL; the ones
+        // the journal creates inside inherit it and name nobody else.
+        use vox_agent_desktop_tauri_lib::context_acl::{verify_private_child, verify_private_dir};
+        for sub in ["keys", "journal"] {
+            verify_private_dir(&root.path().join("context").join(sub)).unwrap();
+        }
+        for sub in ["journal\\db", "journal\\isolated"] {
             let dir = root.path().join("context").join(sub);
             assert!(dir.is_dir(), "{sub}");
-            vox_agent_desktop_tauri_lib::context_acl::verify_private_dir(&dir).unwrap();
+            verify_private_child(&dir).unwrap();
+            assert_eq!(
+                verify_private_dir(&dir).unwrap_err(),
+                vox_agent_desktop_tauri_lib::context_acl::AclError::TooPermissive,
+                "{sub} inherits, so the strict check refuses it"
+            );
         }
     } else {
         assert!(matches!(report, JournalOpenReport::NotSupported));

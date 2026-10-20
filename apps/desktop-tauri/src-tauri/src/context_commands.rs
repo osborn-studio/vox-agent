@@ -392,29 +392,48 @@ pub fn open_journal_with(
     }
     #[cfg(windows)]
     {
-        use crate::context_acl::{ensure_private_dir, verify_private_dir, AclError};
+        use crate::context_acl::{
+            ensure_private_dir, verify_private_child, verify_private_dir, AclError,
+        };
         use crate::context_keys::dpapi::DpapiKeyProvider;
         use crate::context_keys::KeyRing;
         let root = data_dir.join("context");
         let keys = root.join("keys");
         let journal = root.join("journal");
-        // `db/` and `isolated/` are created by `Journal::open` otherwise;
-        // creating them here gives each its own protected DACL instead of an
-        // inherited one, and a later widening of any of them is refused.
-        let db = journal.join("db");
-        let isolated = journal.join("isolated");
-        for dir in [&root, &keys, &journal, &db, &isolated] {
+        for dir in [&root, &keys, &journal] {
             match ensure_private_dir(dir).and_then(|_| verify_private_dir(dir)) {
                 Ok(()) => {}
                 Err(AclError::TooPermissive) => return JournalOpenReport::UnsafeAcl,
                 Err(AclError::Io) => return JournalOpenReport::Failed,
             }
         }
+        // `db/` and `isolated/` belong to `Journal::open` (an empty `db/`
+        // created by anyone else is archived as orphaned), so they are not
+        // pre-created; they inherit the protected owner-only DACL of
+        // `journal/` and are verified as children before and after the open,
+        // so a widened `db/` is refused like a widened `journal/`.
+        let children = [journal.join("db"), journal.join("isolated")];
+        let children_ok = || {
+            children
+                .iter()
+                .filter(|dir| dir.exists())
+                .try_for_each(|dir| verify_private_child(dir))
+        };
+        match children_ok() {
+            Ok(()) => {}
+            Err(AclError::TooPermissive) => return JournalOpenReport::UnsafeAcl,
+            Err(AclError::Io) => return JournalOpenReport::Failed,
+        }
         let ring = KeyRing::new(&keys, DpapiKeyProvider::new());
-        match Journal::open(&journal, &ring, anchors) {
-            Ok(opened) => JournalOpenReport::Opened(opened.into_journal()),
-            Err(JournalError::Busy) => JournalOpenReport::Busy,
-            Err(_) => JournalOpenReport::Failed,
+        let opened = match Journal::open(&journal, &ring, anchors) {
+            Ok(opened) => opened.into_journal(),
+            Err(JournalError::Busy) => return JournalOpenReport::Busy,
+            Err(_) => return JournalOpenReport::Failed,
+        };
+        match children_ok() {
+            Ok(()) => JournalOpenReport::Opened(opened),
+            Err(AclError::TooPermissive) => JournalOpenReport::UnsafeAcl,
+            Err(AclError::Io) => JournalOpenReport::Failed,
         }
     }
 }

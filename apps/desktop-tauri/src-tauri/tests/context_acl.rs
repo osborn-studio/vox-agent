@@ -3,7 +3,9 @@
 #![cfg(windows)]
 
 use std::process::Command;
-use vox_agent_desktop_tauri_lib::context_acl::{ensure_private_dir, verify_private_dir, AclError};
+use vox_agent_desktop_tauri_lib::context_acl::{
+    ensure_private_dir, verify_private_child, verify_private_dir, AclError,
+};
 
 fn grant_everyone_read(dir: &std::path::Path) {
     let status = Command::new("icacls")
@@ -137,4 +139,56 @@ fn ensure_creates_missing_parents_owner_only_too() {
     // Only the leaf carries the protected DACL; the parent is an ordinary
     // directory the caller must secure itself if it matters.
     assert!(root.path().join("a").is_dir());
+}
+
+#[test]
+fn a_child_created_inside_a_private_directory_passes_the_child_check_only() {
+    let root = tempfile::tempdir().unwrap();
+    let dir = root.path().join("ctx");
+    ensure_private_dir(&dir).unwrap();
+    let child = dir.join("db");
+    std::fs::create_dir(&child).unwrap();
+    // Inherited owner-only ACEs: fine as a child, refused as a top level.
+    verify_private_child(&child).unwrap();
+    assert_eq!(
+        verify_private_dir(&child).unwrap_err(),
+        AclError::TooPermissive
+    );
+    // An explicit grant on the child is refused either way.
+    grant_everyone_read(&child);
+    assert_eq!(
+        verify_private_child(&child).unwrap_err(),
+        AclError::TooPermissive
+    );
+    // A child of an ordinary (inherited) directory is refused: its inherited
+    // ACEs name Administrators and whoever else the profile grants.
+    let plain = root.path().join("plain");
+    std::fs::create_dir(&plain).unwrap();
+    let plain_child = plain.join("db");
+    std::fs::create_dir(&plain_child).unwrap();
+    assert_eq!(
+        verify_private_child(&plain_child).unwrap_err(),
+        AclError::TooPermissive
+    );
+}
+
+#[test]
+fn re_enabling_inheritance_on_a_private_directory_is_refused() {
+    let root = tempfile::tempdir().unwrap();
+    let dir = root.path().join("ctx");
+    ensure_private_dir(&dir).unwrap();
+    let status = Command::new("icacls")
+        .arg(&dir)
+        .args(["/inheritance:e"])
+        .status()
+        .unwrap();
+    assert!(status.success(), "icacls /inheritance:e failed");
+    assert_eq!(
+        verify_private_dir(&dir).unwrap_err(),
+        AclError::TooPermissive
+    );
+    assert_eq!(
+        ensure_private_dir(&dir).unwrap_err(),
+        AclError::TooPermissive
+    );
 }
