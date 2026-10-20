@@ -3,11 +3,12 @@
 //! `ensure_private_dir` creates a missing directory with a protected DACL
 //! that grants full access only to the current user and SYSTEM, with no
 //! inheritance from the parent. `verify_private_dir` re-reads the DACL and
-//! fails on any other allow ACE, on any inherited ACE and on a NULL DACL, so
-//! a directory someone widened later (or that merely inherits its parent's
-//! permissions) is not used. An existing directory is verified, never
-//! repaired. Both are no-ops that succeed on non-Windows targets because
-//! those builds never open a journal (see `context_commands::open_journal`).
+//! fails on any other allow ACE, on any inherited ACE, on a NULL DACL, on a
+//! foreign owner and on a reparse point, so a directory someone widened
+//! later (or that merely inherits its parent's permissions) is not used. An
+//! existing directory is verified, never repaired. On non-Windows targets
+//! only the reparse-point check applies, because those builds never open a
+//! journal (see `context_commands::open_journal`).
 use std::path::Path;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -16,17 +17,42 @@ pub enum AclError {
     /// or the directory does not exist.
     Io,
     /// The DACL is NULL, inherits from the parent, or holds an allow ACE for a
-    /// principal other than the owner or SYSTEM.
+    /// principal other than the owner or SYSTEM; the owner is a foreign
+    /// principal; or the path is a symlink, junction or other reparse point.
     TooPermissive,
+}
+
+/// A symlink, junction or other reparse point is never a private directory:
+/// its target could be anywhere and the ACL read here would not be its own.
+fn is_reparse_point(dir: &Path) -> bool {
+    let Ok(metadata) = std::fs::symlink_metadata(dir) else {
+        return false;
+    };
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::MetadataExt;
+        const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;
+        metadata.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0
+    }
+    #[cfg(not(windows))]
+    {
+        metadata.file_type().is_symlink()
+    }
 }
 
 #[cfg(not(windows))]
 pub fn ensure_private_dir(dir: &Path) -> Result<(), AclError> {
+    if is_reparse_point(dir) {
+        return Err(AclError::TooPermissive);
+    }
     std::fs::create_dir_all(dir).map_err(|_| AclError::Io)
 }
 
 #[cfg(not(windows))]
 pub fn verify_private_dir(dir: &Path) -> Result<(), AclError> {
+    if is_reparse_point(dir) {
+        return Err(AclError::TooPermissive);
+    }
     if dir.is_dir() {
         Ok(())
     } else {
@@ -36,7 +62,7 @@ pub fn verify_private_dir(dir: &Path) -> Result<(), AclError> {
 
 #[cfg(windows)]
 mod win {
-    use super::AclError;
+    use super::{is_reparse_point, AclError};
     use std::ffi::OsStr;
     use std::os::windows::ffi::OsStrExt;
     use std::path::Path;
@@ -47,7 +73,7 @@ mod win {
     };
     use windows_sys::Win32::Security::{
         GetAce, GetSecurityDescriptorDacl, GetTokenInformation, IsValidSid, TokenUser,
-        ACCESS_ALLOWED_ACE, ACE_HEADER, ACL, DACL_SECURITY_INFORMATION,
+        ACCESS_ALLOWED_ACE, ACE_HEADER, ACL, DACL_SECURITY_INFORMATION, OWNER_SECURITY_INFORMATION,
         PROTECTED_DACL_SECURITY_INFORMATION, TOKEN_QUERY, TOKEN_USER,
     };
     // windows-sys 0.61: the ACE type constants are plain u32 values here.
@@ -57,6 +83,8 @@ mod win {
     use windows_sys::Win32::System::Threading::{GetCurrentProcess, OpenProcessToken};
 
     const SYSTEM_SID: &str = "S-1-5-18";
+    /// Objects created by an elevated process are owned by this group.
+    const ADMINISTRATORS_SID: &str = "S-1-5-32-544";
     /// `ACE_HEADER.AceFlags` bit set on ACEs inherited from the parent.
     const INHERITED_ACE: u8 = 0x10;
 
@@ -121,48 +149,85 @@ mod win {
         unsafe { sid_to_string(user.User.Sid) }
     }
 
+    /// A self-relative security descriptor built from SDDL; freed on drop.
+    struct Descriptor(*mut core::ffi::c_void);
+
+    impl Descriptor {
+        fn from_sddl(sddl: &str) -> Result<Self, AclError> {
+            let sddl_w = wide(OsStr::new(sddl));
+            let mut descriptor: *mut core::ffi::c_void = std::ptr::null_mut();
+            // SAFETY: the SDDL string is NUL-terminated; the descriptor is
+            // LocalAlloc'd on success and freed by `Drop`.
+            let ok = unsafe {
+                ConvertStringSecurityDescriptorToSecurityDescriptorW(
+                    sddl_w.as_ptr(),
+                    SDDL_REVISION_1,
+                    &mut descriptor,
+                    std::ptr::null_mut(),
+                )
+            };
+            if ok == 0 || descriptor.is_null() {
+                return Err(AclError::Io);
+            }
+            Ok(Self(descriptor))
+        }
+        /// The DACL inside the descriptor (valid while `self` lives).
+        fn dacl(&self) -> Result<*mut ACL, AclError> {
+            let mut dacl: *mut ACL = std::ptr::null_mut();
+            let mut present = 0i32;
+            let mut defaulted = 0i32;
+            // SAFETY: `self.0` is a valid self-relative descriptor.
+            let ok = unsafe {
+                GetSecurityDescriptorDacl(self.0, &mut present, &mut dacl, &mut defaulted)
+            };
+            if ok == 0 || present == 0 || dacl.is_null() {
+                return Err(AclError::Io);
+            }
+            Ok(dacl)
+        }
+    }
+
+    impl Drop for Descriptor {
+        fn drop(&mut self) {
+            unsafe { LocalFree(self.0 as _) };
+        }
+    }
+
     /// Creates a missing directory with the protected DACL. An existing
     /// directory is verified, never repaired: silently tightening an ACL
     /// someone widened would hide the tampering the check exists to catch.
+    /// Everything that can fail is prepared before the directory exists, and
+    /// a directory this call created but could not secure is removed again,
+    /// so a failure never leaves an inherited, permanently refused directory.
     pub fn ensure_private_dir(dir: &Path) -> Result<(), AclError> {
+        if is_reparse_point(dir) {
+            return Err(AclError::TooPermissive);
+        }
         if dir.is_dir() {
             return verify_private_dir(dir);
         }
-        std::fs::create_dir_all(dir).map_err(|_| AclError::Io)?;
         let user = current_user_sid()?;
         // Protected DACL (no inheritance), full access for SYSTEM and the
         // owner, inherited by children (OICI).
-        let sddl = format!("D:P(A;OICI;FA;;;{SYSTEM_SID})(A;OICI;FA;;;{user})");
-        let sddl_w = wide(OsStr::new(&sddl));
-        let mut descriptor: *mut core::ffi::c_void = std::ptr::null_mut();
-        // SAFETY: the SDDL string is NUL-terminated; the descriptor is
-        // LocalAlloc'd on success and freed below.
-        if unsafe {
-            ConvertStringSecurityDescriptorToSecurityDescriptorW(
-                sddl_w.as_ptr(),
-                SDDL_REVISION_1,
-                &mut descriptor,
-                std::ptr::null_mut(),
-            )
-        } == 0
-            || descriptor.is_null()
-        {
-            return Err(AclError::Io);
+        let descriptor = Descriptor::from_sddl(&format!(
+            "D:P(A;OICI;FA;;;{SYSTEM_SID})(A;OICI;FA;;;{user})"
+        ))?;
+        let dacl = descriptor.dacl()?;
+        if let Some(parent) = dir.parent() {
+            std::fs::create_dir_all(parent).map_err(|_| AclError::Io)?;
         }
-        let mut dacl: *mut ACL = std::ptr::null_mut();
-        let mut present = 0i32;
-        let mut defaulted = 0i32;
-        // SAFETY: `descriptor` is a valid self-relative descriptor; the DACL
-        // pointer it yields lives inside it until `LocalFree`.
-        let ok = unsafe {
-            GetSecurityDescriptorDacl(descriptor, &mut present, &mut dacl, &mut defaulted)
-        };
-        if ok == 0 || present == 0 || dacl.is_null() {
-            unsafe { LocalFree(descriptor as _) };
-            return Err(AclError::Io);
+        // Only the leaf is created here; a directory that appeared meanwhile
+        // was not created by us and is verified like any other.
+        match std::fs::create_dir(dir) {
+            Ok(()) => {}
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
+                return verify_private_dir(dir);
+            }
+            Err(_) => return Err(AclError::Io),
         }
         let path_w = wide(dir.as_os_str());
-        // SAFETY: path is NUL-terminated; owner and group are left unchanged.
+        // SAFETY: path is NUL-terminated; owner and group are left unchanged;
+        // `dacl` lives inside `descriptor`, which outlives the call.
         let status = unsafe {
             SetNamedSecurityInfoW(
                 path_w.as_ptr(),
@@ -174,31 +239,44 @@ mod win {
                 std::ptr::null(),
             )
         };
-        unsafe { LocalFree(descriptor as _) };
-        if status != 0 {
-            return Err(AclError::Io);
+        drop(descriptor);
+        let secured = if status == 0 {
+            verify_private_dir(dir)
+        } else {
+            Err(AclError::Io)
+        };
+        if secured.is_err() {
+            // Remove the empty directory this call just created (never one
+            // that existed before), so the next start can create it properly.
+            let _ = std::fs::remove_dir(dir);
         }
-        verify_private_dir(dir)
+        secured
     }
 
-    /// Re-read the DACL: only non-inherited allow ACEs for the current user
-    /// and SYSTEM may exist (deny ACEs only narrow access and are ignored).
+    /// Re-read owner and DACL: the owner must be the current user, SYSTEM or
+    /// Administrators (an elevated process creates objects owned by that
+    /// group), and only non-inherited allow ACEs for the current user and
+    /// SYSTEM may exist (deny ACEs only narrow access and are ignored).
     pub fn verify_private_dir(dir: &Path) -> Result<(), AclError> {
+        if is_reparse_point(dir) {
+            return Err(AclError::TooPermissive);
+        }
         if !dir.is_dir() {
             return Err(AclError::Io);
         }
         let user = current_user_sid()?;
         let path_w = wide(dir.as_os_str());
+        let mut owner: *mut core::ffi::c_void = std::ptr::null_mut();
         let mut dacl: *mut ACL = std::ptr::null_mut();
         let mut descriptor: *mut core::ffi::c_void = std::ptr::null_mut();
-        // SAFETY: out-params are filled on success; the DACL points into the
-        // descriptor, which is freed after the walk.
+        // SAFETY: out-params are filled on success; owner and DACL point into
+        // the descriptor, which is freed after the walk.
         let status = unsafe {
             GetNamedSecurityInfoW(
                 path_w.as_ptr(),
                 SE_FILE_OBJECT,
-                DACL_SECURITY_INFORMATION,
-                std::ptr::null_mut(),
+                OWNER_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION,
+                &mut owner,
                 std::ptr::null_mut(),
                 &mut dacl,
                 std::ptr::null_mut(),
@@ -208,7 +286,15 @@ mod win {
         if status != 0 || descriptor.is_null() {
             return Err(AclError::Io);
         }
-        let result = walk_dacl(dacl, &user);
+        let result = (|| {
+            // SAFETY: `owner` points into the live descriptor.
+            let owner = unsafe { sid_to_string(owner) }?;
+            if owner != user && owner != SYSTEM_SID && owner != ADMINISTRATORS_SID {
+                // Another owner holds implicit WRITE_DAC and could widen it later.
+                return Err(AclError::TooPermissive);
+            }
+            walk_dacl(dacl, &user)
+        })();
         unsafe { LocalFree(descriptor as _) };
         result
     }
@@ -240,10 +326,13 @@ mod win {
                 // refuse rather than guess.
                 return Err(AclError::TooPermissive);
             }
-            let allowed = unsafe { &*(ace as *const ACCESS_ALLOWED_ACE) };
+            // The SID starts at `SidStart` and runs past the fixed struct, so
+            // it is addressed from the raw ACE pointer, not through a
+            // reference to the 12-byte struct.
             let sid = unsafe {
-                sid_to_string(std::ptr::addr_of!(allowed.SidStart) as *mut core::ffi::c_void)
-            }?;
+                (ace as *const u8).add(core::mem::offset_of!(ACCESS_ALLOWED_ACE, SidStart))
+            } as *mut core::ffi::c_void;
+            let sid = unsafe { sid_to_string(sid) }?;
             if sid != user && sid != SYSTEM_SID {
                 return Err(AclError::TooPermissive);
             }
@@ -270,6 +359,24 @@ mod tests {
         assert_eq!(
             verify_private_dir(&root.path().join("absent")).unwrap_err(),
             AclError::Io
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_symlink_is_never_a_private_directory() {
+        let root = tempfile::tempdir().unwrap();
+        let target = root.path().join("target");
+        std::fs::create_dir(&target).unwrap();
+        let link = root.path().join("link");
+        std::os::unix::fs::symlink(&target, &link).unwrap();
+        assert_eq!(
+            verify_private_dir(&link).unwrap_err(),
+            AclError::TooPermissive
+        );
+        assert_eq!(
+            ensure_private_dir(&link).unwrap_err(),
+            AclError::TooPermissive
         );
     }
 }

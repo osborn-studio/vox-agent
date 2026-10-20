@@ -1,6 +1,14 @@
 //! On Windows a signed-in account owns a DPAPI-backed journal under
 //! `<data_dir>/context`; elsewhere it stays `None` (`NotSupported`).
-use vox_agent_desktop_tauri_lib::context_commands::{open_journal, JournalOpenReport};
+use std::path::Path;
+use vox_agent_desktop_tauri_lib::context_commands::{open_journal_with, JournalOpenReport};
+use vox_agent_desktop_tauri_lib::context_journal::FileAnchorStore;
+
+/// `open_journal` with anchors in a file store under `root` (outside
+/// `context/`), so tests never touch the credential store.
+fn open_journal(root: &Path) -> JournalOpenReport {
+    open_journal_with(root, Box::new(FileAnchorStore::new(&root.join("anchors"))))
+}
 
 #[test]
 fn open_journal_reports_platform_support() {
@@ -11,7 +19,6 @@ fn open_journal_reports_platform_support() {
         assert_eq!(report.key_store_label(), "dpapi-user");
         assert!(root.path().join("context").join("journal").is_dir());
         assert!(root.path().join("context").join("keys").is_dir());
-        assert!(root.path().join("context").join("anchors").is_dir());
     } else {
         assert!(matches!(report, JournalOpenReport::NotSupported));
         assert_eq!(report.key_store_label(), "not-available-in-this-build");
@@ -36,7 +43,13 @@ fn report_debug_and_labels_never_carry_paths() {
 fn open_journal_refuses_a_widened_directory() {
     let root = tempfile::tempdir().unwrap();
     let dir = root.path().join("context");
-    std::fs::create_dir_all(&dir).unwrap();
+    // Created owner-only first, then widened: the refusal is for the grant,
+    // not for inherited permissions.
+    vox_agent_desktop_tauri_lib::context_acl::ensure_private_dir(&dir).unwrap();
+    assert!(matches!(
+        open_journal(root.path()),
+        JournalOpenReport::Opened(_)
+    ));
     let status = std::process::Command::new("icacls")
         .arg(&dir)
         .args(["/grant", "Everyone:(OI)(CI)R"])
@@ -47,9 +60,34 @@ fn open_journal_refuses_a_widened_directory() {
         open_journal(root.path()),
         JournalOpenReport::UnsafeAcl
     ));
-    // Nothing was created inside the refused directory.
-    assert!(!dir.join("journal").exists());
-    assert!(!dir.join("keys").exists());
+    // The widened directory was not repaired.
+    let out = std::process::Command::new("icacls")
+        .arg(&dir)
+        .output()
+        .unwrap();
+    assert!(String::from_utf8_lossy(&out.stdout)
+        .to_lowercase()
+        .contains("everyone"));
+}
+
+#[cfg(windows)]
+#[test]
+fn open_journal_refuses_a_junction_in_place_of_the_context_directory() {
+    let root = tempfile::tempdir().unwrap();
+    let elsewhere = root.path().join("elsewhere");
+    std::fs::create_dir(&elsewhere).unwrap();
+    let status = std::process::Command::new("cmd")
+        .args(["/C", "mklink", "/J"])
+        .arg(root.path().join("context"))
+        .arg(&elsewhere)
+        .status()
+        .unwrap();
+    assert!(status.success(), "mklink /J");
+    assert!(matches!(
+        open_journal(root.path()),
+        JournalOpenReport::UnsafeAcl
+    ));
+    assert!(!elsewhere.join("keys").exists());
 }
 
 #[cfg(windows)]

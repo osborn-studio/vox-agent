@@ -376,6 +376,8 @@ fn renewal_is_due_five_minutes_before_expiry() {
 #[derive(Clone, Default)]
 struct MemoryStore {
     values: Arc<Mutex<HashMap<String, String>>>,
+    /// Writes to this account fail (`"*"`: every write).
+    broken: Arc<Mutex<Option<String>>>,
 }
 
 impl TokenStore for MemoryStore {
@@ -383,6 +385,15 @@ impl TokenStore for MemoryStore {
         Ok(self.values.lock().unwrap().get(account).cloned())
     }
     fn write(&self, account: &str, value: &str) -> Result<(), SecretError> {
+        if self
+            .broken
+            .lock()
+            .unwrap()
+            .as_deref()
+            .is_some_and(|b| b == "*" || b == account)
+        {
+            return Err(SecretError::Backend);
+        }
         self.values
             .lock()
             .unwrap()
@@ -433,7 +444,10 @@ fn a_renewal_rotates_the_token_under_the_captured_lease() {
     let lease = service.with_session(|s| s.lease()).unwrap();
     assert!(matches!(
         apply_renewal(&service, &lease, renewed_outcome("alice")),
-        RenewalApplied::Renewed { expires_in: 3600 }
+        RenewalApplied::Renewed {
+            expires_in: 3600,
+            refresh_stored: true
+        }
     ));
     let (_, token) = service.credentials().unwrap();
     assert_eq!(token.as_str(), ACCESS_2);
@@ -505,4 +519,84 @@ fn a_renewal_after_sign_out_and_back_in_is_stale() {
         RenewalApplied::Stale
     ));
     assert_eq!(service.credentials().unwrap().1.as_str(), ACCESS_1);
+}
+
+#[test]
+fn a_renewal_whose_refresh_token_cannot_be_stored_still_counts_as_renewed() {
+    let store = MemoryStore::default();
+    let service = service(&store);
+    let lease = service.with_session(|s| s.lease()).unwrap();
+    // Only the refresh-token write is refused: the access token rotates and
+    // the caller must reschedule, with the store problem on the label.
+    *store.broken.lock().unwrap() = Some(REFRESH_ACCOUNT.to_string());
+    assert!(matches!(
+        apply_renewal(&service, &lease, renewed_outcome("alice")),
+        RenewalApplied::Renewed {
+            expires_in: 3600,
+            refresh_stored: false
+        }
+    ));
+    assert_eq!(service.credentials().unwrap().1.as_str(), ACCESS_2);
+    assert_eq!(
+        store.read(REFRESH_ACCOUNT).unwrap().as_deref(),
+        Some(REFRESH),
+        "the old refresh token stays stored"
+    );
+    // With the access-token write refused too, nothing rotates.
+    let lease = service.with_session(|s| s.lease()).unwrap();
+    *store.broken.lock().unwrap() = Some("*".to_string());
+    assert!(matches!(
+        apply_renewal(&service, &lease, renewed_outcome("alice")),
+        RenewalApplied::RetryLater("SESSION")
+    ));
+    assert_eq!(service.credentials().unwrap().1.as_str(), ACCESS_2);
+}
+
+#[test]
+fn an_unverified_session_is_not_renewed() {
+    let store = MemoryStore::default();
+    let service = service(&store);
+    let lease = service.with_session(|s| s.lease()).unwrap();
+    service.with_session(|s| {
+        s.restore().unwrap();
+    });
+    // `restore` bumps the generation, so the old lease is stale first.
+    assert!(matches!(
+        apply_renewal(&service, &lease, renewed_outcome("alice")),
+        RenewalApplied::Stale
+    ));
+}
+
+#[test]
+fn the_refresh_token_is_read_only_under_a_current_lease() {
+    let store = MemoryStore::default();
+    let service = service(&store);
+    let lease = service.with_session(|s| s.lease()).unwrap();
+    assert_eq!(
+        service
+            .with_session(|s| s.refresh_token_for(&lease))
+            .unwrap()
+            .as_deref(),
+        Some(REFRESH)
+    );
+    // Sign out and back in as someone else: the old lease must not read the
+    // new session's refresh token.
+    service.with_session(|s| {
+        s.sign_out().unwrap();
+        s.sign_in(principal("bob"), ACCESS_2.to_string()).unwrap();
+        s.set_refresh_token(Some("vox_refresh_bobbobbobbobbobbobbobbobbobbobbob"))
+            .unwrap();
+    });
+    assert!(matches!(
+        service.with_session(|s| s.refresh_token_for(&lease)),
+        Err(vox_agent_desktop_tauri_lib::context_session::SessionError::StaleLease)
+    ));
+    // After a renewal (new epoch) the pre-renewal lease is stale for reading too.
+    let service = self::service(&store);
+    let lease = service.with_session(|s| s.lease()).unwrap();
+    apply_renewal(&service, &lease, renewed_outcome("alice"));
+    assert!(matches!(
+        service.with_session(|s| s.refresh_token_for(&lease)),
+        Err(vox_agent_desktop_tauri_lib::context_session::SessionError::StaleLease)
+    ));
 }

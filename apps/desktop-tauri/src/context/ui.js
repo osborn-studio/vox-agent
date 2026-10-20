@@ -20,6 +20,8 @@ import {
 } from "./timeline.js";
 
 export const RECORD_EVENT = "vox-agent://context-record";
+/** Rust ended the account on its own (session renewal refused); payload is a code only. */
+export const ACCOUNT_EVENT = "vox-agent://context-account";
 
 const byId = (doc, id) => doc.getElementById(id);
 const EVENT_ID = /^[A-Za-z0-9_-]{1,128}$/;
@@ -643,6 +645,12 @@ export function initContextUi({ document: doc, invoke, listen, storage, onAgentS
     }
   });
   listen(RECORD_EVENT, (event) => refreshRecord(event?.payload?.eventId));
+  listen(ACCOUNT_EVENT, (event) => {
+    const code = event?.payload?.code;
+    setAccountNote((l) => accountError(typeof code === "string" ? code : "sign-in-required", l));
+    clearPrivateSide();
+    refreshSummary();
+  });
   doc.defaultView?.addEventListener("blur", hideRevealed);
   doc.addEventListener?.("visibilitychange", () => {
     if (doc.visibilityState === "hidden") {

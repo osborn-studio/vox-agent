@@ -482,7 +482,12 @@ impl<S: TokenStore> AccountSlot<S> {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RenewalApplied {
     /// The access token was rotated; schedule the next renewal.
-    Renewed { expires_in: u64 },
+    /// `refresh_stored` is false when the credential store refused the
+    /// refresh token the server returned (the old one stays stored).
+    Renewed {
+        expires_in: u64,
+        refresh_stored: bool,
+    },
     /// A newer sign-in or renewal happened meanwhile; nothing changed.
     Stale,
     /// The caller must end the account (the session itself is already
@@ -509,14 +514,12 @@ pub fn apply_renewal<S: TokenStore>(
             principal,
         } => service.with_session(|session| {
             match session.refresh(lease, &principal, token.to_string()) {
-                Ok(()) => {
-                    if session.set_refresh_token(Some(&refresh_token)).is_err() {
-                        // The old refresh token stays stored; if the server
-                        // rotated it, the next renewal fails closed (401).
-                        return RenewalApplied::RetryLater("STORE");
-                    }
-                    RenewalApplied::Renewed { expires_in }
-                }
+                Ok(()) => RenewalApplied::Renewed {
+                    expires_in,
+                    // The old refresh token stays stored on failure; if the
+                    // server rotated it, the next renewal fails closed (401).
+                    refresh_stored: session.set_refresh_token(Some(&refresh_token)).is_ok(),
+                },
                 Err(SessionError::IdentityChanged) => RenewalApplied::SignOut("IDENTITY_CHANGED"),
                 Err(SessionError::StaleLease | SessionError::NotSignedIn) => RenewalApplied::Stale,
                 Err(_) => RenewalApplied::RetryLater("SESSION"),

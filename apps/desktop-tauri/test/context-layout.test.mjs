@@ -228,6 +228,14 @@ test("diagnostics map every Rust key_store label to fixed copy (PR-A)", () => {
   assert.match(i18n, /"diagnostics\.unsafeAcl": L\(\s*"Local encrypted directory permissions are unsafe; delivery disabled",\s*"本机加密目录权限不安全，已停用投递",/);
 });
 
+test("a renewal sign-out from Rust refreshes the account view with a known code (PR-A)", () => {
+  assert.match(ui, /export const ACCOUNT_EVENT = "vox-agent:\/\/context-account"/);
+  const block = ui.slice(ui.indexOf("listen(ACCOUNT_EVENT"), ui.indexOf("doc.defaultView?.addEventListener(\"blur\""));
+  assert.match(block, /accountError\(typeof code === "string" \? code : "sign-in-required", l\)/);
+  assert.match(block, /clearPrivateSide\(\)/);
+  assert.match(block, /refreshSummary\(\)/);
+});
+
 test("diagnostics render the renewal status as fixed copy with the server code only (PR-A)", () => {
   const fn = ui.slice(ui.indexOf("function renewalCopy"), ui.indexOf("function renderDiagnostics"));
   for (const label of ["none", "scheduled", "renewed", "not-offered", "renewal-unavailable", "signed-out"]) {

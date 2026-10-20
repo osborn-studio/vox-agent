@@ -121,12 +121,24 @@ pub fn context_endpoint_from_env(value: Option<&str>) -> Option<context_wire::Co
     }
 }
 
+/// `context_endpoint_from_env` over the raw `std::env::var` result: a value
+/// that is set but not valid Unicode is an invalid override (sign-in
+/// disabled), not an absent one.
+pub fn context_endpoint_from_var(
+    value: Result<String, std::env::VarError>,
+) -> Option<context_wire::ContextEndpoint> {
+    match value {
+        Ok(raw) => context_endpoint_from_env(Some(&raw)),
+        Err(std::env::VarError::NotPresent) => context_endpoint_from_env(None),
+        Err(std::env::VarError::NotUnicode(_)) => None,
+    }
+}
+
 /// The Context server is decided once at startup, from the environment or
 /// the production default; never from IPC.
 fn context_state() -> context_commands::ContextState {
     let state = context_commands::ContextState::default();
-    let raw = std::env::var("VOX_AGENT_CONTEXT_ENDPOINT").ok();
-    if let Some(endpoint) = context_endpoint_from_env(raw.as_deref()) {
+    if let Some(endpoint) = context_endpoint_from_var(std::env::var("VOX_AGENT_CONTEXT_ENDPOINT")) {
         state.set_endpoint(endpoint);
     }
     state

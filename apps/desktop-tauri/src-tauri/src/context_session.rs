@@ -310,6 +310,23 @@ impl<S: TokenStore> SessionAuthority<S> {
             .map_err(SessionError::Store)
     }
 
+    /// The refresh token for a renewal made under `lease`: refused as
+    /// `StaleLease` when the lease no longer names the active session, so a
+    /// renewal task can never send the refresh token of a session that
+    /// signed in after it decided to renew.
+    pub fn refresh_token_for(&self, lease: &SessionLease) -> Result<Option<String>, SessionError> {
+        match &self.state {
+            State::Active { principal, .. }
+                if *principal == lease.principal
+                    && self.current(lease)
+                    && lease.epoch == self.epoch =>
+            {
+                self.refresh_token()
+            }
+            _ => Err(SessionError::StaleLease),
+        }
+    }
+
     /// Clears memory first, then the stored token, binding and refresh token.
     /// A store error is returned so the UI can warn, but the session is
     /// already signed out.

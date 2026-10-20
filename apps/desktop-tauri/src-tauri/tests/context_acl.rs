@@ -40,7 +40,8 @@ fn creates_directory_readable_only_by_owner_and_system() {
 fn rejects_a_directory_granted_to_everyone() {
     let root = tempfile::tempdir().unwrap();
     let dir = root.path().join("open");
-    std::fs::create_dir(&dir).unwrap();
+    // Owner-only first, so the refusal is for the grant alone.
+    ensure_private_dir(&dir).unwrap();
     grant_everyone_read(&dir);
     assert_eq!(
         verify_private_dir(&dir).unwrap_err(),
@@ -87,4 +88,53 @@ fn a_missing_directory_does_not_verify() {
         verify_private_dir(&root.path().join("absent")).unwrap_err(),
         AclError::Io
     );
+}
+
+#[test]
+fn a_deny_ace_only_narrows_access_and_is_accepted() {
+    let root = tempfile::tempdir().unwrap();
+    let dir = root.path().join("ctx");
+    ensure_private_dir(&dir).unwrap();
+    let status = Command::new("icacls")
+        .arg(&dir)
+        .args(["/deny", "Everyone:(OI)(CI)W"])
+        .status()
+        .unwrap();
+    assert!(status.success(), "icacls /deny failed");
+    verify_private_dir(&dir).unwrap();
+}
+
+#[test]
+fn a_junction_is_never_a_private_directory() {
+    let root = tempfile::tempdir().unwrap();
+    let target = root.path().join("target");
+    ensure_private_dir(&target).unwrap();
+    let link = root.path().join("link");
+    let status = Command::new("cmd")
+        .args(["/C", "mklink", "/J"])
+        .arg(&link)
+        .arg(&target)
+        .status()
+        .unwrap();
+    assert!(status.success(), "mklink /J");
+    assert_eq!(
+        verify_private_dir(&link).unwrap_err(),
+        AclError::TooPermissive
+    );
+    assert_eq!(
+        ensure_private_dir(&link).unwrap_err(),
+        AclError::TooPermissive
+    );
+    assert!(target.is_dir(), "the target is untouched");
+}
+
+#[test]
+fn ensure_creates_missing_parents_owner_only_too() {
+    let root = tempfile::tempdir().unwrap();
+    let leaf = root.path().join("a").join("b");
+    ensure_private_dir(&leaf).unwrap();
+    verify_private_dir(&leaf).unwrap();
+    // Only the leaf carries the protected DACL; the parent is an ordinary
+    // directory the caller must secure itself if it matters.
+    assert!(root.path().join("a").is_dir());
 }

@@ -10,7 +10,7 @@ use windows_sys::Win32::Foundation::LocalFree;
 use windows_sys::Win32::Security::Cryptography::{
     CryptProtectData, CryptUnprotectData, CRYPTPROTECT_UI_FORBIDDEN, CRYPT_INTEGER_BLOB,
 };
-use zeroize::Zeroizing;
+use zeroize::{Zeroize, Zeroizing};
 
 /// Blob description (`vox-ctx`), stored by DPAPI next to the ciphertext.
 const DESCRIPTION: &[u16] = &[
@@ -43,13 +43,18 @@ fn blob(bytes: &[u8]) -> CRYPT_INTEGER_BLOB {
 }
 
 /// Copies the output blob into owned memory and frees the `LocalAlloc`
-/// buffer DPAPI returned.
+/// buffer DPAPI returned. With `secret`, the buffer is zeroed first, so an
+/// unwrapped key does not linger in freed memory.
 ///
 /// # Safety
 /// `out` must be an output blob filled by a successful DPAPI call that has
 /// not been freed yet.
-unsafe fn take(out: CRYPT_INTEGER_BLOB) -> Vec<u8> {
-    let copy = std::slice::from_raw_parts(out.pbData, out.cbData as usize).to_vec();
+unsafe fn take(out: CRYPT_INTEGER_BLOB, secret: bool) -> Vec<u8> {
+    let buffer = std::slice::from_raw_parts_mut(out.pbData, out.cbData as usize);
+    let copy = buffer.to_vec();
+    if secret {
+        buffer.zeroize();
+    }
     LocalFree(out.pbData as _);
     copy
 }
@@ -86,7 +91,7 @@ impl KeyProvider for DpapiKeyProvider {
             return Err(KeyError::Unavailable);
         }
         // SAFETY: `out` was filled by the successful call above.
-        let wrapped = unsafe { take(out) };
+        let wrapped = unsafe { take(out, false) };
         if wrapped.is_empty() {
             return Err(KeyError::Unavailable);
         }
@@ -124,6 +129,6 @@ impl KeyProvider for DpapiKeyProvider {
             return Err(KeyError::Unrecoverable);
         }
         // SAFETY: `out` was filled by the successful call above.
-        Ok(Zeroizing::new(unsafe { take(out) }))
+        Ok(Zeroizing::new(unsafe { take(out, true) }))
     }
 }

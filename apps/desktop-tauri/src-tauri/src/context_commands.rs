@@ -17,11 +17,13 @@ use crate::secrets::NativeSecretStore;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex, OnceLock};
-use std::time::{Duration, Instant};
+use std::time::{Duration, SystemTime};
 use tauri::{AppHandle, Emitter, Manager, State};
 use zeroize::Zeroizing;
 
 pub const RECORD_EVENT: &str = "vox-agent://context-record";
+/// Emitted when Rust ends the account on its own (session renewal refused).
+pub const ACCOUNT_EVENT: &str = "vox-agent://context-account";
 
 /// Tauri state: empty until Rust configures a service for a verified session.
 /// `drivers` holds the records that already have a polling task, so each
@@ -42,14 +44,44 @@ pub struct ContextState {
     renewal_label: Mutex<String>,
 }
 
+/// When the current access token was issued and for how long. Wall-clock
+/// time, so a token that expired while the machine slept is due at once.
 #[derive(Debug, Clone, Copy)]
-struct RenewalSchedule {
+pub struct RenewalSchedule {
     expires_in: u64,
-    issued_at: Instant,
+    issued_at: SystemTime,
+}
+
+impl RenewalSchedule {
+    pub fn new(expires_in: u64, issued_at: SystemTime) -> Self {
+        Self {
+            expires_in,
+            issued_at,
+        }
+    }
+    /// Whether renewal is due at `now` (a clock that went backwards counts
+    /// as due: renewing early is harmless, renewing late is not).
+    pub fn due_at(&self, now: SystemTime) -> bool {
+        let elapsed = now
+            .duration_since(self.issued_at)
+            .map_or(u64::MAX, |d| d.as_secs());
+        crate::context_login::renewal_due(self.expires_in, elapsed)
+    }
+}
+
+/// Payload of `ACCOUNT_EVENT`: labels only.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AccountEvent {
+    pub signed_in: bool,
+    /// The `AccountError` code the WebView already knows how to word.
+    pub code: &'static str,
 }
 
 /// How often the maintenance task checks whether a renewal is due.
 const MAINTENANCE_TICK: Duration = Duration::from_secs(60);
+/// The server's access-token lifetime when it does not report one.
+const DEFAULT_ACCESS_SECONDS: u64 = 3600;
 
 impl Default for ContextState {
     fn default() -> Self {
@@ -98,15 +130,15 @@ impl ContextState {
             .clone()
     }
     /// After a sign-in: schedule renewal of the access token just issued, if
-    /// the server offered a refresh token and a lifetime.
+    /// the server offered a refresh token (without a reported lifetime the
+    /// server's documented hour applies).
     pub fn schedule_renewal(&self, expires_in: Option<u64>, offered: bool) {
-        let schedule = match (offered, expires_in) {
-            (true, Some(expires_in)) => Some(RenewalSchedule {
-                expires_in,
-                issued_at: Instant::now(),
-            }),
-            _ => None,
-        };
+        let schedule = offered.then(|| {
+            RenewalSchedule::new(
+                expires_in.unwrap_or(DEFAULT_ACCESS_SECONDS),
+                SystemTime::now(),
+            )
+        });
         let label = if schedule.is_some() {
             "scheduled"
         } else {
@@ -129,10 +161,7 @@ impl ContextState {
         crate::context_session::SessionLease,
     )> {
         let schedule = (*self.renewal.lock().unwrap_or_else(|p| p.into_inner()))?;
-        if !crate::context_login::renewal_due(
-            schedule.expires_in,
-            schedule.issued_at.elapsed().as_secs(),
-        ) {
+        if !schedule.due_at(SystemTime::now()) {
             return None;
         }
         let service = self.account.current()?;
@@ -149,12 +178,15 @@ pub async fn maintain_session(app: &AppHandle) {
     let Some((service, lease)) = state.due_renewal() else {
         return;
     };
-    let refresh = match service.with_session(|s| s.refresh_token()) {
+    // Read under the lease: a sign-out and sign-in that landed since
+    // `due_renewal` make this `StaleLease`, never another session's token.
+    let refresh = match service.with_session(|s| s.refresh_token_for(&lease)) {
         Ok(Some(token)) => Zeroizing::new(token),
         Ok(None) => {
             state.clear_renewal("not-offered");
             return;
         }
+        Err(crate::context_session::SessionError::StaleLease) => return,
         Err(_) => {
             state.set_renewal_label("renewal-unavailable:STORE".to_string());
             return;
@@ -162,32 +194,63 @@ pub async fn maintain_session(app: &AppHandle) {
     };
     let outcome = crate::context_login::renew(service.endpoint(), &refresh).await;
     drop(refresh);
-    match apply_renewal(&service, &lease, outcome) {
-        RenewalApplied::Renewed { expires_in } => {
+    let applied = apply_renewal(&service, &lease, outcome);
+    // Everything below applies only while this service is still the account:
+    // a late result never reschedules or ends a newer sign-in.
+    let still_current = state
+        .account
+        .current()
+        .is_some_and(|current| Arc::ptr_eq(&current, &service));
+    if !still_current {
+        return;
+    }
+    match applied {
+        RenewalApplied::Renewed {
+            expires_in,
+            refresh_stored,
+        } => {
             state.schedule_renewal(Some(expires_in), true);
-            state.set_renewal_label("renewed".to_string());
+            state.set_renewal_label(
+                if refresh_stored {
+                    "renewed"
+                } else {
+                    "renewal-unavailable:STORE"
+                }
+                .to_string(),
+            );
         }
         RenewalApplied::Stale => {}
         RenewalApplied::SignOut(code) => {
-            // Only if this service is still the account (a late result never
-            // ends a newer sign-in); visible private plaintext goes with it
-            // (T23b), as on any other server-side sign-out.
-            if state
-                .account
-                .current()
-                .is_some_and(|current| Arc::ptr_eq(&current, &service))
-            {
-                app.state::<crate::context_private_commands::PrivateState>()
-                    .clear_view();
-                app.state::<crate::context_weekly_commands::WeeklyState>()
-                    .clear();
-                state.account.end_if(&service);
-                state.clear_renewal(&format!("signed-out:{code}"));
-            }
+            // Visible private plaintext goes with the account (T23b), as on
+            // any other server-side sign-out; the WebView is told with a code
+            // it already words (`AccountError`), never the server body.
+            app.state::<crate::context_private_commands::PrivateState>()
+                .clear_view();
+            app.state::<crate::context_weekly_commands::WeeklyState>()
+                .clear();
+            state.account.end_if(&service);
+            state.clear_renewal(&format!("signed-out:{code}"));
+            let _ = app.emit_to(
+                "main",
+                ACCOUNT_EVENT,
+                AccountEvent {
+                    signed_in: false,
+                    code: account_event_code(code),
+                },
+            );
         }
         RenewalApplied::RetryLater(code) => {
             state.set_renewal_label(format!("renewal-unavailable:{code}"));
         }
+    }
+}
+
+/// The `AccountError` wire code for a renewal sign-out reason.
+pub fn account_event_code(reason: &str) -> &'static str {
+    match reason {
+        "ACCOUNT_DISABLED" => "account-disabled",
+        "IDENTITY_CHANGED" => "identity-changed",
+        _ => "sign-in-required",
     }
 }
 
@@ -242,27 +305,35 @@ impl JournalOpenReport {
 }
 
 /// Open (or create) the encrypted journal under `<data_dir>/context`:
-/// `keys/` (DPAPI-wrapped key files), `journal/` (database and lock) and
-/// `anchors/` (outside the journal directory, as `Journal::open` requires).
-/// Every directory is created with, or verified to have, an owner-only DACL
-/// before anything is written; a widened directory is refused, not repaired.
+/// `keys/` (DPAPI-wrapped key files) and `journal/` (database and lock).
+/// Anchors live in the credential store, outside the journal directory as
+/// `Journal::open` requires. Every directory is created with, or verified to
+/// have, an owner-only DACL before anything is written; a widened directory
+/// is refused, not repaired.
 pub fn open_journal(data_dir: &std::path::Path) -> JournalOpenReport {
+    open_journal_with(data_dir, Box::new(NativeSecretStore::default()))
+}
+
+/// `open_journal` with the anchor store supplied (tests keep anchors in a
+/// file store so they never touch the credential store).
+pub fn open_journal_with(
+    data_dir: &std::path::Path,
+    anchors: Box<dyn crate::context_journal::AnchorStore>,
+) -> JournalOpenReport {
     #[cfg(not(windows))]
     {
-        let _ = data_dir;
+        let _ = (data_dir, anchors);
         JournalOpenReport::NotSupported
     }
     #[cfg(windows)]
     {
         use crate::context_acl::{ensure_private_dir, verify_private_dir, AclError};
-        use crate::context_journal::FileAnchorStore;
         use crate::context_keys::dpapi::DpapiKeyProvider;
         use crate::context_keys::KeyRing;
         let root = data_dir.join("context");
         let keys = root.join("keys");
         let journal = root.join("journal");
-        let anchors = root.join("anchors");
-        for dir in [&root, &keys, &journal, &anchors] {
+        for dir in [&root, &keys, &journal] {
             match ensure_private_dir(dir).and_then(|_| verify_private_dir(dir)) {
                 Ok(()) => {}
                 Err(AclError::TooPermissive) => return JournalOpenReport::UnsafeAcl,
@@ -270,7 +341,7 @@ pub fn open_journal(data_dir: &std::path::Path) -> JournalOpenReport {
             }
         }
         let ring = KeyRing::new(&keys, DpapiKeyProvider::new());
-        match Journal::open(&journal, &ring, Box::new(FileAnchorStore::new(&anchors))) {
+        match Journal::open(&journal, &ring, anchors) {
             Ok(opened) => JournalOpenReport::Opened(opened.into_journal()),
             Err(JournalError::Busy) => JournalOpenReport::Busy,
             Err(_) => JournalOpenReport::Failed,
@@ -1046,6 +1117,58 @@ mod tests {
         for forbidden in ["token", "path", "/Users", "\\"] {
             assert!(!json.contains(forbidden), "{forbidden}");
         }
+    }
+
+    #[test]
+    fn renewal_schedule_uses_wall_clock_time_and_treats_clock_jumps_as_due() {
+        let issued = SystemTime::UNIX_EPOCH + Duration::from_secs(1_000_000);
+        let schedule = RenewalSchedule::new(3600, issued);
+        assert!(!schedule.due_at(issued));
+        assert!(!schedule.due_at(issued + Duration::from_secs(3600 - 301)));
+        assert!(schedule.due_at(issued + Duration::from_secs(3600 - 300)));
+        assert!(
+            schedule.due_at(issued + Duration::from_secs(86_400)),
+            "slept past expiry"
+        );
+        assert!(
+            schedule.due_at(issued - Duration::from_secs(1)),
+            "clock went backwards"
+        );
+        let state = ContextState::default();
+        state.schedule_renewal(None, true);
+        assert_eq!(state.renewal_label(), "scheduled");
+        assert_eq!(
+            state.renewal.lock().unwrap().map(|s| s.expires_in),
+            Some(DEFAULT_ACCESS_SECONDS)
+        );
+        state.schedule_renewal(Some(10), false);
+        assert!(state.renewal.lock().unwrap().is_none());
+        assert_eq!(state.renewal_label(), "not-offered");
+        assert!(
+            state.due_renewal().is_none(),
+            "nothing scheduled, nothing due"
+        );
+        state.schedule_renewal(Some(0), true);
+        assert!(
+            state.due_renewal().is_none(),
+            "due, but no account to renew"
+        );
+        state.clear_renewal("none");
+        assert!(state.renewal.lock().unwrap().is_none());
+    }
+
+    #[test]
+    fn renewal_sign_out_codes_map_to_known_account_error_codes() {
+        assert_eq!(account_event_code("SESSION_EXPIRED"), "sign-in-required");
+        assert_eq!(account_event_code("ACCOUNT_DISABLED"), "account-disabled");
+        assert_eq!(account_event_code("IDENTITY_CHANGED"), "identity-changed");
+        assert_eq!(account_event_code("anything"), "sign-in-required");
+        let json = serde_json::to_string(&AccountEvent {
+            signed_in: false,
+            code: "sign-in-required",
+        })
+        .unwrap();
+        assert_eq!(json, r#"{"signedIn":false,"code":"sign-in-required"}"#);
     }
 
     #[test]
