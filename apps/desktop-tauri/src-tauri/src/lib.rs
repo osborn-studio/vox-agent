@@ -174,7 +174,12 @@ pub fn run() {
                 })
                 .build(),
         )
-        .setup(setup_tray)
+        .setup(|app| {
+            setup_tray(app)?;
+            // Renews the Feishu access token before it expires (spec §3.6).
+            context_commands::spawn_session_maintenance(app.handle().clone());
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             commands::list_audio_input_devices,
             commands::get_native_capture_status,

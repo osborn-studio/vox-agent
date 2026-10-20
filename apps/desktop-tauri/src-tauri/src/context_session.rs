@@ -22,6 +22,9 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 const TOKEN_ACCOUNT: &str = "context_session_token";
 const PRINCIPAL_ACCOUNT: &str = "context_session_principal";
+/// Credential-store entry for the Feishu refresh token (spec §3.6). Read
+/// only when a renewal is due; never held in memory between renewals.
+pub const REFRESH_ACCOUNT: &str = "context_refresh_token";
 
 /// Process-unique id per authority, never reused.
 static NEXT_AUTHORITY: AtomicU64 = AtomicU64::new(1);
@@ -232,6 +235,9 @@ impl<S: TokenStore> SessionAuthority<S> {
             .delete(PRINCIPAL_ACCOUNT)
             .map_err(SessionError::Store)?;
         self.store
+            .delete(REFRESH_ACCOUNT)
+            .map_err(SessionError::Store)?;
+        self.store
             .write(TOKEN_ACCOUNT, &token)
             .map_err(SessionError::Store)?;
         if let Err(error) = self.store.write(PRINCIPAL_ACCOUNT, &principal.scope()) {
@@ -279,13 +285,43 @@ impl<S: TokenStore> SessionAuthority<S> {
         Ok(())
     }
 
-    /// Clears memory first, then the stored token and binding. A store error is
-    /// returned so the UI can warn, but the session is already signed out.
+    /// Store (or, with `None`, remove) the refresh token that renews this
+    /// session's access token. Only meaningful for a signed-in session, but
+    /// the entry is independent of the token and binding entries.
+    pub fn set_refresh_token(&mut self, token: Option<&str>) -> Result<(), SessionError> {
+        match token {
+            Some(value) => {
+                validate_secret_size(value).map_err(|_| SessionError::TokenTooLarge)?;
+                self.store
+                    .write(REFRESH_ACCOUNT, value)
+                    .map_err(SessionError::Store)
+            }
+            None => self
+                .store
+                .delete(REFRESH_ACCOUNT)
+                .map_err(SessionError::Store),
+        }
+    }
+
+    /// The stored refresh token, read fresh from the credential store.
+    pub fn refresh_token(&self) -> Result<Option<String>, SessionError> {
+        self.store
+            .read(REFRESH_ACCOUNT)
+            .map_err(SessionError::Store)
+    }
+
+    /// Clears memory first, then the stored token, binding and refresh token.
+    /// A store error is returned so the UI can warn, but the session is
+    /// already signed out.
     pub fn sign_out(&mut self) -> Result<(), SessionError> {
         self.bump()?;
         let token = self.store.delete(TOKEN_ACCOUNT);
         let principal = self.store.delete(PRINCIPAL_ACCOUNT);
-        token.and(principal).map_err(SessionError::Store)
+        let refresh = self.store.delete(REFRESH_ACCOUNT);
+        token
+            .and(principal)
+            .and(refresh)
+            .map_err(SessionError::Store)
     }
 
     /// Load the stored session after a restart as `Unverified`. Returns the

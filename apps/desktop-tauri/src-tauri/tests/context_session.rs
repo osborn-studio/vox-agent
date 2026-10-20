@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use vox_agent_desktop_tauri_lib::context_session::{
-    DestinationKey, PrincipalKey, SessionAuthority, SessionError, TokenStore,
+    DestinationKey, PrincipalKey, SessionAuthority, SessionError, TokenStore, REFRESH_ACCOUNT,
 };
 use vox_agent_desktop_tauri_lib::context_wire::ContextEndpoint;
 use vox_agent_desktop_tauri_lib::secrets::SecretError;
@@ -336,4 +336,69 @@ fn when_the_store_cannot_delete_the_old_binding_sign_in_fails_and_memory_is_sign
         later.confirm(ticket, &principal("bob")),
         Err(SessionError::IdentityChanged)
     ));
+}
+
+#[test]
+fn the_refresh_token_is_stored_beside_the_session_and_cleared_with_it() {
+    let store = FakeStore::default();
+    let mut authority = signed_in(&store);
+    assert_eq!(authority.refresh_token().unwrap(), None);
+    authority.set_refresh_token(Some("vox_refresh_1")).unwrap();
+    assert_eq!(
+        store
+            .values
+            .borrow()
+            .get(REFRESH_ACCOUNT)
+            .map(String::as_str),
+        Some("vox_refresh_1")
+    );
+    assert_eq!(
+        authority.refresh_token().unwrap().as_deref(),
+        Some("vox_refresh_1")
+    );
+    authority.set_refresh_token(None).unwrap();
+    assert!(!store.values.borrow().contains_key(REFRESH_ACCOUNT));
+    authority.set_refresh_token(Some("vox_refresh_2")).unwrap();
+    authority.sign_out().unwrap();
+    assert!(
+        store.values.borrow().is_empty(),
+        "sign-out clears the refresh token too"
+    );
+}
+
+#[test]
+fn a_new_sign_in_removes_a_stale_refresh_token_first() {
+    let store = FakeStore::default();
+    store
+        .values
+        .borrow_mut()
+        .insert(REFRESH_ACCOUNT.into(), "vox_refresh_old".into());
+    let authority = signed_in(&store);
+    assert_eq!(authority.refresh_token().unwrap(), None);
+
+    // When the stale entry cannot be removed, nothing is signed in.
+    let store = FakeStore::default();
+    store
+        .values
+        .borrow_mut()
+        .insert(REFRESH_ACCOUNT.into(), "vox_refresh_old".into());
+    *store.fail_deletes.borrow_mut() = true;
+    let mut authority = SessionAuthority::new(store.clone());
+    assert!(matches!(
+        authority.sign_in(principal("alice"), "token-1".into()),
+        Err(SessionError::Store(_))
+    ));
+    assert!(matches!(authority.lease(), Err(SessionError::NotSignedIn)));
+}
+
+#[test]
+fn an_oversized_refresh_token_is_refused() {
+    let store = FakeStore::default();
+    let mut authority = signed_in(&store);
+    let huge = "r".repeat(100_000);
+    assert!(matches!(
+        authority.set_refresh_token(Some(&huge)),
+        Err(SessionError::TokenTooLarge)
+    ));
+    assert!(!store.values.borrow().contains_key(REFRESH_ACCOUNT));
 }

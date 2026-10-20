@@ -441,7 +441,9 @@ async fn logout_reports_whether_the_server_ended_the_session() {
 use std::collections::HashMap;
 use vox_agent_desktop_tauri_lib::context_account::AccountSlot;
 use vox_agent_desktop_tauri_lib::context_login::SignedIn;
-use vox_agent_desktop_tauri_lib::context_session::{DestinationKey, PrincipalKey, TokenStore};
+use vox_agent_desktop_tauri_lib::context_session::{
+    DestinationKey, PrincipalKey, TokenStore, REFRESH_ACCOUNT,
+};
 use vox_agent_desktop_tauri_lib::secrets::SecretError;
 
 /// One shared in-memory credential store, like the OS store all sessions use.
@@ -494,7 +496,65 @@ fn signed(actor: &str, token: &str) -> SignedIn {
         principal: PrincipalKey::new(&endpoint(), "default-org", actor, 1).unwrap(),
         destinations: vec![DestinationKey::new("team").unwrap()],
         display_name: "Alice".into(),
+        refresh_token: None,
+        expires_in: None,
     }
+}
+
+const REFRESH_A: &str = "vox_refresh_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+
+#[test]
+fn publish_stores_the_refresh_token_and_sign_out_removes_it() {
+    let store = MemoryStore::default();
+    store
+        .values
+        .lock()
+        .unwrap()
+        .insert(REFRESH_ACCOUNT.into(), "vox_refresh_stale".into());
+    let slot = AccountSlot::default();
+    let ticket = slot.begin_sign_in().unwrap();
+    let mut with_refresh = signed("alice", TOKEN_A);
+    with_refresh.refresh_token = Some(zeroize::Zeroizing::new(REFRESH_A.to_string()));
+    with_refresh.expires_in = Some(3600);
+    slot.publish(&ticket, endpoint(), with_refresh, store.clone(), None)
+        .unwrap();
+    assert_eq!(
+        store
+            .values
+            .lock()
+            .unwrap()
+            .get(REFRESH_ACCOUNT)
+            .map(String::as_str),
+        Some(REFRESH_A)
+    );
+    assert_eq!(
+        slot.current()
+            .unwrap()
+            .with_session(|s| s.refresh_token())
+            .unwrap()
+            .as_deref(),
+        Some(REFRESH_A)
+    );
+    slot.end(|| store.clone());
+    drop(ticket);
+    assert!(store.values.lock().unwrap().is_empty());
+
+    // Without a refresh token from the server, a stale entry is removed.
+    store
+        .values
+        .lock()
+        .unwrap()
+        .insert(REFRESH_ACCOUNT.into(), "vox_refresh_stale".into());
+    let ticket = slot.begin_sign_in().unwrap();
+    slot.publish(
+        &ticket,
+        endpoint(),
+        signed("alice", TOKEN_A),
+        store.clone(),
+        None,
+    )
+    .unwrap();
+    assert!(!store.values.lock().unwrap().contains_key(REFRESH_ACCOUNT));
 }
 
 const TOKEN_A: &str = "vox_sso_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";

@@ -5,7 +5,9 @@
 //! an identity, a token or a delivery state. The service is configured only
 //! from Rust (sign-in, T24a; DPAPI key provider, T07b); until then every
 //! command answers `not-configured`.
-use crate::context_account::{discover_for, AccountError, AccountSlot, ConversationKind};
+use crate::context_account::{
+    apply_renewal, discover_for, AccountError, AccountSlot, ConversationKind, RenewalApplied,
+};
 use crate::context_delivery::{BackupPayload, DeliveryState, ProjectSnapshot};
 use crate::context_journal::{DispatchPhase, Journal, JournalError, RecoveryAction};
 use crate::context_policy::{Next, Stop, UserAction};
@@ -15,8 +17,9 @@ use crate::secrets::NativeSecretStore;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex, OnceLock};
-use std::time::Duration;
-use tauri::{AppHandle, Emitter, State};
+use std::time::{Duration, Instant};
+use tauri::{AppHandle, Emitter, Manager, State};
+use zeroize::Zeroizing;
 
 pub const RECORD_EVENT: &str = "vox-agent://context-record";
 
@@ -31,7 +34,22 @@ pub struct ContextState {
     /// Why the last sign-in did or did not get an encrypted journal
     /// (`JournalOpenReport::key_store_label`), for diagnostics only.
     journal_label: Mutex<&'static str>,
+    /// When the current access token was issued and for how long; `None`
+    /// when nothing is scheduled (signed out, or no refresh token offered).
+    renewal: Mutex<Option<RenewalSchedule>>,
+    /// Fixed status line for diagnostics (`none`, `scheduled`, `renewed`,
+    /// `not-offered`, `renewal-unavailable:<CODE>`, `signed-out:<CODE>`).
+    renewal_label: Mutex<String>,
 }
+
+#[derive(Debug, Clone, Copy)]
+struct RenewalSchedule {
+    expires_in: u64,
+    issued_at: Instant,
+}
+
+/// How often the maintenance task checks whether a renewal is due.
+const MAINTENANCE_TICK: Duration = Duration::from_secs(60);
 
 impl Default for ContextState {
     fn default() -> Self {
@@ -40,6 +58,8 @@ impl Default for ContextState {
             drivers: Arc::default(),
             endpoint: OnceLock::new(),
             journal_label: Mutex::new(JournalOpenReport::NotSupported.key_store_label()),
+            renewal: Mutex::new(None),
+            renewal_label: Mutex::new("none".to_string()),
         }
     }
 }
@@ -68,6 +88,123 @@ impl ContextState {
     pub fn journal_label(&self) -> &'static str {
         *self.journal_label.lock().unwrap_or_else(|p| p.into_inner())
     }
+    fn set_renewal_label(&self, label: String) {
+        *self.renewal_label.lock().unwrap_or_else(|p| p.into_inner()) = label;
+    }
+    pub fn renewal_label(&self) -> String {
+        self.renewal_label
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .clone()
+    }
+    /// After a sign-in: schedule renewal of the access token just issued, if
+    /// the server offered a refresh token and a lifetime.
+    pub fn schedule_renewal(&self, expires_in: Option<u64>, offered: bool) {
+        let schedule = match (offered, expires_in) {
+            (true, Some(expires_in)) => Some(RenewalSchedule {
+                expires_in,
+                issued_at: Instant::now(),
+            }),
+            _ => None,
+        };
+        let label = if schedule.is_some() {
+            "scheduled"
+        } else {
+            "not-offered"
+        };
+        *self.renewal.lock().unwrap_or_else(|p| p.into_inner()) = schedule;
+        self.set_renewal_label(label.to_string());
+    }
+    fn clear_renewal(&self, label: &str) {
+        *self.renewal.lock().unwrap_or_else(|p| p.into_inner()) = None;
+        self.set_renewal_label(label.to_string());
+    }
+    /// What a due renewal needs, captured before any await: the current
+    /// service, its lease (so a later result applies only to this session)
+    /// and the schedule. `None` when nothing is due.
+    fn due_renewal(
+        &self,
+    ) -> Option<(
+        Arc<ContextService<NativeSecretStore>>,
+        crate::context_session::SessionLease,
+    )> {
+        let schedule = (*self.renewal.lock().unwrap_or_else(|p| p.into_inner()))?;
+        if !crate::context_login::renewal_due(
+            schedule.expires_in,
+            schedule.issued_at.elapsed().as_secs(),
+        ) {
+            return None;
+        }
+        let service = self.account.current()?;
+        let lease = service.with_session(|s| s.lease()).ok()?;
+        Some((service, lease))
+    }
+}
+
+/// One maintenance step: renew the access token when it is due. The refresh
+/// token is read from the credential store only now and dropped after the
+/// request; it never reaches argv, logs or events.
+pub async fn maintain_session(app: &AppHandle) {
+    let state = app.state::<ContextState>();
+    let Some((service, lease)) = state.due_renewal() else {
+        return;
+    };
+    let refresh = match service.with_session(|s| s.refresh_token()) {
+        Ok(Some(token)) => Zeroizing::new(token),
+        Ok(None) => {
+            state.clear_renewal("not-offered");
+            return;
+        }
+        Err(_) => {
+            state.set_renewal_label("renewal-unavailable:STORE".to_string());
+            return;
+        }
+    };
+    let outcome = crate::context_login::renew(service.endpoint(), &refresh).await;
+    drop(refresh);
+    match apply_renewal(&service, &lease, outcome) {
+        RenewalApplied::Renewed { expires_in } => {
+            state.schedule_renewal(Some(expires_in), true);
+            state.set_renewal_label("renewed".to_string());
+        }
+        RenewalApplied::Stale => {}
+        RenewalApplied::SignOut(code) => {
+            // Only if this service is still the account (a late result never
+            // ends a newer sign-in); visible private plaintext goes with it
+            // (T23b), as on any other server-side sign-out.
+            if state
+                .account
+                .current()
+                .is_some_and(|current| Arc::ptr_eq(&current, &service))
+            {
+                app.state::<crate::context_private_commands::PrivateState>()
+                    .clear_view();
+                app.state::<crate::context_weekly_commands::WeeklyState>()
+                    .clear();
+                state.account.end_if(&service);
+                state.clear_renewal(&format!("signed-out:{code}"));
+            }
+        }
+        RenewalApplied::RetryLater(code) => {
+            state.set_renewal_label(format!("renewal-unavailable:{code}"));
+        }
+    }
+}
+
+/// Start the one maintenance task of this process (a second call is a no-op).
+pub fn spawn_session_maintenance(app: AppHandle) {
+    static STARTED: OnceLock<()> = OnceLock::new();
+    if STARTED.set(()).is_err() {
+        return;
+    }
+    tauri::async_runtime::spawn(async move {
+        let mut tick = tokio::time::interval(MAINTENANCE_TICK);
+        tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+        loop {
+            tick.tick().await;
+            maintain_session(&app).await;
+        }
+    });
 }
 
 /// Why a build has (or lacks) an encrypted journal. Labels only: no paths.
@@ -594,6 +731,10 @@ pub struct DiagnosticsDto {
     pub key_store: &'static str,
     /// "unavailable", "normal" or "verify-only".
     pub journal: &'static str,
+    /// Session renewal status line (spec §3.6): `none`, `scheduled`,
+    /// `renewed`, `not-offered`, `renewal-unavailable:<CODE>` or
+    /// `signed-out:<CODE>`. Codes are fixed server refusal codes.
+    pub renewal: String,
     pub active_records: Option<u64>,
 }
 
@@ -615,6 +756,7 @@ pub fn diagnostics(state: &ContextState) -> DiagnosticsDto {
             Some(RecoveryMode::Normal) => "normal",
             Some(RecoveryMode::VerifyOnly) => "verify-only",
         },
+        renewal: state.renewal_label(),
         active_records: service
             .and_then(|s| s.quota().ok())
             .map(|q| q.active_records),
@@ -660,6 +802,8 @@ pub async fn context_sign_in(
         JournalOpenReport::Opened(journal) => Some(journal),
         _ => None,
     };
+    let expires_in = signed.expires_in;
+    let renewal_offered = signed.refresh_token.is_some();
     let display_name = state.account.publish(
         &ticket,
         endpoint,
@@ -667,6 +811,7 @@ pub async fn context_sign_in(
         NativeSecretStore::default(),
         journal,
     )?;
+    state.schedule_renewal(expires_in, renewal_offered);
     Ok(AccountDto {
         signed_in: true,
         display_name,
@@ -697,6 +842,7 @@ pub async fn context_sign_out(
     // completed before this point or is refused.
     private.clear_view();
     weekly.clear();
+    state.clear_renewal("none");
     let ended = state.account.end(NativeSecretStore::default);
     let server_confirmed = match &ended.logout {
         Some((endpoint, token)) => crate::context_account::logout(endpoint, token).await,
@@ -885,6 +1031,17 @@ mod tests {
         );
         state.set_journal_label(JournalOpenReport::UnsafeAcl.key_store_label());
         assert_eq!(diagnostics(&state).key_store, "unsafe-acl");
+        assert_eq!(dto.renewal, "none");
+        state.schedule_renewal(Some(3600), true);
+        assert_eq!(diagnostics(&state).renewal, "scheduled");
+        state.schedule_renewal(Some(3600), false);
+        assert_eq!(diagnostics(&state).renewal, "not-offered");
+        state.set_renewal_label("renewal-unavailable:RENEWAL_RATE_LIMIT".into());
+        let json = serde_json::to_string(&diagnostics(&state)).unwrap();
+        assert!(json.contains("\"renewal\":\"renewal-unavailable:RENEWAL_RATE_LIMIT\""));
+        for forbidden in ["token", "vox_", "path", "\\"] {
+            assert!(!json.contains(forbidden), "{forbidden}: {json}");
+        }
         let json = serde_json::to_string(&dto).unwrap();
         for forbidden in ["token", "path", "/Users", "\\"] {
             assert!(!json.contains(forbidden), "{forbidden}");

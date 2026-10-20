@@ -669,6 +669,21 @@ export function initContextUi({ document: doc, invoke, listen, storage, onAgentS
     "not-available-in-this-build": "diagnostics.notAvailable",
   });
 
+  /** Fixed renewal status line from Rust (`renewal`): a word, never a token. */
+  function renewalCopy(value) {
+    const fixed = {
+      none: "diagnostics.renewalNone",
+      scheduled: "diagnostics.renewalScheduled",
+      renewed: "diagnostics.renewalRenewed",
+      "not-offered": "diagnostics.renewalNotOffered",
+    };
+    if (fixed[value]) return t(fixed[value], lang);
+    const [kind, code] = String(value ?? "").split(":");
+    if (kind === "renewal-unavailable" && code) return `${t("diagnostics.renewalUnavailable", lang)} (${code})`;
+    if (kind === "signed-out" && code) return `${t("diagnostics.renewalSignedOut", lang)} (${code})`;
+    return t("diagnostics.renewalNone", lang);
+  }
+
   function renderDiagnostics() {
     if (!diagnostics) {
       el.diagnostics.replaceChildren();
@@ -686,6 +701,7 @@ export function initContextUi({ document: doc, invoke, listen, storage, onAgentS
         "diagnostics.journal",
         t({ normal: "diagnostics.normal", "verify-only": "diagnostics.verifyOnly" }[d.journal] ?? "diagnostics.unavailable", lang),
       ],
+      ["diagnostics.renewal", renewalCopy(d.renewal)],
       ["diagnostics.records", d.activeRecords ?? t("diagnostics.none", lang)],
     ];
     el.diagnostics.replaceChildren(
