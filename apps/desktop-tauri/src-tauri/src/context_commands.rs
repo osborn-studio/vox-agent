@@ -202,12 +202,19 @@ impl ContextState {
         only_for: Option<&Arc<ContextService<NativeSecretStore>>>,
         label: &str,
     ) -> bool {
+        self.clear_renewal_matching(only_for.map(Arc::downgrade).as_ref(), label)
+    }
+    /// `clear_renewal` by weak identity, so a schedule whose service is
+    /// already gone can still be named (and only that one is cleared).
+    fn clear_renewal_matching(
+        &self,
+        only_for: Option<&Weak<ContextService<NativeSecretStore>>>,
+        label: &str,
+    ) -> bool {
         let mut slot = self.renewal.lock().unwrap_or_else(|p| p.into_inner());
         let matches = match (&*slot, only_for) {
             (_, None) => true,
-            (Some(schedule), Some(service)) => {
-                Weak::ptr_eq(&schedule.service, &Arc::downgrade(service))
-            }
+            (Some(schedule), Some(service)) => Weak::ptr_eq(&schedule.service, service),
             (None, Some(_)) => false,
         };
         if matches {
@@ -237,7 +244,9 @@ impl ContextState {
         let service = match (scheduled, current) {
             (Some(scheduled), Some(current)) if Arc::ptr_eq(&scheduled, &current) => current,
             _ => {
-                self.clear_renewal(None, "none");
+                // Drop the schedule inspected here, never one a sign-in
+                // stored meanwhile for the new account.
+                self.clear_renewal_matching(Some(&schedule.service), "none");
                 return None;
             }
         };
@@ -1349,6 +1358,19 @@ mod tests {
         assert!(state.due_renewal().is_none());
         assert!(scheduled_expiry(&state).is_none());
         assert_eq!(state.renewal_label(), "none");
+        // A stale schedule is dropped only while it is still the stored one:
+        // a sign-in that replaced it meanwhile keeps its own schedule.
+        state.schedule_renewal(&second, Some(0), true);
+        let gone = Arc::downgrade(&first);
+        assert!(!state.clear_renewal_matching(Some(&gone), "none"));
+        assert!(state.renewal_belongs_to(&second));
+        assert_eq!(state.renewal_label(), "scheduled");
+        drop(first);
+        assert!(
+            !state.clear_renewal_matching(Some(&gone), "none"),
+            "even once it is gone"
+        );
+        assert!(state.renewal_belongs_to(&second));
         // Scheduled for the account itself, but it is not signed in: no lease,
         // and the schedule is kept for when it is.
         state.account.configure(ContextService::new(
