@@ -58,12 +58,16 @@ def test_manifest_matches_macos_catalog_byte_for_byte():
     assert len(listed) == 9
 
 
-def test_manifest_digest_matches_macos_expected_digest():
-    """macOS computes one digest over the sorted file list; keep it identical."""
+def test_manifest_digest_is_canonical_and_matches_macos():
+    """engine/model_cache.py:83 canonical_digest is the one rule; macOS pins the same value."""
+    from engine.model_cache import ModelManifest, canonical_digest
+
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
     source = SWIFT.read_text(encoding="utf-8")
     expected = re.search(r'static let digest = "([0-9a-f]{64})"', source).group(1)
-    assert manifest["digest"] == expected
+    assert manifest["digest"] == canonical_digest(manifest["files"]) == expected
+    # The strict schema-1 parser must accept the file (digest is a required field, not an extra).
+    ModelManifest.parse(MANIFEST.read_text(encoding="utf-8"))
 ```
 
 - [ ] **Step 2: Run the test to verify it fails**
@@ -71,10 +75,9 @@ def test_manifest_digest_matches_macos_expected_digest():
 Run: `.venv/bin/python -m pytest tests/test_qwen_local_manifest.py -q`
 Expected: FAIL with `FileNotFoundError` for the manifest.
 
-- [ ] **Step 3: Find out how macOS computes `digest`**
+- [ ] **Step 3: Know the digest rule before writing the file**
 
-Run: `grep -n -A20 "expectedDigest" macos/VoxLog/Services/ModelManifest.swift | head -40`
-Expected: a function that hashes the file entries in a fixed order (path, size, sha256). Reproduce that exact rule in the test helper below only if the digest test fails after Step 4; if the Swift code hashes a canonical string, add a `manifest_digest()` helper to the test that builds the same string. Do not invent a new rule: the `digest` value in the JSON must equal the Swift constant `fa38dbb84faec2dc363a2761fbc628d1380ef0b5088e4d5836bc1be03984a0dc`.
+`engine/model_cache.py:83` `canonical_digest(files)` sorts entries by UTF-8 path and hashes the canonical string `{"path":…,"sha256":…,"size":…}` joined per entry; `macos/VoxLog/Services/ModelManifest.swift:55` implements the same rule, which is why the Swift constant `fa38dbb8…a0dc` is the expected value. `digest` is a required schema-1 field (`engine/model_cache.py:37`), so the JSON below must carry it.
 
 - [ ] **Step 4: Write the manifest**
 
@@ -110,12 +113,12 @@ Check the license field against `README.md` in the Hugging Face repo at that rev
 - [ ] **Step 5: Run the tests to verify they pass**
 
 Run: `.venv/bin/python -m pytest tests/test_qwen_local_manifest.py -q`
-Expected: `2 passed`. If the digest test fails, implement the Swift rule from Step 3 in the test and keep the JSON value as the Swift constant.
+Expected: `2 passed`. If the digest test fails, the JSON file list differs from the Swift catalog; fix the JSON, never the expected constant.
 
 - [ ] **Step 6: Run the existing manifest tests**
 
 Run: `.venv/bin/python -m pytest tests -q -k "manifest" --tb=short`
-Expected: all pass (`scripts/pin_model_manifest.py` and `fetch_sherpa_model.py` consumers accept schema 1 with an extra `digest` key; if a strict schema test rejects the extra key, add `digest` to its allowlist with a comment).
+Expected: all pass (`ModelManifest.parse` enforces exactly the schema-1 field set, which this file matches).
 
 - [ ] **Step 7: Commit**
 
@@ -160,7 +163,7 @@ def test_verify_reports_missing_and_mismatched_files(tmp_path):
     model_dir = tmp_path / "model"
     model_dir.mkdir()
     (model_dir / "a.bin").write_bytes(b"aaa")
-    (model_dir / "b.bin").write_bytes(b"WRONG")
+    (model_dir / "b.bin").write_bytes(b"ccc")  # same length: must be a hash, not a size, mismatch
     status = probe.verify_files(probe.load_manifest(manifest), model_dir)
     assert status == {"a.bin": "ok", "b.bin": "sha256-mismatch"}
 
@@ -179,16 +182,27 @@ def test_report_never_contains_transcript_text():
         device="cpu",
         transcripts=["秘密文本", "秘密文本"],
         latencies_ms=[1500, 400],
+        load_ms=12000,
         expected="秘密文本",
-        rss_mb=1234.5,
-        exe_bytes=10,
+        peak_rss_mb=1234.5,
+        frozen_dir_bytes=10,
+        audio_seconds=10.2,
     )
     dumped = json.dumps(report, ensure_ascii=False)
     assert "秘密文本" not in dumped
     assert report["transcript_sha256"] == hashlib.sha256("秘密文本".encode()).hexdigest()
     assert report["transcript_chars"] == 4
     assert report["matches_expected"] is True
-    assert report["latency_ms"] == {"cold": 1500, "warm": 400}
+    assert report["latency_ms"] == {"load": 12000, "cold": 1500, "warm": 400}
+    assert report["audio_seconds"] == 10.2
+    assert report["success"] is True
+
+
+def test_success_requires_cpu_verified_files_and_a_match():
+    kwargs = dict(transcripts=["x"], latencies_ms=[1, 1], load_ms=1, expected="x", peak_rss_mb=1.0, frozen_dir_bytes=1, audio_seconds=1.0)
+    assert probe.build_report(model_dir_status={"a": "ok"}, device="cpu", **kwargs)["success"] is True
+    assert probe.build_report(model_dir_status={"a": "missing"}, device="cpu", **kwargs)["success"] is False
+    assert probe.build_report(model_dir_status={"a": "ok"}, device="cuda", **kwargs)["success"] is False
 
 
 def test_similarity_tolerates_punctuation_and_spaces():
@@ -223,6 +237,9 @@ import sys
 import time
 import urllib.request
 from pathlib import Path
+
+if False:  # typing only; imported lazily in main() so the pure helpers stay import-light
+    import threading
 
 CHUNK = 1 << 20
 
@@ -289,12 +306,29 @@ def matches(transcript: str, expected: str) -> bool:
     return same / len(b) >= 0.8
 
 
-def transcribe_twice(model_dir: Path, wav: Path) -> tuple[list[str], list[int], str]:
+def _peak_rss_sampler(stop: "threading.Event", samples: list[float]) -> None:
+    try:
+        import psutil
+    except Exception:
+        return
+    process = psutil.Process()
+    while not stop.is_set():
+        samples.append(process.memory_info().rss / 1_048_576)
+        stop.wait(0.2)
+
+
+def load_model(model_dir: Path) -> tuple[object, str, int]:
+    """Load from the pinned directory only; the hub must never be contacted."""
     import torch
     from qwen_asr import Qwen3ASRModel
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
+    started = time.perf_counter()
     model = Qwen3ASRModel.from_pretrained(str(model_dir), dtype=torch.float32, device_map=device)
+    return model, device, int((time.perf_counter() - started) * 1000)
+
+
+def transcribe_twice(model: object, wav: Path) -> tuple[list[str], list[int]]:
     transcripts: list[str] = []
     latencies: list[int] = []
     for _ in range(2):
@@ -303,36 +337,47 @@ def transcribe_twice(model_dir: Path, wav: Path) -> tuple[list[str], list[int], 
         latencies.append(int((time.perf_counter() - started) * 1000))
         text = getattr(results[0], "text", "") if results else ""
         transcripts.append(text if isinstance(text, str) else "")
-    return transcripts, latencies, device
+    return transcripts, latencies
 
 
-def rss_megabytes() -> float:
-    try:
-        import psutil  # optional
+def wav_seconds(path: Path) -> float:
+    import wave
 
-        return psutil.Process().memory_info().rss / 1_048_576
-    except Exception:
-        return -1.0
+    with wave.open(str(path), "rb") as handle:
+        return round(handle.getnframes() / float(handle.getframerate() or 1), 2)
+
+
+def dir_bytes(path: Path | None) -> int:
+    if path is None or not path.is_dir():
+        return 0
+    return sum(f.stat().st_size for f in path.rglob("*") if f.is_file())
 
 
 def build_report(*, model_dir_status: dict[str, str], device: str, transcripts: list[str],
-                 latencies_ms: list[int], expected: str, rss_mb: float, exe_bytes: int) -> dict:
+                 latencies_ms: list[int], load_ms: int, expected: str, peak_rss_mb: float,
+                 frozen_dir_bytes: int, audio_seconds: float) -> dict:
     final = transcripts[-1] if transcripts else ""
+    files_ok = all(v == "ok" for v in model_dir_status.values())
+    matched = matches(final, expected)
     return {
         "schema": 1,
         "probe": "qwen3-asr-0.6b-cpu",
         "device": device,
         "files": model_dir_status,
-        "files_ok": all(v == "ok" for v in model_dir_status.values()),
-        "latency_ms": {"cold": latencies_ms[0] if latencies_ms else None,
+        "files_ok": files_ok,
+        "audio_seconds": audio_seconds,
+        "latency_ms": {"load": load_ms,
+                       "cold": latencies_ms[0] if latencies_ms else None,
                        "warm": latencies_ms[-1] if len(latencies_ms) > 1 else None},
         "transcript_chars": len(final),
         "transcript_sha256": hashlib.sha256(final.encode("utf-8")).hexdigest(),
-        "matches_expected": matches(final, expected),
-        "rss_mb": round(rss_mb, 1),
-        "executable_bytes": exe_bytes,
+        "matches_expected": matched,
+        "peak_rss_mb": round(peak_rss_mb, 1),
+        "frozen_dir_bytes": frozen_dir_bytes,
         "python": sys.version.split()[0],
         "frozen": bool(getattr(sys, "frozen", False)),
+        # The spike passes only on CPU, with verified files and a recognisable transcript.
+        "success": files_ok and device == "cpu" and matched,
     }
 
 
@@ -340,9 +385,11 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--model-dir", type=Path, required=True)
-    parser.add_argument("--wav", type=Path, required=True)
+    parser.add_argument("--wav", type=Path)
     parser.add_argument("--expected", default="测试一二三")
     parser.add_argument("--download", action="store_true", help="fetch missing files from the manifest source")
+    parser.add_argument("--verify-only", action="store_true", help="stop after verifying (and downloading) files")
+    parser.add_argument("--frozen-dir", type=Path, help="directory of the frozen build, for the size measurement")
     parser.add_argument("--report", type=Path, required=True)
     parser.add_argument("--print-transcript", action="store_true")
     args = parser.parse_args(argv)
@@ -352,22 +399,38 @@ def main(argv: list[str] | None = None) -> int:
     if args.download and any(v != "ok" for v in status.values()):
         status = download_missing(manifest, args.model_dir, status)
     if any(v != "ok" for v in status.values()):
-        args.report.write_text(json.dumps({"schema": 1, "files": status, "files_ok": False}, indent=2))
+        args.report.write_text(json.dumps({"schema": 1, "files": status, "files_ok": False, "success": False}, indent=2))
         print("model files not verified:", status, file=sys.stderr)
         return 2
+    if args.verify_only:
+        args.report.write_text(json.dumps({"schema": 1, "files": status, "files_ok": True}, indent=2))
+        return 0
+    if args.wav is None or not args.wav.is_file():
+        print("--wav is required unless --verify-only", file=sys.stderr)
+        return 2
 
-    transcripts, latencies, device = transcribe_twice(args.model_dir, args.wav)
-    exe = Path(sys.executable)
+    import threading
+
+    stop = threading.Event()
+    samples: list[float] = []
+    sampler = threading.Thread(target=_peak_rss_sampler, args=(stop, samples), daemon=True)
+    sampler.start()
+    try:
+        model, device, load_ms = load_model(args.model_dir)
+        transcripts, latencies = transcribe_twice(model, args.wav)
+    finally:
+        stop.set()
+        sampler.join(timeout=2)
     report = build_report(
         model_dir_status=status, device=device, transcripts=transcripts, latencies_ms=latencies,
-        expected=args.expected, rss_mb=rss_megabytes(),
-        exe_bytes=exe.stat().st_size if getattr(sys, "frozen", False) and exe.exists() else 0,
+        load_ms=load_ms, expected=args.expected, peak_rss_mb=max(samples) if samples else -1.0,
+        frozen_dir_bytes=dir_bytes(args.frozen_dir), audio_seconds=wav_seconds(args.wav),
     )
     args.report.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
     if args.print_transcript:
         print(transcripts[-1])
-    print(json.dumps({k: report[k] for k in ("device", "latency_ms", "transcript_chars", "matches_expected", "rss_mb")}))
-    return 0 if report["transcript_chars"] > 0 else 3
+    print(json.dumps({k: report[k] for k in ("device", "audio_seconds", "latency_ms", "transcript_chars", "matches_expected", "peak_rss_mb", "success")}))
+    return 0 if report["success"] else 3
 
 
 if __name__ == "__main__":
@@ -377,7 +440,7 @@ if __name__ == "__main__":
 - [ ] **Step 4: Run the tests to verify they pass**
 
 Run: `.venv/bin/python -m pytest tests/test_spike_qwen_local_probe.py -q`
-Expected: `4 passed`.
+Expected: `5 passed`.
 
 - [ ] **Step 5: Ruff**
 
@@ -506,7 +569,7 @@ jobs:
           python scripts/spike_qwen_local_probe.py
           --manifest engine/model_manifests/qwen3-asr-0.6b.json
           --model-dir "${{ runner.temp }}\qwen3-asr-0.6b"
-          --wav NUL --download --report "${{ runner.temp }}\verify-only.json" || if ($LASTEXITCODE -eq 3) { exit 0 } else { exit $LASTEXITCODE }
+          --download --verify-only --report "${{ runner.temp }}\verify-only.json"
 
       - name: Synthesize the test utterance with Windows SAPI
         shell: pwsh
@@ -517,7 +580,8 @@ jobs:
           if ($voice) { $s.SelectVoice($voice.VoiceInfo.Name) }
           $fmt = New-Object System.Speech.AudioFormat.SpeechAudioFormatInfo(16000, [System.Speech.AudioFormat.AudioBitsPerSample]::Sixteen, [System.Speech.AudioFormat.AudioChannel]::Mono)
           $s.SetOutputToWaveFile("${{ runner.temp }}\utterance.wav", $fmt)
-          $s.Speak("测试一二三")
+          # About ten seconds of speech, so the latency rule in the spec applies without scaling.
+          $s.Speak("测试一二三。今天下午三点我们开会讨论新的对话框设计，请大家提前准备好截图和问题清单，会议大约持续四十分钟。")
           $s.Dispose()
           Get-Item "${{ runner.temp }}\utterance.wav" | Select-Object Length
 
@@ -543,6 +607,8 @@ jobs:
             --manifest "$PWD\engine\model_manifests\qwen3-asr-0.6b.json" `
             --model-dir "${{ runner.temp }}\qwen3-asr-0.6b" `
             --wav "${{ runner.temp }}\utterance.wav" `
+            --expected "测试一二三今天下午三点我们开会讨论新的对话框设计请大家提前准备好截图和问题清单会议大约持续四十分钟" `
+            --frozen-dir "${{ runner.temp }}\dist\qwen-local-probe" `
             --report "${{ runner.temp }}\qwen-local-spike-report.json"
           Get-Content "${{ runner.temp }}\qwen-local-spike-report.json"
 
@@ -556,7 +622,7 @@ jobs:
           if-no-files-found: warn
 ```
 
-Notes for the executor: the download step passes `--wav NUL` so the host run stops after verification (exit code 3 means "no transcript", which is expected there and mapped to success). The frozen run clears `PATH` so a system Python cannot be picked up. If `actions/cache` refuses the 1.9 GB entry, keep the download step (it re-fetches) and note the time cost in the report.
+Notes for the executor: the download step uses `--verify-only`, so the host Python never loads the model. The frozen run clears `PATH` so a system Python cannot be picked up, and the exe exits non-zero unless `success` is true (CPU, verified files, recognisable transcript). If `actions/cache` refuses the 1.9 GB entry, keep the download step (it re-fetches) and note the time cost in the report.
 
 - [ ] **Step 2: Validate the YAML locally**
 
@@ -584,7 +650,7 @@ EOF
 - [ ] **Step 4: Wait for the run and download the report**
 
 Run: `gh run list --workflow qwen-local-spike.yml --limit 1` then `gh run download <run-id> -n qwen-local-spike-report -D /tmp/spike`
-Expected: `/tmp/spike/qwen-local-spike-report.json` with `files_ok: true`, `transcript_chars > 0`, `latency_ms.cold`, `latency_ms.warm`, `rss_mb`, and the frozen size from the job log.
+Expected: `/tmp/spike/qwen-local-spike-report.json` with `success: true`, `audio_seconds` ≈ 10, `latency_ms.load`, `latency_ms.cold`, `latency_ms.warm`, `peak_rss_mb`, `frozen_dir_bytes`.
 
 ### Task 5: Decision report
 
@@ -606,17 +672,17 @@ Expected: `/tmp/spike/qwen-local-spike-report.json` with `files_ok: true`, `tran
 | Measure | Value |
 |---|---|
 | Nine pinned files verified offline | yes / no |
-| Frozen directory size | <MB> |
-| Cold transcribe latency (utterance "测试一二三", <seconds> s of audio) | <ms> |
+| Frozen directory size (`frozen_dir_bytes`) | <MB> |
+| Model load time (`latency_ms.load`) | <ms> |
+| Cold transcribe latency (`audio_seconds` s of audio) | <ms> |
 | Warm transcribe latency | <ms> |
-| Peak RSS | <MB> |
+| Peak RSS during load + inference | <MB> |
 | Transcript matched expected | yes / no (sha256 <...>, <n> chars) |
 | Clean shutdown | yes / no |
 
 ## Decision (spec §3.2 rule: warm ≤ 6 s for a 10-second utterance)
 
-The test utterance is about 2 s long; scale the warm latency linearly to 10 s
-for the rule. Measured warm × 5 = <ms> → **Qwen local default** | **sherpa-sensevoice default, Qwen local opt-in**.
+The utterance is about 10 s long, so the rule applies directly. Measured warm = <ms> → **Qwen local default** | **sherpa-sensevoice default, Qwen local opt-in**.
 
 ## What PR-B and PR-C take from this
 

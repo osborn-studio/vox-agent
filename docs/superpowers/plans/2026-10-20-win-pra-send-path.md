@@ -6,7 +6,9 @@
 
 **Architecture:** A `DpapiKeyProvider` implements the existing `KeyProvider` trait (`context_keys/mod.rs`) with `CryptProtectData`/`CryptUnprotectData` (user scope, context bytes as entropy). A new `context_acl` module creates the Context directories with a protected DACL (current user + SYSTEM, full access) and verifies it on every open; an unsafe ACL leaves the journal `None`, which keeps delivery blocked by design. `context_commands::context_sign_in` opens the journal through `open_journal()` and passes it to `AccountSlot::publish`. `lib.rs` defaults the endpoint to `https://api.osbornvox.com` when the environment variable is absent. A renewal task stores the refresh token in the credential store and applies `SessionAuthority::refresh` before expiry.
 
-**Tech Stack:** Rust 2021, `windows-sys 0.61` (features `Win32_Foundation`, `Win32_Security_Cryptography`, `Win32_Security_Authorization`, `Win32_Security`, `Win32_System_Memory`, `Win32_Storage_FileSystem`), `zeroize`, existing `KeyRing`/`Journal`/`FileAnchorStore`, `tokio`, `reqwest`, `keyring` (Credential Manager). All Windows code behind `#[cfg(windows)]`; macOS/Linux keep `None`.
+**Tech Stack:** Rust 2021, `windows-sys 0.61` (features `Win32_Foundation`, `Win32_Security_Cryptography`, `Win32_Security_Authorization`, `Win32_Security`, `Win32_System_Memory`, `Win32_System_SystemServices`, `Win32_System_Threading`, `Win32_Storage_FileSystem`), `zeroize`, existing `KeyRing`/`Journal`/`FileAnchorStore`, `tokio`, `reqwest`, `keyring` (Credential Manager). All Windows code behind `#[cfg(windows)]`; macOS/Linux keep `None`.
+
+Scope note (after the Codex plan audit): this PR covers in-process renewal while the app runs. Restoring a signed-in session after an app restart (credential restore, `/me` confirmation through `SessionAuthority::confirm`, destinations and journal reconstruction) is **PR-A2**, planned separately once this PR's interfaces exist.
 
 Compile and test on `windows-latest` CI (`windows-tauri-test` job runs `cargo fmt --check` and `cargo test --locked`). On this Mac only `cargo check` of the non-Windows paths is possible; push early and let CI compile the Windows paths.
 
@@ -29,6 +31,7 @@ windows-sys = { version = "0.61.2", features = [
     "Win32_Security_Authorization",
     "Win32_Security",
     "Win32_System_Memory",
+    "Win32_System_SystemServices",
     "Win32_System_Threading",
     "Win32_Storage_FileSystem",
 ] }
@@ -270,12 +273,15 @@ fn rejects_a_directory_granted_to_everyone() {
 }
 
 #[test]
-fn ensure_is_idempotent_and_repairs_inherited_aces() {
+fn ensure_is_idempotent_and_never_repairs_an_existing_directory() {
     let root = tempfile::tempdir().unwrap();
     let dir = root.path().join("ctx");
     ensure_private_dir(&dir).unwrap();
     ensure_private_dir(&dir).unwrap();
     verify_private_dir(&dir).unwrap();
+    let status = Command::new("icacls").arg(&dir).args(["/grant", "Everyone:(OI)(CI)R"]).status().unwrap();
+    assert!(status.success());
+    assert_eq!(ensure_private_dir(&dir).unwrap_err(), AclError::TooPermissive);
 }
 ```
 
@@ -325,8 +331,10 @@ mod win {
     use windows_sys::Win32::Security::{
         GetAce, GetSecurityDescriptorDacl, GetTokenInformation, IsValidSid, TokenUser, ACCESS_ALLOWED_ACE,
         ACE_HEADER, ACL, DACL_SECURITY_INFORMATION, PROTECTED_DACL_SECURITY_INFORMATION, TOKEN_QUERY,
-        TOKEN_USER, ACCESS_ALLOWED_ACE_TYPE,
+        TOKEN_USER,
     };
+    // In windows-sys 0.61 the ACE type constants are u32 values in SystemServices.
+    use windows_sys::Win32::System::SystemServices::{ACCESS_ALLOWED_ACE_TYPE, ACCESS_DENIED_ACE_TYPE};
     use windows_sys::Win32::System::Threading::{GetCurrentProcess, OpenProcessToken};
 
     const SYSTEM_SID: &str = "S-1-5-18";
@@ -371,7 +379,13 @@ mod win {
         sid_to_string(user.User.Sid)
     }
 
+    /// Creates a missing directory with the protected DACL. An existing
+    /// directory is verified, never repaired: silently tightening an ACL
+    /// someone widened would hide the tampering the check exists to catch.
     pub fn ensure_private_dir(dir: &Path) -> Result<(), AclError> {
+        if dir.is_dir() {
+            return verify_private_dir(dir);
+        }
         std::fs::create_dir_all(dir).map_err(|_| AclError::Io)?;
         let user = current_user_sid()?;
         // Protected DACL (no inheritance), full access for the owner and SYSTEM,
@@ -438,8 +452,13 @@ mod win {
                     return Err(AclError::Io);
                 }
                 let header = unsafe { &*(ace as *const ACE_HEADER) };
-                if u32::from(header.AceType) != ACCESS_ALLOWED_ACE_TYPE {
+                let ace_type = u32::from(header.AceType);
+                if ace_type == ACCESS_DENIED_ACE_TYPE {
                     continue; // deny ACEs only narrow access
+                }
+                if ace_type != ACCESS_ALLOWED_ACE_TYPE {
+                    // Object, callback or audit ACE forms are not evaluated here; refuse rather than guess.
+                    return Err(AclError::TooPermissive);
                 }
                 let allowed = unsafe { &*(ace as *const ACCESS_ALLOWED_ACE) };
                 let sid = sid_to_string(&allowed.SidStart as *const u32 as *mut core::ffi::c_void)?;
@@ -470,7 +489,7 @@ git push
 gh pr checks --watch
 ```
 
-Expected on CI: `context_acl` tests pass. Typical fixes if not: `ACCESS_ALLOWED_ACE_TYPE` is a `u8` constant in some generations (compare without `u32::from`); `SidStart` is a `u32` field whose address is the SID start (as written); `SetNamedSecurityInfoW` takes `*const u16` for the path (as written, since `wide()` returns a `Vec<u16>`).
+Expected on CI: `context_acl` tests pass. Typical fixes if not: `SidStart` is a `u32` field whose address is the SID start (as written); `SetNamedSecurityInfoW` takes `*const u16` for the path (as written, since `wide()` returns a `Vec<u16>`); if `ACE_HEADER.AceType` is already `u32` in this generation drop the `u32::from`.
 
 ### Task 4: Open the journal on Windows and pass it to the service
 
@@ -519,13 +538,19 @@ use crate::context_journal::{FileAnchorStore, Journal};
 use crate::context_keys::KeyRing;
 
 /// Why a build has (or lacks) an encrypted journal. Labels only.
-#[derive(Debug)]
 pub enum JournalOpenReport {
     Opened(Journal),
     NotSupported,
     UnsafeAcl,
     Busy,
     Failed,
+}
+
+// `Journal` has no Debug (it holds a live SQLite connection); print the label only.
+impl std::fmt::Debug for JournalOpenReport {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.key_store_label())
+    }
 }
 
 impl JournalOpenReport {
@@ -635,15 +660,15 @@ use vox_agent_desktop_tauri_lib::context_endpoint_from_env;
 
 #[test]
 fn env_override_wins_and_default_is_production() {
+    // `canonical()` always ends with a slash (context_wire.rs:34).
     let dev = context_endpoint_from_env(Some("http://127.0.0.1:18900")).unwrap();
-    assert_eq!(dev.canonical(), "http://127.0.0.1:18900");
+    assert_eq!(dev.canonical(), "http://127.0.0.1:18900/");
     let prod = context_endpoint_from_env(None).unwrap();
-    assert_eq!(prod.canonical(), "https://api.osbornvox.com");
-    assert!(context_endpoint_from_env(Some("ftp://nope")).is_none() || context_endpoint_from_env(Some("ftp://nope")).unwrap().canonical() == "https://api.osbornvox.com");
+    assert_eq!(prod.canonical(), "https://api.osbornvox.com/");
+    // An invalid override disables sign-in; it never silently becomes production.
+    assert!(context_endpoint_from_env(Some("ftp://nope")).is_none());
 }
 ```
-
-Tighten the last assertion to whichever behaviour you implement: an invalid override must never silently become production; implement "invalid override → `None` (sign-in reports not-available)" and assert `is_none()`.
 
 - [ ] **Step 2: Implement**
 
@@ -751,16 +776,22 @@ pub fn renewal_due(expires_in_secs: u64, elapsed_secs: u64) -> bool {
 }
 
 pub async fn renew(endpoint: &ContextEndpoint, refresh_token: &str) -> RenewOutcome {
-    let client = reqwest::Client::new();
-    let url = match endpoint.join("/v1/auth/feishu/renew") { Some(u) => u, None => return RenewOutcome::RetryLater("ENDPOINT") };
+    // Same client, bounded body read and refusal decoding as `sign_in` uses:
+    // `transport_client()` and `refusal_code(&body)` in this module (context_login.rs:355).
+    let client = transport_client();
+    let Some(url) = crate::context_account::join(endpoint, "/v1/auth/feishu/renew") else {
+        return RenewOutcome::RetryLater("ENDPOINT");
+    };
     let response = match client.post(url).bearer_auth(refresh_token).send().await {
         Ok(r) => r,
         Err(_) => return RenewOutcome::RetryLater("NETWORK"),
     };
     let status = response.status().as_u16();
-    let body = response.bytes().await.unwrap_or_default();
-    let code = serde_json::from_slice::<serde_json::Value>(&body).ok()
-        .and_then(|v| v.get("detail").and_then(|d| d.as_str()).map(str::to_owned));
+    let body = match read_bounded_body(response, 64 * 1024).await {  // reuse the helper sign_in uses for redeem
+        Ok(b) => b,
+        Err(_) => return RenewOutcome::RetryLater("INVALID_RESPONSE"),
+    };
+    let code = refusal_code(&body);
     match (status, code.as_deref()) {
         (200, _) => match serde_json::from_slice::<Redeemed>(&body) {
             Ok(r) if r.token.starts_with("vox_sso_") && r.refresh_token.as_deref().is_some_and(|t| t.starts_with("vox_refresh_")) => RenewOutcome::Renewed {
@@ -780,7 +811,7 @@ pub async fn renew(endpoint: &ContextEndpoint, refresh_token: &str) -> RenewOutc
 }
 ```
 
-Use the crate's existing HTTP helper (the one `sign_in` uses for `begin`/`redeem`) instead of a bare `reqwest::Client::new()` if it enforces the endpoint allow-list; mirror its construction. `ContextEndpoint::join` is the helper in `context_account.rs:217` (`fn join(endpoint, path) -> Option<reqwest::Url>`); move or re-export it so both modules share one implementation.
+`join` is a private free function in `context_account.rs:217`; make it `pub(crate)`. If `sign_in` reads bodies through a differently named helper, use that name instead of `read_bounded_body`. Keep the `#[serde(rename_all = "camelCase")]` attribute the struct already carries.
 
 - [ ] **Step 3: Store the refresh token and schedule renewal**
 
@@ -809,9 +840,9 @@ pub fn spawn_session_maintenance(app: tauri::AppHandle) {
 }
 ```
 
-`apply_renewal` takes a `SessionLease` from the current service (`ContextService` exposes its session; see how `context_delivery.rs` obtains a lease) and calls `SessionAuthority::refresh(&lease, principal, token)` then `set_refresh_token`. `note_renewal_problem` only records a fixed status label for `diagnostics` (`"renewal-unavailable:<CODE>"`); `sign_out_with_reason` calls the existing `end(...)` path and records `"signed-out:<CODE>"`. Call `spawn_session_maintenance(app.handle().clone())` from the Tauri `setup` closure in `lib.rs`.
+`renewal_inputs()` must also capture a `SessionLease` **before** the await (`ContextService::with_session(|s| s.lease())`, see how `context_delivery.rs` obtains one) and return it; `apply_renewal(lease, token, refresh_token, expires_in)` runs `service.with_session(|s| s.refresh(&lease, &principal, token.to_string()))` where `principal` is the lease's principal (the server's renew reply carries the same profile; compare it to the stored principal and treat a mismatch as `SignedOut("IDENTITY_CHANGED")`), then `s.set_refresh_token(Some(&refresh_token))`. A `StaleLease` result means a newer sign-in happened meanwhile; drop the renewal silently. `note_renewal_problem` only records a fixed status label for `diagnostics` (`"renewal-unavailable:<CODE>"`); `sign_out_with_reason` calls the existing `end(...)` path and records `"signed-out:<CODE>"`. Call `spawn_session_maintenance(app.handle().clone())` from the Tauri `setup` closure in `lib.rs`.
 
-On startup, when a stored principal and token exist, the existing restore path (if any) should call `GET /v1/auth/feishu/me`; if none exists, treat startup like "signed_at = now, expires_in = 0" so the first tick renews immediately with the stored refresh token. Record which of the two you implemented in the PR description.
+Startup restore is **not** in this PR (see the scope note at the top): the Tauri shell has no restore path today and a restored session stays `Unverified` until `SessionAuthority::confirm` (`context_session.rs:325`) runs against `/me`. PR-A2 adds credential restore, `/me` confirmation, destinations and journal reconstruction. In this PR the maintenance task only acts while a session signed in during this process lifetime is active.
 
 - [ ] **Step 4: Tests, fmt, push, CI**
 
@@ -827,6 +858,6 @@ git push && gh pr checks --watch
 
 ### Task 7: Finish the PR
 
-- [ ] **Step 1: Mark ready, fill the description** with: what macOS could compile, what only Windows CI compiled and tested (`context_dpapi`, `context_acl`, `context_windows_journal`), the restore behaviour chosen in Task 6, and that device evidence is PR-F.
+- [ ] **Step 1: Mark ready, fill the description** with: what macOS could compile, what only Windows CI compiled and tested (`context_dpapi`, `context_acl`, `context_windows_journal`), that restart restore is PR-A2, and that device evidence is PR-F.
 
 - [ ] **Step 2: Codex audit** per the master plan; append the record to `docs/verification/windows-voice-flow-2026-10.md`; close every high-severity finding.

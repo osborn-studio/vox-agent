@@ -19,7 +19,8 @@ Codex audit record. Execute each sub-plan in its own worktree session.
 | PR | Sub-plan | Depends on | Produces |
 |---|---|---|---|
 | PR-0 | [`2026-10-20-win-pr0-qwen-local-spike.md`](2026-10-20-win-pr0-qwen-local-spike.md) | nothing | pinned Qwen manifest, frozen CPU probe on `windows-latest`, decision report |
-| PR-A | [`2026-10-20-win-pra-send-path.md`](2026-10-20-win-pra-send-path.md) | nothing | DPAPI key provider, owner-only ACLs, journal wiring, endpoint default, `/me` + renew |
+| PR-A | [`2026-10-20-win-pra-send-path.md`](2026-10-20-win-pra-send-path.md) | nothing | DPAPI key provider, owner-only ACLs, journal wiring, endpoint default, in-process renewal |
+| PR-A2 | written after PR-A merges | PR-A | session restore after restart: credential restore, `/me` confirmation via `SessionAuthority::confirm`, destinations and journal reconstruction |
 | PR-B | written after PR-0 reports (see "Deferred sub-plans") | PR-0 | `voxagent-backend.exe` sidecar with `--require-auth`, supervisor launch, CI build |
 | PR-C | written after PR-0 reports | PR-0 | `QwenLocalASR` pinned loading, local-only fallback, inference lock |
 | PR-D | [`2026-10-20-win-prd-sync-polish.md`](2026-10-20-win-prd-sync-polish.md) | nothing | `PolishOutcome`, `/v1/voice` `polish=1` + `polish_status`, `/v1/text/polish`, contracts |
@@ -94,7 +95,7 @@ A PR is not merged while a high-severity finding is open. Fix, push, rerun the t
 
 ## Deferred sub-plans
 
-PR-B, PR-C, PR-E and PR-F are written by the same process as the three plans
+PR-A2, PR-B, PR-C, PR-E and PR-F are written by the same process as the three plans
 linked above (brainstorm already done; use `superpowers:writing-plans` with the
 spec sections 3.1, 3.2, 3.4, 5) once their inputs exist:
 
@@ -104,6 +105,8 @@ spec sections 3.1, 3.2, 3.4, 5) once their inputs exist:
 - PR-C needs PR-0's confirmation that `Qwen3ASRModel.from_pretrained(<local dir>)`
   loads from the pinned nine files offline, and the measured warm latency to set
   the default route.
+- PR-A2 needs PR-A's refresh-token storage and `JournalOpenReport`, and a read of
+  `SessionAuthority::confirm` (`context_session.rs:325`) and the `/me` route.
 - PR-E needs the merged `polish_status` contract (PR-D) and a reachable bundled
   backend (PR-B) to write end-to-end Node tests against.
 - PR-F needs the owner's PC details.
@@ -117,7 +120,8 @@ spec sections 3.1, 3.2, 3.4, 5) once their inputs exist:
 | 3.3 synchronous polish, `polish_status`, `/v1/text/polish` | PR-D |
 | 3.4 composer integration | PR-E |
 | 3.5 encrypted journal, DPAPI, owner-only ACL | PR-A |
-| 3.6 endpoint default, `/me`, renew | PR-A |
+| 3.6 endpoint default, renew while running | PR-A |
+| 3.6 restore after restart (`/me` confirmation) | PR-A2 |
 | 4 security boundaries | every PR's Codex adversarial pass |
 | 5.1 feasibility spike | PR-0 |
 | 5.2 CI | PR-B (build step), PR-F (regression + Node tests on Windows) |

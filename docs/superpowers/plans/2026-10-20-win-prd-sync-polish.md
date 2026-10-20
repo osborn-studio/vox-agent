@@ -34,7 +34,10 @@ from runtime.slowpath.polisher import PolishOutcome, Polisher
 
 def _config(llm_main: str = "qwen-turbo", key: str = "k") -> VoxAgentConfig:
     config = VoxAgentConfig()
+    # Defaults read the environment (runtime/models/config.py:62-63, :102); pin them.
     config.dashscope_key_cn = key
+    config.dashscope_key_us = ""  # the Qwen route falls back to the US key when CN is empty
+    config.api_token = ""
     config.profiles[config.active_profile].llm_main = llm_main
     return config
 
@@ -248,6 +251,7 @@ class FakeRecent:
 @pytest.fixture
 def client(monkeypatch):
     config = VoxAgentConfig()
+    config.api_token = ""  # the default reads the environment; keep verify_token open in tests
     monkeypatch.setattr(server, "_config", config)
     monkeypatch.setattr(server, "_corrector", FakeCorrector())
     monkeypatch.setattr(server, "_store", object())
@@ -308,12 +312,24 @@ def test_polish_endpoint_rejects_empty_and_oversized(client, monkeypatch):
     assert client.post("/v1/text/polish", json={"text": "a" * 8193}).status_code == 413
 
 
-def test_apply_polish_helper_is_additive_to_payload():
-    payload = {"display_text": "原文", "polished_text": "原文"}
-    out = server._apply_polish(payload, PolishOutcome("ok", "润色", None))
-    assert out["polished_text"] == "润色" and out["polish_status"] == "ok" and "polish_error" not in out
-    out = server._apply_polish(payload, None)
-    assert out["polished_text"] == "原文" and out["polish_status"] == "skipped"
+def test_apply_polish_helper_sets_every_field_explicitly():
+    ok = server._apply_polish({"display_text": "原文", "polished_text": "原文"}, PolishOutcome("ok", "润色", None))
+    assert ok["polished_text"] == "润色" and ok["polish_status"] == "ok" and "polish_error" not in ok
+    skipped = server._apply_polish({"display_text": "原文", "polished_text": "原文"}, None)
+    assert skipped["polished_text"] == "原文" and skipped["polish_status"] == "skipped" and "polish_error" not in skipped
+    # Stale fields from an earlier outcome are cleared, never carried over.
+    stale = {"display_text": "原文", "polished_text": "旧", "polish_status": "ok", "polish_error": "x"}
+    failed = server._apply_polish(stale, PolishOutcome("failed", None, "Qwen Bailian: HTTP 500"))
+    assert failed["polished_text"] == "原文" and failed["polish_status"] == "failed" and failed["polish_error"] == "Qwen Bailian: HTTP 500"
+
+
+def test_inline_polish_result_reaches_the_slow_path_event(client, monkeypatch):
+    captured = []
+    monkeypatch.setattr(server, "enqueue", lambda event: captured.append(event))
+    monkeypatch.setattr(server, "_polisher", FakePolisher(PolishOutcome("ok", "测试", None)))
+    client.post("/v1/voice/text", json={"text": "嗯 测试", "polish": True})
+    assert captured and captured[0].polished_text == "测试"
+
 ```
 
 - [ ] **Step 2: Run the tests to verify they fail**
@@ -330,7 +346,9 @@ POLISH_TEXT_LIMIT = 8_192
 
 
 def _apply_polish(payload: dict, outcome: "PolishOutcome | None") -> dict:
-    """Add the explicit polish fields. Clients key on polish_status, never on text equality."""
+    """Set the explicit polish fields. Clients key on polish_status, never on text equality."""
+    payload["polished_text"] = payload["display_text"]
+    payload.pop("polish_error", None)
     if outcome is None:
         payload["polish_status"] = "skipped"
         return payload
@@ -356,21 +374,32 @@ async def _maybe_polish(text: str, requested: bool) -> "PolishOutcome | None":
 
 Add `from runtime.slowpath.polisher import PolishOutcome, Polisher` to the imports (the module already imports `Polisher`).
 
-In `voice_endpoint`, add the form field `polish: str = Form("0")` after `mode`, and replace the final `return` with:
+In `voice_endpoint`, add the form field `polish: str = Form("0")` after `mode`. Inline polish must run **before** `enqueue(event)` so the slow-path worker does not call the provider a second time (`runtime/slowpath/worker.py:82`): replace the block from `# Enqueue for slow path` to the final `return` with:
 
 ```python
-    payload = _fastpath_response_payload(result, event, agent=agent, role="me")
     outcome = await _maybe_polish(result.display_text, _polish_requested(polish))
+    if outcome is not None and outcome.status == "ok" and outcome.text:
+        event.polished_text = outcome.text
+    enqueue(event)
+    _recent.put(result, event, audio_bytes)
+    payload = _fastpath_response_payload(result, event, agent=agent, role="me")
     return _apply_polish(payload, outcome)
 ```
 
-In `text_voice_endpoint`, replace the final `return` with:
+In `text_voice_endpoint`, apply the same order: compute `outcome` from `display_text` and `body.get("polish", False)`, set `event.polished_text` on success, then `enqueue(event)`, `_recent.put(...)`, build the payload and `return _apply_polish(payload, outcome)`.
+
+In `runtime/slowpath/worker.py:82`, make the worker skip provider calls for events that already carry a polished text:
 
 ```python
-    payload = _fastpath_response_payload(result, event, agent=agent, role=role)
-    outcome = await _maybe_polish(display_text, _polish_requested(body.get("polish", False)))
-    return _apply_polish(payload, outcome)
+    if (
+        event.recording_mode == RecordingMode.NORMAL
+        and polisher
+        and event.raw_text
+        and not event.polished_text  # inline polish already ran for this event
+    ):
 ```
+
+and, before that block, persist an inline result so history sees it: `if event.polished_text: event.archive_status = ArchiveStatus.POLISHED; await archive.update_polish(event.id, event.polished_text)`. Add a test to the existing worker test file (`grep -rln "slowpath.worker\|from runtime.slowpath import worker" tests | head -1`) asserting that an event with `polished_text` set results in zero polisher calls and one `update_polish` call.
 
 Add the new endpoint directly below `text_voice_endpoint`:
 
@@ -401,7 +430,7 @@ async def polish_text_endpoint(request: Request, _auth: None = Depends(verify_to
 - [ ] **Step 4: Run the tests to verify they pass**
 
 Run: `.venv/bin/python -m pytest tests/test_desktop_sync_polish.py -q`
-Expected: `7 passed`.
+Expected: `8 passed`.
 
 - [ ] **Step 5: Run the gateway tests that mock these responses**
 
@@ -418,63 +447,69 @@ git commit -m "Expose opt-in inline polish with explicit polish_status
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ```
 
-### Task 3: TypeScript contract (additive optional fields)
+### Task 3: TypeScript contract and gateway forwarding
 
 **Files:**
 - Modify: `packages/contracts/src/fastpath-result.ts`
-- Test: `packages/contracts/src/fastpath-result.test.ts` (create next to existing tests if that is the convention; check with `ls packages/contracts/src/*.test.ts`)
+- Modify: `services/api-ts/src/routes/voice.ts` (multipart field allowlist, new proxy route)
+- Test: `services/api-ts/src/test/voice-polish.test.ts` (`packages/contracts` has no test runner; `services/api-ts` runs `node --import tsx --test src/test/**/*.test.ts`)
 
-- [ ] **Step 1: Write the failing test**
+- [ ] **Step 1: Write the failing tests**
+
+Model the file on `services/api-ts/src/test/app.test.ts` (same imports, same fake upstream pattern):
 
 ```ts
-import { describe, expect, it } from "vitest";
-import { fastPathResponseSchema } from "./fastpath-result";
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import { fastPathResponseSchema } from "@vox-agent/contracts"; // use the exact specifier app.test.ts uses
 
-const base = {
-  // copy one valid object from an existing fastpath-result test or fixture here
-};
+const base = { /* copy the complete valid fast-path object app.test.ts already uses as its upstream reply */ };
 
-describe("fastPathResponseSchema polish fields", () => {
-  it("accepts responses without polish fields (older backends)", () => {
-    expect(fastPathResponseSchema.safeParse(base).success).toBe(true);
-  });
-  it("accepts polish_status and polish_error", () => {
-    const parsed = fastPathResponseSchema.safeParse({ ...base, polish_status: "failed", polish_error: "Qwen Bailian: HTTP 429" });
-    expect(parsed.success).toBe(true);
-    expect(parsed.success && parsed.data.polish_status).toBe("failed");
-  });
-  it("rejects unknown polish_status values", () => {
-    expect(fastPathResponseSchema.safeParse({ ...base, polish_status: "maybe" }).success).toBe(false);
-  });
+test("fast-path schema accepts responses without polish fields", () => {
+  assert.equal(fastPathResponseSchema.safeParse(base).success, true);
+});
+
+test("fast-path schema accepts polish_status and polish_error, rejects unknown status", () => {
+  const ok = fastPathResponseSchema.safeParse({ ...base, polish_status: "failed", polish_error: "Qwen Bailian: HTTP 429" });
+  assert.equal(ok.success, true);
+  assert.equal(fastPathResponseSchema.safeParse({ ...base, polish_status: "maybe" }).success, false);
+});
+
+test("gateway forwards the multipart polish field and proxies /v1/text/polish", async () => {
+  // Reuse app.test.ts's fake upstream: assert the upstream /v1/voice request body contains a `polish` part
+  // when the client sends one, and that POST /v1/text/polish {text} reaches upstream /v1/text/polish
+  // and its {polish_status, polished_text, polish_error?} body is returned unchanged.
 });
 ```
 
-Fill `base` from an existing valid fixture (`grep -rn "fastPathResponseSchema" packages/contracts/src services/api-ts/src/test | head`), so the test exercises the real required fields.
+Fill the third test with the concrete fake-upstream helpers from `app.test.ts` (the file shows how `/v1/voice` and `/v1/voice/text` are proxied and asserted).
 
-- [ ] **Step 2: Run to verify it fails**
+- [ ] **Step 2: Run to verify they fail**
 
-Run: `npm run check --workspace packages/contracts && npx vitest run packages/contracts/src/fastpath-result.test.ts`
-Expected: FAIL on the `polish_status` typed access or the enum rejection.
+Run: `npm run build --workspace packages/contracts && npm test --workspace services/api-ts`
+Expected: FAIL (schema rejects `polish_status`; `/v1/text/polish` returns 404; `polish` part not forwarded).
 
 - [ ] **Step 3: Implement**
 
-In `packages/contracts/src/fastpath-result.ts`, inside `fastPathResponseSchema`'s object, after `polished_text: z.string(),` add:
+`packages/contracts/src/fastpath-result.ts`, inside `fastPathResponseSchema` after `polished_text: z.string(),`:
 
 ```ts
   polish_status: z.enum(["ok", "skipped", "failed"]).optional(),
   polish_error: z.string().max(200).optional(),
 ```
 
+`services/api-ts/src/routes/voice.ts`: add `polish: "0"` to the `fields` allowlist object at line 8 so a client's `polish` part is copied to the upstream form; add a proxy for `POST /v1/text/polish` next to the `/v1/voice/text` route that validates `{ text: z.string().min(1).max(8192) }` inbound, forwards to the Python backend, and validates the upstream reply with a new `polishTextResponseSchema` (`{ polish_status: z.enum([...]), polished_text: z.string(), polish_error: z.string().max(200).optional() }`) exported from `packages/contracts/src/fastpath-result.ts`.
+
 - [ ] **Step 4: Run to verify it passes, then the workspace checks**
 
-Run: `npx vitest run packages/contracts/src/fastpath-result.test.ts && npm run check --workspace packages/contracts && npm run check --workspace services/api-ts && npm test --workspace services/api-ts`
+Run: `npm run build --workspace packages/contracts && npm run check --workspace packages/contracts && npm run check --workspace services/api-ts && npm test --workspace services/api-ts`
 Expected: all pass.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add packages/contracts/src/fastpath-result.ts packages/contracts/src/fastpath-result.test.ts
-git commit -m "Contracts: optional polish_status and polish_error on fast-path responses
+git add packages/contracts/src/fastpath-result.ts services/api-ts/src/routes/voice.ts services/api-ts/src/test/voice-polish.test.ts
+git commit -m "Contracts and gateway: polish_status, polish_error and /v1/text/polish
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ```
@@ -482,51 +517,57 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ### Task 4: Rust contract (serde defaults)
 
 **Files:**
-- Modify: `apps/desktop-tauri/src-tauri/src/contracts.rs` (the struct containing `pub polished_text: String`)
+- Modify: `apps/desktop-tauri/src-tauri/src/contracts.rs:92-113` (`pub struct FastPathResponse`; it currently has no `polished_text` at all, and `HistoryItem` at `:287` is a different struct that must not change)
 
-- [ ] **Step 1: Write the failing test** (append to the `#[cfg(test)] mod tests` in `contracts.rs`, or create one if absent)
+- [ ] **Step 1: Write the failing test** (append to the `#[cfg(test)] mod tests` in `contracts.rs`, or create one)
 
 ```rust
 #[test]
 fn fast_path_response_accepts_optional_polish_fields() {
-    let without: FastPathResponse = serde_json::from_str(FIXTURE_WITHOUT_POLISH).unwrap();
+    const WITHOUT: &str = r#"{"id":"u1","status":"ok","raw_text":"嗯 测试","display_text":"嗯 测试","stt_provider":"qwen-local","stt_model":"Qwen/Qwen3-ASR-0.6B","target_app":"cockpit","target_risk_level":"low","should_autopaste":true,"needs_review":false,"confidence":0.9,"dictionary_applied":[],"latency_ms":120,"session_id":"s1","utterance_id":"u1","output_id":"o1","output_mode":"paste","archive_status":"queued","created_at":"2026-10-20T00:00:00Z"}"#;
+    let without: FastPathResponse = serde_json::from_str(WITHOUT).unwrap();
+    assert_eq!(without.polished_text, None);
     assert_eq!(without.polish_status, None);
-    let with: FastPathResponse = serde_json::from_str(FIXTURE_WITH_POLISH).unwrap();
+    let with = WITHOUT.replacen("\"created_at\"", "\"polished_text\":\"测试\",\"polish_status\":\"failed\",\"polish_error\":\"Qwen Bailian: HTTP 429\",\"created_at\"", 1);
+    let with: FastPathResponse = serde_json::from_str(&with).unwrap();
+    assert_eq!(with.polished_text.as_deref(), Some("测试"));
     assert_eq!(with.polish_status.as_deref(), Some("failed"));
     assert_eq!(with.polish_error.as_deref(), Some("Qwen Bailian: HTTP 429"));
 }
 ```
 
-Name the struct exactly as it is declared around `contracts.rs:287` (read the `pub struct` line above `polished_text`); define `FIXTURE_WITHOUT_POLISH` as a complete JSON object matching every required field of that struct (copy from an existing test fixture in `tests/` or `src/contracts.rs`), and `FIXTURE_WITH_POLISH` as the same JSON plus `"polish_status":"failed","polish_error":"Qwen Bailian: HTTP 429"`.
+Check the enum wire names (`FastPathStatus`, `TargetRiskLevel`, `OutputMode`) by reading their `#[serde(rename_all = ...)]` attributes in `contracts.rs` and adjust the fixture strings (`"ok"`, `"low"`, `"paste"`) to the real spellings.
 
 - [ ] **Step 2: Run to verify it fails**
 
 Run: `cargo test --manifest-path apps/desktop-tauri/src-tauri/Cargo.toml --locked fast_path_response_accepts_optional_polish_fields`
-Expected: FAIL to compile: no field `polish_status`.
+Expected: FAIL to compile: no field `polished_text` / `polish_status`.
 
 - [ ] **Step 3: Implement**
 
-Below `pub polished_text: String,` add:
+Below `pub display_text: String,` in `FastPathResponse` add:
 
 ```rust
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub polished_text: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub polish_status: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub polish_error: Option<String>,
 ```
 
-Keep `String` (not an enum) so an unknown future status is passed through to the WebView as text rather than failing deserialization.
+Keep `String` for the status (not an enum) so an unknown future value reaches the WebView as text instead of failing deserialization.
 
 - [ ] **Step 4: Run to verify it passes, then the full Rust suite and fmt**
 
 Run: `cargo fmt --manifest-path apps/desktop-tauri/src-tauri/Cargo.toml --all -- --check && cargo test --manifest-path apps/desktop-tauri/src-tauri/Cargo.toml --locked`
-Expected: fmt clean, all tests pass (check any JSON snapshot test that serialises this struct; `skip_serializing_if` keeps old snapshots unchanged).
+Expected: fmt clean, all tests pass (`skip_serializing_if` keeps existing JSON snapshots unchanged).
 
 - [ ] **Step 5: Commit**
 
 ```bash
 git add apps/desktop-tauri/src-tauri/src/contracts.rs
-git commit -m "Tauri contracts: pass through polish_status and polish_error
+git commit -m "Tauri contracts: pass through polished_text, polish_status and polish_error
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ```
