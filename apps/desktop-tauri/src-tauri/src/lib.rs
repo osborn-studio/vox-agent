@@ -3,6 +3,7 @@ mod bridge;
 pub mod capture_session;
 mod commands;
 pub mod context_account;
+pub mod context_acl;
 pub mod context_commands;
 pub mod context_conversation;
 pub mod context_delivery;
