@@ -11,7 +11,7 @@ rerun and amended after every fix until no high-severity finding is open.
 - Rounds: six diff reviews and five adversarial passes, each rerun after the fixes it caused; the final diff review (fe723ce) reports no actionable regression. An independent Rust review (Claude subagent) ran before the first Codex round; its findings are folded into the same dispositions.
 - Diff review findings (all rounds, deduplicated): 3 high / 6 medium / 1 low from Codex, plus 3 high / 7 medium / 8 low from the independent review
 - Adversarial pass (final, fe723ce tree): FAIL on two **pre-existing** high-severity items outside this PR (see dispositions); no in-scope high-severity item open
-- CI: `windows-tauri-test` green on c89fd7e, dceac76 and b777eab; the run for fe723ce (adds the dispatch-time ACL check, junction tests and child checks) was in progress when this record was written and its result is in the PR checks
+- CI: all eight Verify jobs green on f6ddedb (fe723ce plus this record), run 39462919227, including `windows-tauri-test` with the new `cargo check --release --locked` step; `windows-tauri-test` was also green on c89fd7e, dceac76 and b777eab
 - Dispositions:
   - `FileAnchorStore` is `cfg(any(test, debug_assertions))`, so the Windows release build could not link the journal path (independent review, high) → fixed in b777eab: anchors go to the credential store (`NativeSecretStore: AnchorStore`), tests inject the file store through `open_journal_with`; `cargo check --release --locked` added to `windows-tauri-test`
   - A set but non-Unicode `VOX_AGENT_CONTEXT_ENDPOINT` fell back to production (independent review, high) → fixed in b777eab: `context_endpoint_from_var` treats `VarError::NotUnicode` as an invalid override (sign-in disabled)
