@@ -120,6 +120,9 @@ def test_polish_endpoint_rejects_empty_and_oversized(client, monkeypatch):
     assert client.post("/v1/text/polish", json={"text": "  "}).status_code == 422
     assert client.post("/v1/text/polish", json={"text": "a" * 8193}).status_code == 413
     assert client.post("/v1/text/polish", json=["not", "an", "object"]).status_code == 422
+    # Non-string drafts are rejected, never stringified into content ("None", "True", "[...]").
+    for bad in (None, True, 1, ["x"], {"nested": "x"}):
+        assert client.post("/v1/text/polish", json={"text": bad}).status_code == 422, repr(bad)
     assert fake.calls == []
 
 

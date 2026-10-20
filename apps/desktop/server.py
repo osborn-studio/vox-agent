@@ -619,8 +619,8 @@ async def polish_text_endpoint(request: Request, _auth: None = Depends(verify_to
     """Polish a typed draft ("Polish, then send"). Never persists or enqueues."""
     assert _config
     body = await request.json()
-    text = str(body.get("text", "")) if isinstance(body, dict) else ""
-    if not text.strip():
+    text = body.get("text") if isinstance(body, dict) else None
+    if not isinstance(text, str) or not text.strip():
         raise HTTPException(422, "text required")
     if len(text) > POLISH_TEXT_LIMIT:
         raise HTTPException(413, f"text exceeds {POLISH_TEXT_LIMIT} characters")
