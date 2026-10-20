@@ -107,15 +107,26 @@ fn setup_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-/// The Context server comes only from the process environment at startup
-/// (`VOX_AGENT_CONTEXT_ENDPOINT`, https or loopback http origin). Without it,
-/// sign-in reports `not-available`. The production origin is fixed by T49p.
+/// The production Context origin (T49p, spec §3.6).
+pub const PRODUCTION_CONTEXT_ENDPOINT: &str = "https://api.osbornvox.com";
+
+/// `VOX_AGENT_CONTEXT_ENDPOINT` (https or loopback http origin) overrides the
+/// Context server for development. An override that is set but invalid
+/// disables sign-in (`None`) instead of silently falling back to production.
+/// Without the variable, installed builds use the production origin.
+pub fn context_endpoint_from_env(value: Option<&str>) -> Option<context_wire::ContextEndpoint> {
+    match value {
+        Some(raw) => context_wire::ContextEndpoint::parse(raw).ok(),
+        None => context_wire::ContextEndpoint::parse(PRODUCTION_CONTEXT_ENDPOINT).ok(),
+    }
+}
+
+/// The Context server is decided once at startup, from the environment or
+/// the production default; never from IPC.
 fn context_state() -> context_commands::ContextState {
     let state = context_commands::ContextState::default();
-    if let Some(endpoint) = std::env::var("VOX_AGENT_CONTEXT_ENDPOINT")
-        .ok()
-        .and_then(|value| context_wire::ContextEndpoint::parse(&value).ok())
-    {
+    let raw = std::env::var("VOX_AGENT_CONTEXT_ENDPOINT").ok();
+    if let Some(endpoint) = context_endpoint_from_env(raw.as_deref()) {
         state.set_endpoint(endpoint);
     }
     state
