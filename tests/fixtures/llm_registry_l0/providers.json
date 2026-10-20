@@ -1,0 +1,765 @@
+{
+  "schema": "osborn-llm-registry/providers@1",
+  "updated_at": "2026-10-18",
+  "endpoint_types": [
+    "openai-chat-completions",
+    "openai-responses",
+    "anthropic-messages",
+    "gemini-generate-content"
+  ],
+  "providers": [
+    {
+      "id": "dashscope_cn",
+      "label": {
+        "zh": "阿里云百炼 · 国内（Qwen）",
+        "en": "Alibaba Model Studio (China, Qwen)"
+      },
+      "region": "cn",
+      "editions": [
+        "cn"
+      ],
+      "aliases": {
+        "vox": "bailian",
+        "vox_keychain_account": "tf_llm_bailian"
+      },
+      "sources": {
+        "modelsdev": "alibaba-cn"
+      },
+      "secret": {
+        "id": "dashscope_cn",
+        "env": [
+          "DASHSCOPE_TEXT_API_KEY",
+          "DASHSCOPE_API_KEY"
+        ],
+        "required": true
+      },
+      "auth": {
+        "type": "api-key",
+        "header": "Authorization",
+        "prefix": "Bearer "
+      },
+      "endpoints": {
+        "openai-chat-completions": {
+          "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "chat_path": "/chat/completions",
+          "discovery_path": "/models",
+          "dialect": {
+            "thinking_disable": {
+              "path": "enable_thinking",
+              "value": false
+            }
+          }
+        }
+      },
+      "default_endpoint": "openai-chat-completions",
+      "links": {
+        "docs": "https://help.aliyun.com/zh/model-studio/",
+        "api_key": "https://bailian.console.aliyun.com/?apiKey=1"
+      },
+      "status": "active"
+    },
+    {
+      "id": "dashscope_us",
+      "label": {
+        "zh": "阿里云百炼 · 美国（Qwen）",
+        "en": "Alibaba Model Studio (US, Qwen)"
+      },
+      "region": "us",
+      "editions": [
+        "global"
+      ],
+      "aliases": {
+        "vox": "bailianUS",
+        "vox_keychain_account": "tf_llm_bailianUS"
+      },
+      "sources": {
+        "modelsdev": "alibaba"
+      },
+      "secret": {
+        "id": "dashscope_us",
+        "env": [
+          "DASHSCOPE_API_KEY"
+        ],
+        "required": true
+      },
+      "auth": {
+        "type": "api-key",
+        "header": "Authorization",
+        "prefix": "Bearer "
+      },
+      "endpoints": {
+        "openai-chat-completions": {
+          "base_url": "https://dashscope-us.aliyuncs.com/compatible-mode/v1",
+          "chat_path": "/chat/completions",
+          "discovery_path": "/models",
+          "dialect": {
+            "thinking_disable": {
+              "path": "enable_thinking",
+              "value": false
+            }
+          }
+        }
+      },
+      "default_endpoint": "openai-chat-completions",
+      "links": {
+        "docs": "https://www.alibabacloud.com/help/en/model-studio/"
+      },
+      "status": "active"
+    },
+    {
+      "id": "dashscope_intl",
+      "label": {
+        "zh": "阿里云百炼 · 新加坡（Qwen）",
+        "en": "Alibaba Model Studio (Singapore, Qwen)"
+      },
+      "region": "intl",
+      "editions": [
+        "global"
+      ],
+      "sources": {
+        "modelsdev": "alibaba"
+      },
+      "secret": {
+        "id": "dashscope_intl",
+        "env": [
+          "DASHSCOPE_TEXT_API_KEY",
+          "DASHSCOPE_API_KEY"
+        ],
+        "required": true
+      },
+      "auth": {
+        "type": "api-key",
+        "header": "Authorization",
+        "prefix": "Bearer "
+      },
+      "endpoints": {
+        "openai-chat-completions": {
+          "base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+          "chat_path": "/chat/completions",
+          "discovery_path": "/models",
+          "dialect": {
+            "thinking_disable": {
+              "path": "enable_thinking",
+              "value": false
+            }
+          }
+        }
+      },
+      "default_endpoint": "openai-chat-completions",
+      "links": {
+        "docs": "https://www.alibabacloud.com/help/en/model-studio/"
+      },
+      "status": "active"
+    },
+    {
+      "id": "openai",
+      "label": {
+        "zh": "OpenAI",
+        "en": "OpenAI"
+      },
+      "region": "intl",
+      "editions": [
+        "global"
+      ],
+      "aliases": {
+        "vox": "openai",
+        "vox_keychain_account": "tf_llm_openai",
+        "alpha": "openai"
+      },
+      "sources": {
+        "modelsdev": "openai",
+        "litellm": "openai"
+      },
+      "secret": {
+        "id": "openai",
+        "env": [
+          "OPENAI_API_KEY"
+        ],
+        "required": true
+      },
+      "auth": {
+        "type": "api-key",
+        "header": "Authorization",
+        "prefix": "Bearer "
+      },
+      "endpoints": {
+        "openai-chat-completions": {
+          "base_url": "https://api.openai.com/v1",
+          "chat_path": "/chat/completions",
+          "discovery_path": "/models"
+        },
+        "openai-responses": {
+          "base_url": "https://api.openai.com/v1",
+          "chat_path": "/responses",
+          "discovery_path": "/models"
+        }
+      },
+      "default_endpoint": "openai-chat-completions",
+      "links": {
+        "docs": "https://platform.openai.com/docs/api-reference",
+        "api_key": "https://platform.openai.com/api-keys"
+      },
+      "status": "active"
+    },
+    {
+      "id": "deepseek",
+      "label": {
+        "zh": "DeepSeek（深度求索）",
+        "en": "DeepSeek"
+      },
+      "region": "cn",
+      "editions": [
+        "cn",
+        "global"
+      ],
+      "aliases": {
+        "vox": "deepseek",
+        "vox_keychain_account": "tf_llm_deepseek",
+        "alpha": "deepseek"
+      },
+      "sources": {
+        "modelsdev": "deepseek",
+        "litellm": "deepseek"
+      },
+      "secret": {
+        "id": "deepseek",
+        "env": [
+          "DEEPSEEK_API_KEY"
+        ],
+        "required": true
+      },
+      "auth": {
+        "type": "api-key",
+        "header": "Authorization",
+        "prefix": "Bearer "
+      },
+      "endpoints": {
+        "openai-chat-completions": {
+          "base_url": "https://api.deepseek.com",
+          "chat_path": "/chat/completions",
+          "discovery_path": "/models",
+          "dialect": {
+            "thinking_disable": {
+              "path": "thinking.type",
+              "value": "disabled"
+            }
+          }
+        }
+      },
+      "default_endpoint": "openai-chat-completions",
+      "links": {
+        "docs": "https://api-docs.deepseek.com/",
+        "api_key": "https://platform.deepseek.com/api_keys"
+      },
+      "status": "active"
+    },
+    {
+      "id": "gemini",
+      "label": {
+        "zh": "Gemini（Google）",
+        "en": "Gemini (Google)"
+      },
+      "region": "intl",
+      "editions": [
+        "global"
+      ],
+      "aliases": {
+        "vox": "gemini",
+        "vox_keychain_account": "tf_llm_gemini"
+      },
+      "sources": {
+        "modelsdev": "google",
+        "litellm": "gemini"
+      },
+      "secret": {
+        "id": "gemini",
+        "env": [
+          "GEMINI_API_KEY"
+        ],
+        "required": true
+      },
+      "auth": {
+        "type": "api-key",
+        "header": "x-goog-api-key",
+        "prefix": ""
+      },
+      "endpoints": {
+        "gemini-generate-content": {
+          "base_url": "https://generativelanguage.googleapis.com/v1beta",
+          "chat_path": "/models/{model}:generateContent",
+          "discovery_path": "/models?pageSize=200",
+          "stream_chat_path": "/models/{model}:streamGenerateContent?alt=sse"
+        },
+        "openai-chat-completions": {
+          "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
+          "chat_path": "/chat/completions",
+          "discovery_path": "/models"
+        }
+      },
+      "default_endpoint": "gemini-generate-content",
+      "links": {
+        "docs": "https://ai.google.dev/gemini-api/docs",
+        "api_key": "https://aistudio.google.com/apikey"
+      },
+      "status": "active"
+    },
+    {
+      "id": "kimi_cn",
+      "label": {
+        "zh": "Kimi（月之暗面 · 国内）",
+        "en": "Kimi (Moonshot, China)"
+      },
+      "region": "cn",
+      "editions": [
+        "cn"
+      ],
+      "sources": {
+        "modelsdev": "moonshotai-cn",
+        "litellm": "moonshot"
+      },
+      "secret": {
+        "id": "kimi_cn",
+        "env": [
+          "MOONSHOT_API_KEY"
+        ],
+        "required": true
+      },
+      "auth": {
+        "type": "api-key",
+        "header": "Authorization",
+        "prefix": "Bearer "
+      },
+      "endpoints": {
+        "openai-chat-completions": {
+          "base_url": "https://api.moonshot.cn/v1",
+          "chat_path": "/chat/completions",
+          "discovery_path": "/models",
+          "dialect": {
+            "thinking_disable": {
+              "path": "thinking.type",
+              "value": "disabled"
+            }
+          }
+        },
+        "anthropic-messages": {
+          "base_url": "https://api.moonshot.cn/anthropic",
+          "chat_path": "/v1/messages",
+          "discovery_path": "/v1/models"
+        }
+      },
+      "default_endpoint": "openai-chat-completions",
+      "links": {
+        "docs": "https://platform.moonshot.cn/docs/api/chat",
+        "api_key": "https://platform.moonshot.cn/console/api-keys"
+      },
+      "status": "active",
+      "aliases": {
+        "alpha": "kimi"
+      }
+    },
+    {
+      "id": "kimi_intl",
+      "label": {
+        "zh": "Kimi（Moonshot · 海外）",
+        "en": "Kimi (Moonshot, global)"
+      },
+      "region": "intl",
+      "editions": [
+        "global"
+      ],
+      "aliases": {
+        "vox": "kimi",
+        "vox_keychain_account": "tf_llm_kimi"
+      },
+      "sources": {
+        "modelsdev": "moonshotai",
+        "litellm": "moonshot"
+      },
+      "secret": {
+        "id": "kimi_intl",
+        "env": [
+          "MOONSHOT_INTL_API_KEY",
+          "MOONSHOT_API_KEY"
+        ],
+        "required": true
+      },
+      "auth": {
+        "type": "api-key",
+        "header": "Authorization",
+        "prefix": "Bearer "
+      },
+      "endpoints": {
+        "openai-chat-completions": {
+          "base_url": "https://api.moonshot.ai/v1",
+          "chat_path": "/chat/completions",
+          "discovery_path": "/models",
+          "dialect": {
+            "thinking_disable": {
+              "path": "thinking.type",
+              "value": "disabled"
+            }
+          }
+        },
+        "anthropic-messages": {
+          "base_url": "https://api.moonshot.ai/anthropic",
+          "chat_path": "/v1/messages",
+          "discovery_path": "/v1/models"
+        }
+      },
+      "default_endpoint": "openai-chat-completions",
+      "links": {
+        "docs": "https://platform.moonshot.ai/docs/api/chat",
+        "api_key": "https://platform.moonshot.ai/console/api-keys"
+      },
+      "status": "active"
+    },
+    {
+      "id": "zhipu",
+      "label": {
+        "zh": "智谱 GLM",
+        "en": "Zhipu GLM"
+      },
+      "region": "cn",
+      "editions": [
+        "cn",
+        "global"
+      ],
+      "aliases": {
+        "vox": "zhipu",
+        "vox_keychain_account": "tf_llm_zhipu"
+      },
+      "sources": {
+        "modelsdev": "zhipuai",
+        "litellm": "zhipu"
+      },
+      "secret": {
+        "id": "zhipu",
+        "env": [
+          "ZHIPU_API_KEY"
+        ],
+        "required": true
+      },
+      "auth": {
+        "type": "api-key",
+        "header": "Authorization",
+        "prefix": "Bearer "
+      },
+      "endpoints": {
+        "openai-chat-completions": {
+          "base_url": "https://open.bigmodel.cn/api/paas/v4",
+          "chat_path": "/chat/completions",
+          "discovery_path": "/models",
+          "dialect": {
+            "thinking_disable": {
+              "path": "reasoning_effort",
+              "value": "none"
+            }
+          }
+        },
+        "anthropic-messages": {
+          "base_url": "https://open.bigmodel.cn/api/anthropic",
+          "chat_path": "/v1/messages",
+          "discovery_path": "/v1/models"
+        }
+      },
+      "default_endpoint": "openai-chat-completions",
+      "links": {
+        "docs": "https://docs.bigmodel.cn/",
+        "api_key": "https://open.bigmodel.cn/apikey/platform"
+      },
+      "status": "active"
+    },
+    {
+      "id": "minimax_cn",
+      "label": {
+        "zh": "MiniMax · 国内",
+        "en": "MiniMax (China)"
+      },
+      "region": "cn",
+      "editions": [
+        "cn"
+      ],
+      "aliases": {
+        "vox": "minimaxCN",
+        "vox_keychain_account": "tf_llm_minimaxCN",
+        "alpha": "minimax"
+      },
+      "sources": {
+        "modelsdev": "minimax-cn",
+        "litellm": "minimax"
+      },
+      "secret": {
+        "id": "minimax_cn",
+        "env": [
+          "MINIMAX_API_KEY"
+        ],
+        "required": true
+      },
+      "auth": {
+        "type": "api-key",
+        "header": "Authorization",
+        "prefix": "Bearer "
+      },
+      "endpoints": {
+        "openai-chat-completions": {
+          "base_url": "https://api.minimaxi.com/v1",
+          "chat_path": "/chat/completions",
+          "discovery_path": "/models",
+          "dialect": {
+            "reasoning_split": true
+          }
+        },
+        "anthropic-messages": {
+          "base_url": "https://api.minimaxi.com/anthropic",
+          "chat_path": "/v1/messages",
+          "discovery_path": "/v1/models"
+        }
+      },
+      "default_endpoint": "openai-chat-completions",
+      "links": {
+        "docs": "https://platform.minimaxi.com/document",
+        "api_key": "https://platform.minimaxi.com/user-center/basic-information/interface-key"
+      },
+      "status": "active"
+    },
+    {
+      "id": "minimax_intl",
+      "label": {
+        "zh": "MiniMax · 海外",
+        "en": "MiniMax (global)"
+      },
+      "region": "intl",
+      "editions": [
+        "global"
+      ],
+      "aliases": {
+        "vox": "minimaxIntl",
+        "vox_keychain_account": "tf_llm_minimaxIntl"
+      },
+      "sources": {
+        "modelsdev": "minimax",
+        "litellm": "minimax"
+      },
+      "secret": {
+        "id": "minimax_intl",
+        "env": [
+          "MINIMAX_INTL_API_KEY",
+          "MINIMAX_API_KEY"
+        ],
+        "required": true
+      },
+      "auth": {
+        "type": "api-key",
+        "header": "Authorization",
+        "prefix": "Bearer "
+      },
+      "endpoints": {
+        "openai-chat-completions": {
+          "base_url": "https://api.minimax.io/v1",
+          "chat_path": "/chat/completions",
+          "discovery_path": "/models",
+          "dialect": {
+            "reasoning_split": true
+          }
+        },
+        "anthropic-messages": {
+          "base_url": "https://api.minimax.io/anthropic",
+          "chat_path": "/v1/messages",
+          "discovery_path": "/v1/models"
+        }
+      },
+      "default_endpoint": "openai-chat-completions",
+      "links": {
+        "docs": "https://platform.minimax.io/docs",
+        "api_key": "https://platform.minimax.io/user-center/basic-information/interface-key"
+      },
+      "status": "active"
+    },
+    {
+      "id": "openrouter",
+      "label": {
+        "zh": "OpenRouter",
+        "en": "OpenRouter"
+      },
+      "region": "intl",
+      "editions": [
+        "global"
+      ],
+      "aliases": {
+        "vox": "openrouter",
+        "vox_keychain_account": "tf_llm_openrouter"
+      },
+      "sources": {
+        "modelsdev": "openrouter",
+        "litellm": "openrouter"
+      },
+      "secret": {
+        "id": "openrouter",
+        "env": [
+          "OPENROUTER_API_KEY"
+        ],
+        "required": true
+      },
+      "auth": {
+        "type": "api-key",
+        "header": "Authorization",
+        "prefix": "Bearer "
+      },
+      "endpoints": {
+        "openai-chat-completions": {
+          "base_url": "https://openrouter.ai/api/v1",
+          "chat_path": "/chat/completions",
+          "discovery_path": "/models"
+        }
+      },
+      "default_endpoint": "openai-chat-completions",
+      "links": {
+        "docs": "https://openrouter.ai/docs",
+        "api_key": "https://openrouter.ai/keys",
+        "models": "https://openrouter.ai/models"
+      },
+      "status": "active"
+    },
+    {
+      "id": "doubao",
+      "label": {
+        "zh": "豆包（火山方舟）",
+        "en": "Doubao (Volcengine ARK)"
+      },
+      "region": "cn",
+      "editions": [
+        "cn"
+      ],
+      "aliases": {
+        "vox": "doubao",
+        "vox_keychain_account": "tf_llm_doubao",
+        "alpha": "ark"
+      },
+      "secret": {
+        "id": "doubao",
+        "env": [
+          "ARK_API_KEY"
+        ],
+        "required": true
+      },
+      "auth": {
+        "type": "api-key",
+        "header": "Authorization",
+        "prefix": "Bearer "
+      },
+      "endpoints": {
+        "openai-chat-completions": {
+          "base_url": "https://ark.cn-beijing.volces.com/api/v3",
+          "chat_path": "/chat/completions",
+          "discovery_path": "/models",
+          "dialect": {
+            "thinking_disable": {
+              "path": "thinking.type",
+              "value": "disabled"
+            }
+          }
+        },
+        "anthropic-messages": {
+          "base_url": "https://ark.cn-beijing.volces.com/api/coding",
+          "chat_path": "/v1/messages",
+          "discovery_path": "/v1/models"
+        }
+      },
+      "default_endpoint": "openai-chat-completions",
+      "links": {
+        "docs": "https://www.volcengine.com/docs/82379",
+        "api_key": "https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey"
+      },
+      "status": "active"
+    },
+    {
+      "id": "claude",
+      "label": {
+        "zh": "Claude（Anthropic）",
+        "en": "Claude (Anthropic)"
+      },
+      "region": "intl",
+      "editions": [
+        "global"
+      ],
+      "aliases": {
+        "vox": "claude",
+        "vox_keychain_account": "tf_llm_claude"
+      },
+      "sources": {
+        "modelsdev": "anthropic",
+        "litellm": "anthropic"
+      },
+      "secret": {
+        "id": "claude",
+        "env": [
+          "ANTHROPIC_API_KEY"
+        ],
+        "required": true
+      },
+      "auth": {
+        "type": "api-key",
+        "header": "x-api-key",
+        "prefix": ""
+      },
+      "endpoints": {
+        "anthropic-messages": {
+          "base_url": "https://api.anthropic.com",
+          "chat_path": "/v1/messages",
+          "discovery_path": "/v1/models",
+          "dialect": {
+            "temperature": false
+          }
+        }
+      },
+      "default_endpoint": "anthropic-messages",
+      "links": {
+        "docs": "https://docs.anthropic.com/",
+        "api_key": "https://console.anthropic.com/settings/keys"
+      },
+      "status": "active"
+    },
+    {
+      "id": "ollama",
+      "label": {
+        "zh": "Ollama（本地模型）",
+        "en": "Ollama (local)"
+      },
+      "region": "local",
+      "editions": [
+        "cn",
+        "global"
+      ],
+      "aliases": {
+        "vox": "ollama",
+        "vox_keychain_account": "tf_llm_ollama"
+      },
+      "secret": {
+        "id": "ollama",
+        "env": [],
+        "required": false
+      },
+      "auth": {
+        "type": "none"
+      },
+      "endpoints": {
+        "openai-chat-completions": {
+          "base_url": "http://localhost:11434/v1",
+          "chat_path": "/chat/completions",
+          "discovery_path": "/models",
+          "dialect": {
+            "thinking_disable": {
+              "path": "think",
+              "value": false
+            }
+          }
+        }
+      },
+      "default_endpoint": "openai-chat-completions",
+      "links": {
+        "docs": "https://docs.ollama.com/api/openai-compatibility"
+      },
+      "status": "active"
+    }
+  ]
+}

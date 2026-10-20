@@ -1,0 +1,7215 @@
+{
+ "schema": "osborn-llm-registry/models@1",
+ "meta": {
+  "source": "https://models.dev/api.json",
+  "fetched_at": "2026-10-18",
+  "usd_cny": 7.1,
+  "generator": "packages/llm-registry/scripts/sync-models.mjs"
+ },
+ "providers": {
+  "claude": {
+   "claude-fable-5": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 10,
+     "output": 50
+    },
+    "release_date": "2026-06-07",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "claude-fable-5-1": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 10,
+     "output": 50
+    },
+    "release_date": "2026-09-01",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "claude-haiku-4-5": {
+    "source": "models.dev",
+    "context": 200000,
+    "output": 64000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1,
+     "output": 5
+    },
+    "release_date": "2025-10-15",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "claude-haiku-4-5-20251001": {
+    "source": "models.dev",
+    "context": 200000,
+    "output": 64000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1,
+     "output": 5
+    },
+    "release_date": "2025-10-15",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "claude-haiku-5-5": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.1,
+     "output": 0.5
+    },
+    "release_date": "2026-10-07",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "claude-opus-4-5": {
+    "source": "models.dev",
+    "context": 200000,
+    "output": 64000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 5,
+     "output": 25
+    },
+    "release_date": "2025-11-24",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "claude-opus-4-5-20251101": {
+    "source": "models.dev",
+    "context": 200000,
+    "output": 64000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 5,
+     "output": 25
+    },
+    "release_date": "2025-11-24",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "claude-opus-4-6": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 5,
+     "output": 25
+    },
+    "release_date": "2026-02-04",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "claude-opus-4-7": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 5,
+     "output": 25
+    },
+    "release_date": "2026-04-14",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "claude-opus-4-8": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 5,
+     "output": 25
+    },
+    "release_date": "2026-05-28",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "claude-opus-5": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 5,
+     "output": 25
+    },
+    "release_date": "2026-07-24",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "claude-opus-5-5": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 4,
+     "output": 20
+    },
+    "release_date": "2026-09-22",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "claude-sonnet-4-5": {
+    "source": "models.dev",
+    "context": 200000,
+    "output": 64000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 3,
+     "output": 15
+    },
+    "release_date": "2025-09-29",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "claude-sonnet-4-5-20250929": {
+    "source": "models.dev",
+    "context": 200000,
+    "output": 64000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 3,
+     "output": 15
+    },
+    "release_date": "2025-09-29",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "claude-sonnet-4-6": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 3,
+     "output": 15
+    },
+    "release_date": "2026-02-17",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "claude-sonnet-5": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 2,
+     "output": 10
+    },
+    "release_date": "2026-06-29",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "claude-sonnet-5-5": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 2,
+     "output": 10
+    },
+    "release_date": "2026-09-28",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   }
+  },
+  "dashscope_cn": {
+   "MiniMax-M2.5": {
+    "source": "models.dev",
+    "context": 204800,
+    "output": 131072,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.3,
+     "output": 1.2
+    },
+    "release_date": "2026-02-12",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "MiniMax/MiniMax-M2.7": {
+    "source": "models.dev",
+    "context": 204800,
+    "output": 131072,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.3,
+     "output": 1.2
+    },
+    "release_date": "2026-03-18",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "deepseek-r1": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 16384,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.574,
+     "output": 2.294
+    },
+    "release_date": "2025-01-01",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "deepseek-r1-0528": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 16384,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.574,
+     "output": 2.294
+    },
+    "release_date": "2025-05-28",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "deepseek-r1-distill-llama-70b": {
+    "source": "models.dev",
+    "context": 32768,
+    "output": 16384,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.287,
+     "output": 0.861
+    },
+    "release_date": "2025-01-01",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "deepseek-r1-distill-llama-8b": {
+    "source": "models.dev",
+    "context": 32768,
+    "output": 16384,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0,
+     "output": 0
+    },
+    "release_date": "2025-01-01",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "deepseek-r1-distill-qwen-1-5b": {
+    "source": "models.dev",
+    "context": 32768,
+    "output": 16384,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0,
+     "output": 0
+    },
+    "release_date": "2025-01-01",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "deepseek-r1-distill-qwen-14b": {
+    "source": "models.dev",
+    "context": 32768,
+    "output": 16384,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.144,
+     "output": 0.431
+    },
+    "release_date": "2025-01-01",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "deepseek-r1-distill-qwen-32b": {
+    "source": "models.dev",
+    "context": 32768,
+    "output": 16384,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.287,
+     "output": 0.861
+    },
+    "release_date": "2025-01-01",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "deepseek-r1-distill-qwen-7b": {
+    "source": "models.dev",
+    "context": 32768,
+    "output": 16384,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.072,
+     "output": 0.144
+    },
+    "release_date": "2025-01-01",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "deepseek-v3": {
+    "source": "models.dev",
+    "context": 65536,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.287,
+     "output": 1.147
+    },
+    "release_date": "2024-12-01",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "deepseek-v3-1": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 65536,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.574,
+     "output": 1.721
+    },
+    "release_date": "2025-01-01",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "deepseek-v3-2-exp": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 65536,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.287,
+     "output": 0.431
+    },
+    "release_date": "2025-01-01",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "deepseek-v4-flash": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 384000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.14,
+     "output": 0.28
+    },
+    "release_date": "2026-04-24",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "deepseek-v4-pro": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 384000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.435,
+     "output": 0.87
+    },
+    "release_date": "2026-04-24",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "deepseek-v4.1-flash": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 384000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.29754,
+     "output": 1.19015
+    },
+    "release_date": "2026-09-10",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "glm-5": {
+    "source": "models.dev",
+    "context": 202752,
+    "output": 16384,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.573,
+     "output": 2.58
+    },
+    "release_date": "2026-02-11",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "glm-5.1": {
+    "source": "models.dev",
+    "context": 202752,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.825,
+     "output": 3.301
+    },
+    "release_date": "2026-04-14",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "glm-5.2": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1.1,
+     "output": 3.851
+    },
+    "release_date": "2026-06-13",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "glm-5.3": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 131072,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1.1,
+     "output": 3.851
+    },
+    "release_date": "2026-08-14",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "kimi-k2-thinking": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 16384,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.574,
+     "output": 2.294
+    },
+    "release_date": "2025-11-06",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "kimi-k2.5": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 32768,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.574,
+     "output": 2.411
+    },
+    "release_date": "2026-01-27",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "kimi-k2.6": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 16384,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.929,
+     "output": 3.858
+    },
+    "release_date": "2026-04-21",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "kimi-k3": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 1000000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 2.827,
+     "output": 14.133
+    },
+    "release_date": "2026-07-16",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "kimi/kimi-k2.5": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 262144,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.6,
+     "output": 3
+    },
+    "release_date": "2026-01-27",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "moonshot-kimi-k2-instruct": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.574,
+     "output": 2.294
+    },
+    "release_date": "2025-01-01",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qvq-max": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1.147,
+     "output": 4.588
+    },
+    "release_date": "2025-03-25",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen-doc-turbo": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.087,
+     "output": 0.144
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen-flash": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 32768,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.022,
+     "output": 0.216
+    },
+    "release_date": "2025-07-28",
+    "price_cny_micro": {
+     "input": 150000,
+     "output": 1500000,
+     "as_of": "2026-10-01"
+    },
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": "最便宜，润色/分类够用"
+   },
+   "qwen-long": {
+    "source": "models.dev",
+    "context": 10000000,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.072,
+     "output": 0.287
+    },
+    "release_date": "2025-01-25",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen-math-plus": {
+    "source": "models.dev",
+    "context": 4096,
+    "output": 3072,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.574,
+     "output": 1.721
+    },
+    "release_date": "2024-08-16",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen-math-turbo": {
+    "source": "models.dev",
+    "context": 4096,
+    "output": 3072,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.287,
+     "output": 0.861
+    },
+    "release_date": "2024-09-19",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen-max": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.345,
+     "output": 1.377
+    },
+    "release_date": "2024-04-03",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": "最强，最贵"
+   },
+   "qwen-mt-plus": {
+    "source": "models.dev",
+    "context": 16384,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.259,
+     "output": 0.775
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen-mt-turbo": {
+    "source": "models.dev",
+    "context": 16384,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.101,
+     "output": 0.28
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen-omni-turbo": {
+    "source": "models.dev",
+    "context": 32768,
+    "output": 2048,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.058,
+     "output": 0.23
+    },
+    "release_date": "2025-01-19",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen-plus": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 32768,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.115,
+     "output": 0.287
+    },
+    "release_date": "2024-01-25",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": "质量与价格折中"
+   },
+   "qwen-plus-character": {
+    "source": "models.dev",
+    "context": 32768,
+    "output": 4096,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.115,
+     "output": 0.287
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen-turbo": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 16384,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.044,
+     "output": 0.087
+    },
+    "release_date": "2024-11-01",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": "旧版低价档"
+   },
+   "qwen-vl-max": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.23,
+     "output": 0.574
+    },
+    "release_date": "2024-04-08",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen-vl-ocr": {
+    "source": "models.dev",
+    "context": 34096,
+    "output": 4096,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.043,
+     "output": 0.072
+    },
+    "release_date": "2024-10-28",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen-vl-plus": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.115,
+     "output": 0.287
+    },
+    "release_date": "2024-01-25",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen2-5-14b-instruct": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.144,
+     "output": 0.431
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen2-5-32b-instruct": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.287,
+     "output": 0.861
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen2-5-72b-instruct": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.574,
+     "output": 1.721
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen2-5-7b-instruct": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.072,
+     "output": 0.144
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen2-5-coder-32b-instruct": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.287,
+     "output": 0.861
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen2-5-coder-7b-instruct": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.144,
+     "output": 0.287
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen2-5-math-72b-instruct": {
+    "source": "models.dev",
+    "context": 4096,
+    "output": 3072,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.574,
+     "output": 1.721
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen2-5-math-7b-instruct": {
+    "source": "models.dev",
+    "context": 4096,
+    "output": 3072,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.144,
+     "output": 0.287
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen2-5-omni-7b": {
+    "source": "models.dev",
+    "context": 32768,
+    "output": 2048,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.087,
+     "output": 0.345
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen2-5-vl-72b-instruct": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 2.294,
+     "output": 6.881
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen2-5-vl-7b-instruct": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.287,
+     "output": 0.717
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-14b": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.144,
+     "output": 0.574
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-235b-a22b": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 16384,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.287,
+     "output": 1.147
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-32b": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 16384,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.287,
+     "output": 1.147
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-8b": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.072,
+     "output": 0.287
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-coder-30b-a3b-instruct": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 65536,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.216,
+     "output": 0.861
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-coder-480b-a35b-instruct": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 65536,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.861,
+     "output": 3.441
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-coder-flash": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 65536,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.144,
+     "output": 0.574
+    },
+    "release_date": "2025-07-28",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-coder-plus": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 65536,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.574,
+     "output": 2.296
+    },
+    "release_date": "2025-07-23",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-max": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.359,
+     "output": 1.434
+    },
+    "release_date": "2026-01-23",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-next-80b-a3b-instruct": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 32768,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.144,
+     "output": 0.574
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-next-80b-a3b-thinking": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 32768,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.144,
+     "output": 1.434
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-omni-flash": {
+    "source": "models.dev",
+    "context": 65536,
+    "output": 16384,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.058,
+     "output": 0.23
+    },
+    "release_date": "2025-09-15",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-vl-235b-a22b": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 32768,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.286705,
+     "output": 1.14682
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-vl-30b-a3b": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 32768,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.108,
+     "output": 0.431
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-vl-plus": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 32768,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.143353,
+     "output": 1.433525
+    },
+    "release_date": "2025-09-23",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.5-397b-a17b": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 65536,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.172,
+     "output": 1.032
+    },
+    "release_date": "2026-02-16",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.5-flash": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.029,
+     "output": 0.287
+    },
+    "release_date": "2026-02-23",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.5-plus": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.115,
+     "output": 0.688
+    },
+    "release_date": "2026-02-16",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.6-flash": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.1875,
+     "output": 1.125
+    },
+    "release_date": "2026-04-27",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.6-max-preview": {
+    "source": "models.dev",
+    "context": 245800,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1.32,
+     "output": 7.9
+    },
+    "release_date": "2026-04-20",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.6-plus": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 65536,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.5,
+     "output": 3
+    },
+    "release_date": "2026-04-02",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.7-flash": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 131072,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.02962,
+     "output": 0.1185
+    },
+    "release_date": "2026-07-15",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.7-max": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 65536,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 2.5,
+     "output": 7.5
+    },
+    "release_date": "2026-05-21",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.7-plus": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 64000,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.5,
+     "output": 3
+    },
+    "release_date": "2026-06-02",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.8-flash": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 131072,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.11875,
+     "output": 0.40073
+    },
+    "release_date": "2026-08-26",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.8-max": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 131072,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1.77744,
+     "output": 5.33231
+    },
+    "release_date": "2026-08-03",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.8-omni-flash": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 131072,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.113,
+     "output": 0.382
+    },
+    "release_date": "2026-09-17",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwq-32b": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.287,
+     "output": 0.861
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwq-plus": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.23,
+     "output": 0.574
+    },
+    "release_date": "2025-03-05",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "siliconflow/deepseek-r1-0528": {
+    "source": "models.dev",
+    "context": 163840,
+    "output": 32768,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.5,
+     "output": 2.18
+    },
+    "release_date": "2025-05-28",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "siliconflow/deepseek-v3-0324": {
+    "source": "models.dev",
+    "context": 163840,
+    "output": 163840,
+    "structured_output": true,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.25,
+     "output": 1
+    },
+    "release_date": "2024-12-26",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "siliconflow/deepseek-v3.1-terminus": {
+    "source": "models.dev",
+    "context": 163840,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.27,
+     "output": 1
+    },
+    "release_date": "2025-09-29",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "siliconflow/deepseek-v3.2": {
+    "source": "models.dev",
+    "context": 163840,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.27,
+     "output": 0.42
+    },
+    "release_date": "2025-12-03",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "tongyi-intent-detect-v3": {
+    "source": "models.dev",
+    "context": 8192,
+    "output": 1024,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.058,
+     "output": 0.144
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   }
+  },
+  "dashscope_intl": {
+   "deepseek-v4-flash-0731": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 384000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.2,
+     "output": 0.4
+    },
+    "release_date": "2026-07-31",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "glm-5.2": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 131072,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1.4,
+     "output": 4.4
+    },
+    "release_date": "2026-06-13",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "kimi-k3": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 1000000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 3,
+     "output": 15
+    },
+    "release_date": "2026-07-16",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qvq-max": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1.2,
+     "output": 4.8
+    },
+    "release_date": "2025-03-25",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen-flash": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 32768,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.05,
+     "output": 0.4
+    },
+    "release_date": "2025-07-28",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen-max": {
+    "source": "models.dev",
+    "context": 32768,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 1.6,
+     "output": 6.4
+    },
+    "release_date": "2024-04-03",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen-mt-plus": {
+    "source": "models.dev",
+    "context": 16384,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 2.46,
+     "output": 7.37
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen-mt-turbo": {
+    "source": "models.dev",
+    "context": 16384,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.16,
+     "output": 0.49
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen-omni-turbo": {
+    "source": "models.dev",
+    "context": 32768,
+    "output": 2048,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.07,
+     "output": 0.27
+    },
+    "release_date": "2025-01-19",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen-plus": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 32768,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.4,
+     "output": 1.2
+    },
+    "release_date": "2024-01-25",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen-plus-character-ja": {
+    "source": "models.dev",
+    "context": 8192,
+    "output": 512,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.5,
+     "output": 1.4
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen-turbo": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 16384,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.05,
+     "output": 0.2
+    },
+    "release_date": "2024-11-01",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen-vl-max": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.8,
+     "output": 3.2
+    },
+    "release_date": "2024-04-08",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen-vl-ocr": {
+    "source": "models.dev",
+    "context": 34096,
+    "output": 4096,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.07,
+     "output": 0.16
+    },
+    "release_date": "2024-10-28",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen-vl-plus": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.21,
+     "output": 0.63
+    },
+    "release_date": "2024-01-25",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen2-5-14b-instruct": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.35,
+     "output": 1.4
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen2-5-32b-instruct": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.7,
+     "output": 2.8
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen2-5-72b-instruct": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 1.4,
+     "output": 5.6
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen2-5-7b-instruct": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.175,
+     "output": 0.7
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen2-5-omni-7b": {
+    "source": "models.dev",
+    "context": 32768,
+    "output": 2048,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.1,
+     "output": 0.4
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen2-5-vl-72b-instruct": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 2.8,
+     "output": 8.4
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen2-5-vl-7b-instruct": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.35,
+     "output": 1.05
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-14b": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.35,
+     "output": 1.4
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-235b-a22b": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 16384,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.7,
+     "output": 2.8
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-32b": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 16384,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.7,
+     "output": 2.8
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-8b": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.18,
+     "output": 0.7
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-coder-30b-a3b-instruct": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 65536,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.45,
+     "output": 2.25
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-coder-480b-a35b-instruct": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 65536,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 1.5,
+     "output": 7.5
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-coder-flash": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 65536,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.3,
+     "output": 1.5
+    },
+    "release_date": "2025-07-28",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-coder-plus": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 65536,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 1,
+     "output": 5
+    },
+    "release_date": "2025-07-23",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-max": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 65536,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 1.2,
+     "output": 6
+    },
+    "release_date": "2025-09-23",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-next-80b-a3b-instruct": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 32768,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.5,
+     "output": 2
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-next-80b-a3b-thinking": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 32768,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.5,
+     "output": 6
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-omni-flash": {
+    "source": "models.dev",
+    "context": 65536,
+    "output": 16384,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.43,
+     "output": 1.66
+    },
+    "release_date": "2025-09-15",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-vl-235b-a22b": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 32768,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.7,
+     "output": 2.8
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-vl-30b-a3b": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 32768,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.2,
+     "output": 0.8
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-vl-plus": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 32768,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.2,
+     "output": 1.6
+    },
+    "release_date": "2025-09-23",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.5-122b-a10b": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.4,
+     "output": 3.2
+    },
+    "release_date": "2026-02-23",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.5-27b": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.3,
+     "output": 2.4
+    },
+    "release_date": "2026-02-23",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.5-35b-a3b": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.25,
+     "output": 2
+    },
+    "release_date": "2026-02-23",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.5-397b-a17b": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.6,
+     "output": 3.6
+    },
+    "release_date": "2026-02-15",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.5-flash": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.1,
+     "output": 0.4
+    },
+    "release_date": "2026-02-23",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.5-plus": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 65536,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.4,
+     "output": 2.4
+    },
+    "release_date": "2026-02-16",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.6-27b": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.6,
+     "output": 3.6
+    },
+    "release_date": "2026-04-22",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.6-35b-a3b": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.248,
+     "output": 1.485
+    },
+    "release_date": "2026-04-17",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.6-flash": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.1875,
+     "output": 1.125
+    },
+    "release_date": "2026-04-27",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.6-max-preview": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 65536,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1.3,
+     "output": 7.8
+    },
+    "release_date": "2026-04-20",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.6-plus": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 65536,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.5,
+     "output": 3
+    },
+    "release_date": "2026-04-02",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.7-flash": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 131072,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.03,
+     "output": 0.13
+    },
+    "release_date": "2026-07-15",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.7-max": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 131072,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 2.5,
+     "output": 7.5
+    },
+    "release_date": "2026-05-21",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.7-plus": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 131072,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.4,
+     "output": 1.6
+    },
+    "release_date": "2026-06-02",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.8-flash": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 131072,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.15,
+     "output": 0.47
+    },
+    "release_date": "2026-08-26",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.8-max": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 131072,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 2,
+     "output": 6
+    },
+    "release_date": "2026-08-03",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.8-omni-flash": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 131072,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.15,
+     "output": 0.47
+    },
+    "release_date": "2026-09-17",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwq-plus": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.8,
+     "output": 2.4
+    },
+    "release_date": "2025-03-05",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   }
+  },
+  "dashscope_us": {
+   "deepseek-v4-flash-0731": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 384000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.2,
+     "output": 0.4
+    },
+    "release_date": "2026-07-31",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "glm-5.2": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 131072,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1.4,
+     "output": 4.4
+    },
+    "release_date": "2026-06-13",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "kimi-k3": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 1000000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 3,
+     "output": 15
+    },
+    "release_date": "2026-07-16",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qvq-max": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1.2,
+     "output": 4.8
+    },
+    "release_date": "2025-03-25",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen-flash": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 32768,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.05,
+     "output": 0.4
+    },
+    "release_date": "2025-07-28",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen-max": {
+    "source": "models.dev",
+    "context": 32768,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 1.6,
+     "output": 6.4
+    },
+    "release_date": "2024-04-03",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen-mt-plus": {
+    "source": "models.dev",
+    "context": 16384,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 2.46,
+     "output": 7.37
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen-mt-turbo": {
+    "source": "models.dev",
+    "context": 16384,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.16,
+     "output": 0.49
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen-omni-turbo": {
+    "source": "models.dev",
+    "context": 32768,
+    "output": 2048,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.07,
+     "output": 0.27
+    },
+    "release_date": "2025-01-19",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen-plus": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 32768,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.4,
+     "output": 1.2
+    },
+    "release_date": "2024-01-25",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen-plus-character-ja": {
+    "source": "models.dev",
+    "context": 8192,
+    "output": 512,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.5,
+     "output": 1.4
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen-turbo": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 16384,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.05,
+     "output": 0.2
+    },
+    "release_date": "2024-11-01",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen-vl-max": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.8,
+     "output": 3.2
+    },
+    "release_date": "2024-04-08",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen-vl-ocr": {
+    "source": "models.dev",
+    "context": 34096,
+    "output": 4096,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.07,
+     "output": 0.16
+    },
+    "release_date": "2024-10-28",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen-vl-plus": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.21,
+     "output": 0.63
+    },
+    "release_date": "2024-01-25",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen2-5-14b-instruct": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.35,
+     "output": 1.4
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen2-5-32b-instruct": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.7,
+     "output": 2.8
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen2-5-72b-instruct": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 1.4,
+     "output": 5.6
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen2-5-7b-instruct": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.175,
+     "output": 0.7
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen2-5-omni-7b": {
+    "source": "models.dev",
+    "context": 32768,
+    "output": 2048,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.1,
+     "output": 0.4
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen2-5-vl-72b-instruct": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 2.8,
+     "output": 8.4
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen2-5-vl-7b-instruct": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.35,
+     "output": 1.05
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-14b": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.35,
+     "output": 1.4
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-235b-a22b": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 16384,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.7,
+     "output": 2.8
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-32b": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 16384,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.7,
+     "output": 2.8
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-8b": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.18,
+     "output": 0.7
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-coder-30b-a3b-instruct": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 65536,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.45,
+     "output": 2.25
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-coder-480b-a35b-instruct": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 65536,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 1.5,
+     "output": 7.5
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-coder-flash": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 65536,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.3,
+     "output": 1.5
+    },
+    "release_date": "2025-07-28",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-coder-plus": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 65536,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 1,
+     "output": 5
+    },
+    "release_date": "2025-07-23",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-max": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 65536,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 1.2,
+     "output": 6
+    },
+    "release_date": "2025-09-23",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-next-80b-a3b-instruct": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 32768,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.5,
+     "output": 2
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-next-80b-a3b-thinking": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 32768,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.5,
+     "output": 6
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-omni-flash": {
+    "source": "models.dev",
+    "context": 65536,
+    "output": 16384,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.43,
+     "output": 1.66
+    },
+    "release_date": "2025-09-15",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-vl-235b-a22b": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 32768,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.7,
+     "output": 2.8
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-vl-30b-a3b": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 32768,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.2,
+     "output": 0.8
+    },
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3-vl-plus": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 32768,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.2,
+     "output": 1.6
+    },
+    "release_date": "2025-09-23",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.5-122b-a10b": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.4,
+     "output": 3.2
+    },
+    "release_date": "2026-02-23",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.5-27b": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.3,
+     "output": 2.4
+    },
+    "release_date": "2026-02-23",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.5-35b-a3b": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.25,
+     "output": 2
+    },
+    "release_date": "2026-02-23",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.5-397b-a17b": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.6,
+     "output": 3.6
+    },
+    "release_date": "2026-02-15",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.5-flash": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.1,
+     "output": 0.4
+    },
+    "release_date": "2026-02-23",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.5-plus": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 65536,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.4,
+     "output": 2.4
+    },
+    "release_date": "2026-02-16",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.6-27b": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.6,
+     "output": 3.6
+    },
+    "release_date": "2026-04-22",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.6-35b-a3b": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.248,
+     "output": 1.485
+    },
+    "release_date": "2026-04-17",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.6-flash": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.1875,
+     "output": 1.125
+    },
+    "release_date": "2026-04-27",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.6-max-preview": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 65536,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1.3,
+     "output": 7.8
+    },
+    "release_date": "2026-04-20",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.6-plus": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 65536,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.5,
+     "output": 3
+    },
+    "release_date": "2026-04-02",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.7-flash": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 131072,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.03,
+     "output": 0.13
+    },
+    "release_date": "2026-07-15",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.7-max": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 131072,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 2.5,
+     "output": 7.5
+    },
+    "release_date": "2026-05-21",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.7-plus": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 131072,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.4,
+     "output": 1.6
+    },
+    "release_date": "2026-06-02",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.8-flash": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 131072,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.15,
+     "output": 0.47
+    },
+    "release_date": "2026-08-26",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.8-max": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 131072,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 2,
+     "output": 6
+    },
+    "release_date": "2026-08-03",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen3.8-omni-flash": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 131072,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.15,
+     "output": 0.47
+    },
+    "release_date": "2026-09-17",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwq-plus": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.8,
+     "output": 2.4
+    },
+    "release_date": "2025-03-05",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   }
+  },
+  "deepseek": {
+   "deepseek-chat": {
+    "source": "override",
+    "context": 128000,
+    "output": 8192,
+    "structured_output": true,
+    "reasoning": false,
+    "cost_usd": null,
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": "deepseek-chat",
+    "response_model_verified_at": "2026-09-29",
+    "hint_zh": "通用对话，支持 JSON"
+   },
+   "deepseek-flash": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 393216,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.15,
+     "output": 0.6
+    },
+    "release_date": "2026-10-17",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "deepseek-reasoner": {
+    "source": "override",
+    "context": 128000,
+    "output": 32768,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": null,
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": "推理模型，输出慢、不建议 JSON 模式"
+   },
+   "deepseek-v4-flash": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 393216,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.15,
+     "output": 0.6
+    },
+    "release_date": "2026-10-17",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "deepseek-v4-flash-vision-exp": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 393216,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.15,
+     "output": 0.6
+    },
+    "release_date": "2026-10-17",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "deepseek-v4-pro": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 393216,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.66,
+     "output": 1.98
+    },
+    "release_date": "2026-08-12",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   }
+  },
+  "gemini": {
+   "gemini-2.0-flash": {
+    "source": "override",
+    "context": 1000000,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": null,
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": "Gemini 适配器不支持流式与 JSON 模式"
+   },
+   "gemini-2.5-flash": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.3,
+     "output": 2.5
+    },
+    "release_date": "2025-06-17",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": "Gemini 适配器不支持流式与 JSON 模式"
+   },
+   "gemini-2.5-flash-lite": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.1,
+     "output": 0.4
+    },
+    "release_date": "2025-06-17",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gemini-2.5-pro": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1.25,
+     "output": 10
+    },
+    "release_date": "2025-06-17",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gemini-3-flash-preview": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.5,
+     "output": 3
+    },
+    "release_date": "2025-12-17",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gemini-3.1-flash-lite": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.25,
+     "output": 1.5
+    },
+    "release_date": "2026-05-07",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gemini-3.1-flash-lite-preview": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.25,
+     "output": 1.5
+    },
+    "release_date": "2026-03-03",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gemini-3.1-pro-preview": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 2,
+     "output": 12
+    },
+    "release_date": "2026-02-19",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gemini-3.1-pro-preview-customtools": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 2,
+     "output": 12
+    },
+    "release_date": "2026-02-19",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gemini-3.5-flash": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1.5,
+     "output": 9
+    },
+    "release_date": "2026-05-19",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gemini-3.5-flash-lite": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.3,
+     "output": 2.5
+    },
+    "release_date": "2026-07-21",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gemini-3.6-flash": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.75,
+     "output": 3.75
+    },
+    "release_date": "2026-07-21",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gemini-3.7-flash": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.75,
+     "output": 3.75
+    },
+    "release_date": "2026-08-13",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gemini-3.8-flash": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.75,
+     "output": 3.75
+    },
+    "release_date": "2026-09-02",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gemini-4-argon": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 32768,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 2,
+     "output": 10
+    },
+    "release_date": "2026-10-13",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gemini-flash-latest": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.75,
+     "output": 3.75
+    },
+    "release_date": "2026-08-13",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gemini-flash-lite-latest": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.3,
+     "output": 2.5
+    },
+    "release_date": "2026-07-21",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gemma-4-26b-a4b-it": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 32768,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": null,
+    "release_date": "2026-04-02",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gemma-4-31b-it": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 32768,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": null,
+    "release_date": "2026-04-02",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   }
+  },
+  "kimi_cn": {
+   "kimi-k2-0905-preview": {
+    "source": "override",
+    "context": 256000,
+    "output": 16384,
+    "structured_output": true,
+    "reasoning": false,
+    "cost_usd": null,
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "kimi-k2-turbo-preview": {
+    "source": "override",
+    "context": 256000,
+    "output": 16384,
+    "structured_output": true,
+    "reasoning": false,
+    "cost_usd": null,
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": "高速档"
+   },
+   "kimi-k2.6": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 262144,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.95,
+     "output": 4
+    },
+    "release_date": "2026-04-21",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "kimi-k2.7-code": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 262144,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.95,
+     "output": 4
+    },
+    "release_date": "2026-06-12",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "kimi-k2.7-code-highspeed": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 262144,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1.9,
+     "output": 8
+    },
+    "release_date": "2026-06-12",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "kimi-k3": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 1000000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 3,
+     "output": 15
+    },
+    "release_date": "2026-07-16",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "moonshot-v1-128k": {
+    "source": "override",
+    "context": 128000,
+    "output": 8192,
+    "structured_output": true,
+    "reasoning": false,
+    "cost_usd": null,
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   }
+  },
+  "kimi_intl": {
+   "kimi-k2-0905-preview": {
+    "source": "override",
+    "context": 256000,
+    "output": 16384,
+    "structured_output": true,
+    "reasoning": false,
+    "cost_usd": null,
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "kimi-k2-turbo-preview": {
+    "source": "override",
+    "context": 256000,
+    "output": 16384,
+    "structured_output": true,
+    "reasoning": false,
+    "cost_usd": null,
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "kimi-k2.6": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 262144,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.95,
+     "output": 4
+    },
+    "release_date": "2026-04-21",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "kimi-k2.7-code": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 262144,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.95,
+     "output": 4
+    },
+    "release_date": "2026-06-12",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "kimi-k2.7-code-highspeed": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 262144,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1.9,
+     "output": 8
+    },
+    "release_date": "2026-06-12",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "kimi-k3": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 1000000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 3,
+     "output": 15
+    },
+    "release_date": "2026-07-16",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   }
+  },
+  "minimax_cn": {
+   "MiniMax-M1": {
+    "source": "override",
+    "context": 1000000,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": null,
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "MiniMax-M2": {
+    "source": "models.dev",
+    "context": 204800,
+    "output": 131072,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.3,
+     "output": 1.2
+    },
+    "release_date": "2025-10-27",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "MiniMax-M2.1": {
+    "source": "models.dev",
+    "context": 204800,
+    "output": 131072,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.3,
+     "output": 1.2
+    },
+    "release_date": "2025-12-23",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "MiniMax-M2.5": {
+    "source": "models.dev",
+    "context": 204800,
+    "output": 131072,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.3,
+     "output": 1.2
+    },
+    "release_date": "2026-02-12",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "MiniMax-M2.5-highspeed": {
+    "source": "models.dev",
+    "context": 204800,
+    "output": 131072,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.6,
+     "output": 2.4
+    },
+    "release_date": "2026-02-13",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "MiniMax-M2.7": {
+    "source": "models.dev",
+    "context": 204800,
+    "output": 131072,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.3,
+     "output": 1.2
+    },
+    "release_date": "2026-03-18",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "MiniMax-M2.7-highspeed": {
+    "source": "models.dev",
+    "context": 204800,
+    "output": 131072,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.6,
+     "output": 2.4
+    },
+    "release_date": "2026-03-18",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "MiniMax-M3": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 512000,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.3,
+     "output": 1.2
+    },
+    "release_date": "2026-06-01",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   }
+  },
+  "minimax_intl": {
+   "MiniMax-M2": {
+    "source": "models.dev",
+    "context": 204800,
+    "output": 131072,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.3,
+     "output": 1.2
+    },
+    "release_date": "2025-10-27",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "MiniMax-M2.1": {
+    "source": "models.dev",
+    "context": 204800,
+    "output": 131072,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.3,
+     "output": 1.2
+    },
+    "release_date": "2025-12-23",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "MiniMax-M2.5": {
+    "source": "models.dev",
+    "context": 204800,
+    "output": 131072,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.3,
+     "output": 1.2
+    },
+    "release_date": "2026-02-12",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "MiniMax-M2.5-highspeed": {
+    "source": "models.dev",
+    "context": 204800,
+    "output": 131072,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.6,
+     "output": 2.4
+    },
+    "release_date": "2026-02-13",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "MiniMax-M2.7": {
+    "source": "models.dev",
+    "context": 204800,
+    "output": 131072,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.3,
+     "output": 1.2
+    },
+    "release_date": "2026-03-18",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "MiniMax-M2.7-highspeed": {
+    "source": "models.dev",
+    "context": 204800,
+    "output": 131072,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.6,
+     "output": 2.4
+    },
+    "release_date": "2026-03-18",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "MiniMax-M3": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 512000,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.3,
+     "output": 1.2
+    },
+    "release_date": "2026-06-01",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   }
+  },
+  "openai": {
+   "gpt-3.5-turbo": {
+    "source": "models.dev",
+    "context": 16385,
+    "output": 4096,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.5,
+     "output": 1.5
+    },
+    "release_date": "2023-03-01",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gpt-4": {
+    "source": "models.dev",
+    "context": 8192,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 30,
+     "output": 60
+    },
+    "release_date": "2023-11-06",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gpt-4-turbo": {
+    "source": "models.dev",
+    "context": 128000,
+    "output": 4096,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 10,
+     "output": 30
+    },
+    "release_date": "2023-11-06",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gpt-4.1": {
+    "source": "models.dev",
+    "context": 1047576,
+    "output": 32768,
+    "structured_output": true,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 2,
+     "output": 8
+    },
+    "release_date": "2025-04-14",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gpt-4.1-mini": {
+    "source": "models.dev",
+    "context": 1047576,
+    "output": 32768,
+    "structured_output": true,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.4,
+     "output": 1.6
+    },
+    "release_date": "2025-04-14",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gpt-4.1-nano": {
+    "source": "models.dev",
+    "context": 1047576,
+    "output": 32768,
+    "structured_output": true,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.1,
+     "output": 0.4
+    },
+    "release_date": "2025-04-14",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gpt-4o": {
+    "source": "models.dev",
+    "context": 128000,
+    "output": 16384,
+    "structured_output": true,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 2.5,
+     "output": 10
+    },
+    "release_date": "2024-05-13",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gpt-4o-2024-05-13": {
+    "source": "models.dev",
+    "context": 128000,
+    "output": 4096,
+    "structured_output": true,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 5,
+     "output": 15
+    },
+    "release_date": "2024-05-13",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gpt-4o-2024-08-06": {
+    "source": "models.dev",
+    "context": 128000,
+    "output": 16384,
+    "structured_output": true,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 2.5,
+     "output": 10
+    },
+    "release_date": "2024-08-06",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gpt-4o-2024-11-20": {
+    "source": "models.dev",
+    "context": 128000,
+    "output": 16384,
+    "structured_output": true,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 2.5,
+     "output": 10
+    },
+    "release_date": "2024-11-20",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gpt-4o-mini": {
+    "source": "models.dev",
+    "context": 128000,
+    "output": 16384,
+    "structured_output": true,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.15,
+     "output": 0.6
+    },
+    "release_date": "2024-07-18",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": "别名：返回名是带日期的快照名，先测试再采用"
+   },
+   "gpt-4o-mini-2024-07-18": {
+    "source": "override",
+    "context": 128000,
+    "output": 16384,
+    "structured_output": true,
+    "reasoning": false,
+    "cost_usd": null,
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": "gpt-4o-mini-2024-07-18",
+    "response_model_verified_at": "2026-09-29",
+    "hint_zh": null
+   },
+   "gpt-5": {
+    "source": "models.dev",
+    "context": 400000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1.25,
+     "output": 10
+    },
+    "release_date": "2025-08-07",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gpt-5-mini": {
+    "source": "models.dev",
+    "context": 400000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.25,
+     "output": 2
+    },
+    "release_date": "2025-08-07",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gpt-5-nano": {
+    "source": "models.dev",
+    "context": 400000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.05,
+     "output": 0.4
+    },
+    "release_date": "2025-08-07",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gpt-5-pro": {
+    "source": "models.dev",
+    "context": 400000,
+    "output": 272000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 15,
+     "output": 120
+    },
+    "release_date": "2025-10-06",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gpt-5.1": {
+    "source": "models.dev",
+    "context": 400000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1.25,
+     "output": 10
+    },
+    "release_date": "2025-11-13",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gpt-5.2": {
+    "source": "models.dev",
+    "context": 400000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1.75,
+     "output": 14
+    },
+    "release_date": "2025-12-11",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gpt-5.2-chat-latest": {
+    "source": "models.dev",
+    "context": 128000,
+    "output": 16384,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1.75,
+     "output": 14
+    },
+    "release_date": "2025-12-11",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gpt-5.2-pro": {
+    "source": "models.dev",
+    "context": 400000,
+    "output": 128000,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 21,
+     "output": 168
+    },
+    "release_date": "2025-12-11",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gpt-5.3-chat-latest": {
+    "source": "models.dev",
+    "context": 128000,
+    "output": 16384,
+    "structured_output": true,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 1.75,
+     "output": 14
+    },
+    "release_date": "2026-03-03",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gpt-5.3-codex": {
+    "source": "models.dev",
+    "context": 400000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1.75,
+     "output": 14
+    },
+    "release_date": "2026-02-05",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gpt-5.3-codex-spark": {
+    "source": "models.dev",
+    "context": 128000,
+    "output": 32000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1.75,
+     "output": 14
+    },
+    "release_date": "2026-02-05",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gpt-5.4": {
+    "source": "models.dev",
+    "context": 1050000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 2.5,
+     "output": 15
+    },
+    "release_date": "2026-03-05",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gpt-5.4-mini": {
+    "source": "models.dev",
+    "context": 400000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.75,
+     "output": 4.5
+    },
+    "release_date": "2026-03-17",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gpt-5.4-nano": {
+    "source": "models.dev",
+    "context": 400000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.2,
+     "output": 1.25
+    },
+    "release_date": "2026-03-17",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gpt-5.4-pro": {
+    "source": "models.dev",
+    "context": 1050000,
+    "output": 128000,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 30,
+     "output": 180
+    },
+    "release_date": "2026-03-05",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gpt-5.5": {
+    "source": "models.dev",
+    "context": 1050000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 5,
+     "output": 30
+    },
+    "release_date": "2026-04-23",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gpt-5.5-pro": {
+    "source": "models.dev",
+    "context": 1050000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 30,
+     "output": 180
+    },
+    "release_date": "2026-04-23",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gpt-5.6": {
+    "source": "models.dev",
+    "context": 1050000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 4,
+     "output": 20
+    },
+    "release_date": "2026-07-09",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gpt-5.6-luna": {
+    "source": "models.dev",
+    "context": 1050000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.2,
+     "output": 1.2
+    },
+    "release_date": "2026-07-09",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gpt-5.6-sol": {
+    "source": "models.dev",
+    "context": 1050000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 4,
+     "output": 20
+    },
+    "release_date": "2026-07-09",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gpt-5.6-terra": {
+    "source": "models.dev",
+    "context": 1050000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 2,
+     "output": 12
+    },
+    "release_date": "2026-07-09",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gpt-6-astra": {
+    "source": "models.dev",
+    "context": 1050000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 10,
+     "output": 50
+    },
+    "release_date": "2026-09-04",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gpt-6-luna": {
+    "source": "models.dev",
+    "context": 1050000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.1,
+     "output": 0.5
+    },
+    "release_date": "2026-09-22",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gpt-6-sol": {
+    "source": "models.dev",
+    "context": 1050000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 2,
+     "output": 10
+    },
+    "release_date": "2026-09-22",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gpt-6.1-sol": {
+    "source": "models.dev",
+    "context": 1050000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 2,
+     "output": 10
+    },
+    "release_date": "2026-09-29",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gpt-daybreak-blue-latest": {
+    "source": "models.dev",
+    "context": 1050000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 4,
+     "output": 20
+    },
+    "release_date": "2026-08-07",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "gpt-daybreak-red-latest": {
+    "source": "models.dev",
+    "context": 400000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 12.5,
+     "output": 75
+    },
+    "release_date": "2026-08-07",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "o1": {
+    "source": "models.dev",
+    "context": 200000,
+    "output": 100000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 15,
+     "output": 60
+    },
+    "release_date": "2024-12-05",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "o1-pro": {
+    "source": "models.dev",
+    "context": 200000,
+    "output": 100000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 150,
+     "output": 600
+    },
+    "release_date": "2025-03-19",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "o3": {
+    "source": "models.dev",
+    "context": 200000,
+    "output": 100000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 2,
+     "output": 8
+    },
+    "release_date": "2025-04-16",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "o3-mini": {
+    "source": "models.dev",
+    "context": 200000,
+    "output": 100000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1.1,
+     "output": 4.4
+    },
+    "release_date": "2024-12-20",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "o3-pro": {
+    "source": "models.dev",
+    "context": 200000,
+    "output": 100000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 20,
+     "output": 80
+    },
+    "release_date": "2025-06-10",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "o4-mini": {
+    "source": "models.dev",
+    "context": 200000,
+    "output": 100000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1.1,
+     "output": 4.4
+    },
+    "release_date": "2025-04-16",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   }
+  },
+  "openrouter": {
+   "anthropic/claude-fable-5": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 10,
+     "output": 50
+    },
+    "release_date": "2026-06-09",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "anthropic/claude-fable-5.1": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 10,
+     "output": 50
+    },
+    "release_date": "2026-09-01",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "anthropic/claude-haiku-4.5": {
+    "source": "models.dev",
+    "context": 200000,
+    "output": 64000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1,
+     "output": 5
+    },
+    "release_date": "2025-10-15",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "anthropic/claude-haiku-5.5": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.1,
+     "output": 0.5
+    },
+    "release_date": "2026-10-07",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "anthropic/claude-opus-4.5": {
+    "source": "models.dev",
+    "context": 200000,
+    "output": 64000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 5,
+     "output": 25
+    },
+    "release_date": "2025-11-24",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "anthropic/claude-opus-4.6": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 5,
+     "output": 25
+    },
+    "release_date": "2026-02-05",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "anthropic/claude-opus-4.7": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 5,
+     "output": 25
+    },
+    "release_date": "2026-04-16",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "anthropic/claude-opus-4.8": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 5,
+     "output": 25
+    },
+    "release_date": "2026-05-28",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "anthropic/claude-opus-5": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 5,
+     "output": 25
+    },
+    "release_date": "2026-07-24",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "anthropic/claude-opus-5.5": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 4,
+     "output": 20
+    },
+    "release_date": "2026-09-22",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "anthropic/claude-sonnet-4.5": {
+    "source": "models.dev",
+    "context": 200000,
+    "output": 64000,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 3,
+     "output": 15
+    },
+    "release_date": "2025-09-29",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "anthropic/claude-sonnet-4.6": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 3,
+     "output": 15
+    },
+    "release_date": "2026-02-17",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "anthropic/claude-sonnet-5": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 2,
+     "output": 10
+    },
+    "release_date": "2026-06-30",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "anthropic/claude-sonnet-5.5": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 2,
+     "output": 10
+    },
+    "release_date": "2026-09-28",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "deepseek/deepseek-chat": {
+    "source": "models.dev",
+    "context": 163840,
+    "output": 16384,
+    "structured_output": true,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.32,
+     "output": 0.89
+    },
+    "release_date": "2025-12-01",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "deepseek/deepseek-chat-v3.1": {
+    "source": "override",
+    "context": 128000,
+    "output": 8192,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": null,
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": "返回名由上游决定，先测试再采用"
+   },
+   "deepseek/deepseek-v3.1-terminus": {
+    "source": "models.dev",
+    "context": 163840,
+    "output": 147456,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.27,
+     "output": 1
+    },
+    "release_date": "2025-09-22",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "deepseek/deepseek-v3.2": {
+    "source": "models.dev",
+    "context": 163840,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.28,
+     "output": 0.42
+    },
+    "release_date": "2025-12-01",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "deepseek/deepseek-v3.2-exp": {
+    "source": "models.dev",
+    "context": 163840,
+    "output": 147456,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.27,
+     "output": 0.41
+    },
+    "release_date": "2025-09-29",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "deepseek/deepseek-v4-flash": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 943717,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.091,
+     "output": 0.182
+    },
+    "release_date": "2026-04-24",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "deepseek/deepseek-v4-flash-0731": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 943718,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.0199,
+     "output": 0.45
+    },
+    "release_date": "2026-07-31",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "deepseek/deepseek-v4-flash-vision-exp": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 262144,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.2156,
+     "output": 0.6468
+    },
+    "release_date": "2026-08-21",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "deepseek/deepseek-v4-pro": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 384000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.2088,
+     "output": 0.4176
+    },
+    "release_date": "2026-04-24",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "deepseek/deepseek-v4-pro-0813": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 384000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.66,
+     "output": 1.98
+    },
+    "release_date": "2026-08-12",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "deepseek/deepseek-v4.1-flash": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 943718,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.04,
+     "output": 0.144
+    },
+    "release_date": "2026-09-10",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "deepseek/deepseek-v4.1-flash-1017": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 393216,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.15,
+     "output": 0.6
+    },
+    "release_date": "2026-10-17",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "google/gemini-2.5-flash": {
+    "source": "override",
+    "context": 1000000,
+    "output": 65536,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": null,
+    "release_date": null,
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "google/gemini-3-flash-preview": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.5,
+     "output": 3
+    },
+    "release_date": "2025-12-17",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "google/gemini-3.1-flash-lite": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.25,
+     "output": 1.5
+    },
+    "release_date": "2026-05-07",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "google/gemini-3.1-flash-lite-preview": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.25,
+     "output": 1.5
+    },
+    "release_date": "2026-03-03",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "google/gemini-3.1-pro-preview": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 2,
+     "output": 12
+    },
+    "release_date": "2026-02-19",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "google/gemini-3.1-pro-preview-customtools": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 2,
+     "output": 12
+    },
+    "release_date": "2026-02-19",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "google/gemini-3.5-flash": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1.5,
+     "output": 9
+    },
+    "release_date": "2026-05-19",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "google/gemini-3.5-flash-lite": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.3,
+     "output": 2.5
+    },
+    "release_date": "2026-07-21",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "google/gemini-3.6-flash": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.75,
+     "output": 3.75
+    },
+    "release_date": "2026-07-21",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "google/gemini-3.7-flash": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.75,
+     "output": 3.75
+    },
+    "release_date": "2026-08-13",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "google/gemini-3.8-flash": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.825,
+     "output": 4.125
+    },
+    "release_date": "2026-09-02",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "google/gemini-4-argon": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 2,
+     "output": 10
+    },
+    "release_date": "2026-10-13",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "google/gemini-nano-banana-2.1": {
+    "source": "models.dev",
+    "context": 65536,
+    "output": 58982,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1.5,
+     "output": 7.5
+    },
+    "release_date": "2026-10-06",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "google/gemma-4-26b-a4b-it": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 235929,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.0675,
+     "output": 0.225
+    },
+    "release_date": "2026-04-02",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "google/gemma-4-31b-it": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 16384,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.2,
+     "output": 0.4
+    },
+    "release_date": "2026-04-02",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "minimax/minimax-m2": {
+    "source": "models.dev",
+    "context": 204800,
+    "output": 131072,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.255,
+     "output": 1.02
+    },
+    "release_date": "2025-10-27",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "minimax/minimax-m2-her": {
+    "source": "models.dev",
+    "context": 65536,
+    "output": 2048,
+    "structured_output": false,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.3,
+     "output": 1.2
+    },
+    "release_date": "2026-01-23",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "minimax/minimax-m2.1": {
+    "source": "models.dev",
+    "context": 204800,
+    "output": 131072,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.3,
+     "output": 1.2
+    },
+    "release_date": "2025-12-23",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "minimax/minimax-m2.5": {
+    "source": "models.dev",
+    "context": 204800,
+    "output": 32768,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.27,
+     "output": 0.95
+    },
+    "release_date": "2026-02-12",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "minimax/minimax-m2.7": {
+    "source": "models.dev",
+    "context": 204800,
+    "output": 131072,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.3,
+     "output": 1.2
+    },
+    "release_date": "2026-03-18",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "minimax/minimax-m3": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 512000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.3,
+     "output": 1.2
+    },
+    "release_date": "2026-06-01",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "moonshotai/kimi-k2-thinking": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 98304,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.6,
+     "output": 2.5
+    },
+    "release_date": "2025-11-06",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "moonshotai/kimi-k2.6": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 235929,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.65,
+     "output": 3.41
+    },
+    "release_date": "2026-04-21",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "moonshotai/kimi-k2.7-code": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 235929,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.6712,
+     "output": 3.35
+    },
+    "release_date": "2026-06-12",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "moonshotai/kimi-k3": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 943718,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.249,
+     "output": 11.936
+    },
+    "release_date": "2026-07-16",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "openai/gpt-5-pro": {
+    "source": "models.dev",
+    "context": 400000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 15,
+     "output": 120
+    },
+    "release_date": "2025-10-06",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "openai/gpt-5.1": {
+    "source": "models.dev",
+    "context": 400000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1.25,
+     "output": 10
+    },
+    "release_date": "2025-11-13",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "openai/gpt-5.1-codex": {
+    "source": "models.dev",
+    "context": 400000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1.25,
+     "output": 10
+    },
+    "release_date": "2025-11-13",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "openai/gpt-5.1-codex-max": {
+    "source": "models.dev",
+    "context": 400000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1.25,
+     "output": 10
+    },
+    "release_date": "2025-11-13",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "openai/gpt-5.1-codex-mini": {
+    "source": "models.dev",
+    "context": 400000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.25,
+     "output": 2
+    },
+    "release_date": "2025-11-13",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "openai/gpt-5.2": {
+    "source": "models.dev",
+    "context": 400000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1.75,
+     "output": 14
+    },
+    "release_date": "2025-12-11",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "openai/gpt-5.2-chat": {
+    "source": "models.dev",
+    "context": 128000,
+    "output": 32000,
+    "structured_output": true,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 1.75,
+     "output": 14
+    },
+    "release_date": "2025-12-10",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "openai/gpt-5.2-codex": {
+    "source": "models.dev",
+    "context": 400000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1.75,
+     "output": 14
+    },
+    "release_date": "2025-12-11",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "openai/gpt-5.2-pro": {
+    "source": "models.dev",
+    "context": 400000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 21,
+     "output": 168
+    },
+    "release_date": "2025-12-11",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "openai/gpt-5.3-codex": {
+    "source": "models.dev",
+    "context": 400000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1.75,
+     "output": 14
+    },
+    "release_date": "2026-02-05",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "openai/gpt-5.4": {
+    "source": "models.dev",
+    "context": 1050000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 2.5,
+     "output": 15
+    },
+    "release_date": "2026-03-05",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "openai/gpt-5.4-mini": {
+    "source": "models.dev",
+    "context": 400000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.75,
+     "output": 4.5
+    },
+    "release_date": "2026-03-17",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "openai/gpt-5.4-nano": {
+    "source": "models.dev",
+    "context": 400000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.2,
+     "output": 1.25
+    },
+    "release_date": "2026-03-17",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "openai/gpt-5.4-pro": {
+    "source": "models.dev",
+    "context": 1050000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 30,
+     "output": 180
+    },
+    "release_date": "2026-03-05",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "openai/gpt-5.5": {
+    "source": "models.dev",
+    "context": 1050000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 5,
+     "output": 30
+    },
+    "release_date": "2026-04-23",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "openai/gpt-5.5-pro": {
+    "source": "models.dev",
+    "context": 1050000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 30,
+     "output": 180
+    },
+    "release_date": "2026-04-23",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "openai/gpt-5.6-luna": {
+    "source": "models.dev",
+    "context": 1050000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.2,
+     "output": 1.2
+    },
+    "release_date": "2026-07-09",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "openai/gpt-5.6-luna-pro": {
+    "source": "models.dev",
+    "context": 1050000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.2,
+     "output": 1.2
+    },
+    "release_date": "2026-07-09",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "openai/gpt-5.6-sol": {
+    "source": "models.dev",
+    "context": 1050000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 4,
+     "output": 20
+    },
+    "release_date": "2026-07-09",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "openai/gpt-5.6-sol-pro": {
+    "source": "models.dev",
+    "context": 1050000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 4,
+     "output": 20
+    },
+    "release_date": "2026-07-09",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "openai/gpt-5.6-terra": {
+    "source": "models.dev",
+    "context": 1050000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 2,
+     "output": 12
+    },
+    "release_date": "2026-07-09",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "openai/gpt-5.6-terra-pro": {
+    "source": "models.dev",
+    "context": 1050000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 2,
+     "output": 12
+    },
+    "release_date": "2026-07-09",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "openai/gpt-6-astra": {
+    "source": "models.dev",
+    "context": 1050000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 10,
+     "output": 50
+    },
+    "release_date": "2026-09-04",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "openai/gpt-6-astra-pro": {
+    "source": "models.dev",
+    "context": 1050000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 10,
+     "output": 50
+    },
+    "release_date": "2026-09-04",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "openai/gpt-6-luna": {
+    "source": "models.dev",
+    "context": 1050000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.1,
+     "output": 0.5
+    },
+    "release_date": "2026-09-22",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "openai/gpt-6-luna-pro": {
+    "source": "models.dev",
+    "context": 1050000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.1,
+     "output": 0.5
+    },
+    "release_date": "2026-09-22",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "openai/gpt-6-sol": {
+    "source": "models.dev",
+    "context": 1050000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 2,
+     "output": 10
+    },
+    "release_date": "2026-09-22",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "openai/gpt-6-sol-pro": {
+    "source": "models.dev",
+    "context": 1050000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 2,
+     "output": 10
+    },
+    "release_date": "2026-09-22",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "openai/gpt-6.1-sol": {
+    "source": "models.dev",
+    "context": 1050000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 2,
+     "output": 10
+    },
+    "release_date": "2026-09-29",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "openai/gpt-6.1-sol-pro": {
+    "source": "models.dev",
+    "context": 1050000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 2,
+     "output": 10
+    },
+    "release_date": "2026-09-29",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "openai/gpt-chat-latest": {
+    "source": "models.dev",
+    "context": 400000,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 5,
+     "output": 30
+    },
+    "release_date": "2026-05-05",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "openai/gpt-oss-safeguard-20b": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.075,
+     "output": 0.3
+    },
+    "release_date": "2025-10-29",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen/qwen3-coder-next": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 235929,
+    "structured_output": true,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.12,
+     "output": 0.8
+    },
+    "release_date": "2026-02-03",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen/qwen3-vl-235b-a22b-instruct": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 32768,
+    "structured_output": true,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.21,
+     "output": 1.9
+    },
+    "release_date": "2025-09-23",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen/qwen3-vl-30b-a3b-instruct": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 16384,
+    "structured_output": true,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.15,
+     "output": 0.6
+    },
+    "release_date": "2025-10-04",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen/qwen3-vl-30b-a3b-thinking": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 235929,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.29,
+     "output": 1
+    },
+    "release_date": "2025-10-06",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen/qwen3-vl-8b-instruct": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 235929,
+    "structured_output": true,
+    "reasoning": false,
+    "cost_usd": {
+     "input": 0.25,
+     "output": 0.75
+    },
+    "release_date": "2025-10-14",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen/qwen3.5-122b-a10b": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.26,
+     "output": 2.08
+    },
+    "release_date": "2026-02-23",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen/qwen3.5-27b": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 81920,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.26,
+     "output": 2.6
+    },
+    "release_date": "2026-02-23",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen/qwen3.5-35b-a3b": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 235929,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.15,
+     "output": 1
+    },
+    "release_date": "2026-02-23",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen/qwen3.5-397b-a17b": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 235929,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.5,
+     "output": 3.6
+    },
+    "release_date": "2026-02-15",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen/qwen3.5-9b": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 32768,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.1,
+     "output": 0.15
+    },
+    "release_date": "2026-02-23",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen/qwen3.5-flash-02-23": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.065,
+     "output": 0.26
+    },
+    "release_date": "2026-02-25",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen/qwen3.5-plus-02-15": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.26,
+     "output": 1.56
+    },
+    "release_date": "2026-02-16",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen/qwen3.5-plus-20260420": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.3,
+     "output": 1.8
+    },
+    "release_date": "2026-04-27",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen/qwen3.6-27b": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.25,
+     "output": 2
+    },
+    "release_date": "2026-04-22",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen/qwen3.6-35b-a3b": {
+    "source": "models.dev",
+    "context": 262144,
+    "output": 235929,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.15,
+     "output": 1
+    },
+    "release_date": "2026-04-17",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen/qwen3.6-flash": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.1875,
+     "output": 1.125
+    },
+    "release_date": "2026-04-27",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen/qwen3.6-plus": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 65536,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.325,
+     "output": 1.95
+    },
+    "release_date": "2026-04-02",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen/qwen3.7-flash": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 65536,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.03,
+     "output": 0.13
+    },
+    "release_date": "2026-07-15",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen/qwen3.7-max": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 131072,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1.475,
+     "output": 4.425
+    },
+    "release_date": "2026-05-21",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen/qwen3.7-plus": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 131072,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.32,
+     "output": 1.28
+    },
+    "release_date": "2026-06-02",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen/qwen3.8-2.4t-a95b": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 131072,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 2,
+     "output": 6
+    },
+    "release_date": "2026-08-12",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen/qwen3.8-27b": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 235929,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.24,
+     "output": 2.2
+    },
+    "release_date": "2026-08-14",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen/qwen3.8-flash": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 131072,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.15,
+     "output": 0.47
+    },
+    "release_date": "2026-08-26",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen/qwen3.8-max-0902": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 131072,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 2,
+     "output": 6
+    },
+    "release_date": "2026-09-02",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen/qwen3.8-max-prime": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 131072,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 4,
+     "output": 12
+    },
+    "release_date": "2026-09-23",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "qwen/qwen3.8-omni-flash": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 131072,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.15,
+     "output": 0.47
+    },
+    "release_date": "2026-09-17",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "z-ai/glm-4.6": {
+    "source": "models.dev",
+    "context": 204800,
+    "output": 131072,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.5,
+     "output": 2
+    },
+    "release_date": "2025-09-30",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "z-ai/glm-4.6v": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 32768,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.3,
+     "output": 0.9
+    },
+    "release_date": "2025-12-08",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "z-ai/glm-4.7": {
+    "source": "models.dev",
+    "context": 204800,
+    "output": 131072,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.54,
+     "output": 1.98
+    },
+    "release_date": "2025-12-22",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "z-ai/glm-4.7-flash": {
+    "source": "models.dev",
+    "context": 200000,
+    "output": 117964,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.0605,
+     "output": 0.4
+    },
+    "release_date": "2026-01-19",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "z-ai/glm-5": {
+    "source": "models.dev",
+    "context": 204800,
+    "output": 131072,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1,
+     "output": 3.2
+    },
+    "release_date": "2026-02-12",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "z-ai/glm-5-turbo": {
+    "source": "models.dev",
+    "context": 202752,
+    "output": 131072,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1.2,
+     "output": 4
+    },
+    "release_date": "2026-03-16",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "z-ai/glm-5.1": {
+    "source": "models.dev",
+    "context": 204800,
+    "output": 128000,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.966,
+     "output": 3.036
+    },
+    "release_date": "2026-04-07",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "z-ai/glm-5.2": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 943718,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.62,
+     "output": 2.42
+    },
+    "release_date": "2026-06-13",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "z-ai/glm-5.3": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 943718,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.079,
+     "output": 1.4
+    },
+    "release_date": "2026-08-14",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "z-ai/glm-5.3-flash": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 943718,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.048,
+     "output": 0.2
+    },
+    "release_date": "2026-08-26",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "z-ai/glm-5.3-flashx": {
+    "source": "models.dev",
+    "context": 1048576,
+    "output": 131072,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.37,
+     "output": 1.25
+    },
+    "release_date": "2026-09-18",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "z-ai/glm-5.3-prime": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 131072,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 2.8,
+     "output": 8.8
+    },
+    "release_date": "2026-09-23",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "z-ai/glm-5v-turbo": {
+    "source": "models.dev",
+    "context": 202752,
+    "output": 131072,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1.2,
+     "output": 4
+    },
+    "release_date": "2026-04-01",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   }
+  },
+  "zhipu": {
+   "glm-4.5": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 98304,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.6,
+     "output": 2.2
+    },
+    "release_date": "2025-07-28",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "glm-4.5-air": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 98304,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.2,
+     "output": 1.1
+    },
+    "release_date": "2025-07-28",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": "轻量低价档"
+   },
+   "glm-4.5-flash": {
+    "source": "models.dev",
+    "context": 131072,
+    "output": 98304,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0,
+     "output": 0
+    },
+    "release_date": "2025-07-28",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "glm-4.5v": {
+    "source": "models.dev",
+    "context": 64000,
+    "output": 16384,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.6,
+     "output": 1.8
+    },
+    "release_date": "2025-08-11",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "glm-4.6": {
+    "source": "models.dev",
+    "context": 204800,
+    "output": 131072,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.6,
+     "output": 2.2
+    },
+    "release_date": "2025-09-30",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "glm-4.6v": {
+    "source": "models.dev",
+    "context": 128000,
+    "output": 32768,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.3,
+     "output": 0.9
+    },
+    "release_date": "2025-12-08",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "glm-4.6v-flash": {
+    "source": "models.dev",
+    "context": 128000,
+    "output": 32768,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0,
+     "output": 0
+    },
+    "release_date": "2025-12-08",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "glm-4.7": {
+    "source": "models.dev",
+    "context": 204800,
+    "output": 131072,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.6,
+     "output": 2.2
+    },
+    "release_date": "2025-12-22",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "glm-4.7-flash": {
+    "source": "models.dev",
+    "context": 200000,
+    "output": 131072,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0,
+     "output": 0
+    },
+    "release_date": "2026-01-19",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "glm-4.7-flashx": {
+    "source": "models.dev",
+    "context": 200000,
+    "output": 131072,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.07,
+     "output": 0.4
+    },
+    "release_date": "2026-01-19",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "glm-5": {
+    "source": "models.dev",
+    "context": 204800,
+    "output": 131072,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1,
+     "output": 3.2
+    },
+    "release_date": "2026-02-11",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "glm-5.1": {
+    "source": "models.dev",
+    "context": 200000,
+    "output": 131072,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1.4,
+     "output": 4.4
+    },
+    "release_date": "2026-03-27",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "glm-5.2": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 131072,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1.4,
+     "output": 4.4
+    },
+    "release_date": "2026-06-13",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "glm-5.3": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 131072,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 1.4,
+     "output": 4.4
+    },
+    "release_date": "2026-08-14",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "glm-5.3-flash": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 131072,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.15,
+     "output": 0.5
+    },
+    "release_date": "2026-08-26",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "glm-5.3-flashx": {
+    "source": "models.dev",
+    "context": 1000000,
+    "output": 131072,
+    "structured_output": true,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 0.37,
+     "output": 1.25
+    },
+    "release_date": "2026-09-18",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   },
+   "glm-5v-turbo": {
+    "source": "models.dev",
+    "context": 200000,
+    "output": 131072,
+    "structured_output": false,
+    "reasoning": true,
+    "cost_usd": {
+     "input": 5,
+     "output": 22
+    },
+    "release_date": "2026-04-01",
+    "price_cny_micro": null,
+    "response_model": null,
+    "response_model_verified_at": null,
+    "hint_zh": null
+   }
+  }
+ }
+}

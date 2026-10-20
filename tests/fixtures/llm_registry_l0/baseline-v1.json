@@ -1,0 +1,201 @@
+{
+  "schema": "osborn-llm-registry/compat@1",
+  "frozen_at": "2026-10-18",
+  "fields": {
+    "root": [
+      "schema",
+      "updated_at",
+      "endpoint_types",
+      "providers"
+    ],
+    "provider": [
+      "id",
+      "label",
+      "region",
+      "editions",
+      "secret",
+      "auth",
+      "endpoints",
+      "default_endpoint",
+      "status"
+    ],
+    "endpoint": [
+      "base_url",
+      "chat_path",
+      "discovery_path"
+    ]
+  },
+  "enums": {
+    "endpoint_types": [
+      "openai-chat-completions",
+      "openai-responses",
+      "anthropic-messages",
+      "gemini-generate-content"
+    ],
+    "region": [
+      "cn",
+      "intl",
+      "us",
+      "local"
+    ],
+    "editions": [
+      "cn",
+      "global"
+    ],
+    "status": [
+      "active",
+      "deprecated"
+    ],
+    "auth_type": [
+      "api-key",
+      "none"
+    ]
+  },
+  "identity": {
+    "dashscope_cn": {
+      "secret_id": "dashscope_cn",
+      "env": [
+        "DASHSCOPE_TEXT_API_KEY",
+        "DASHSCOPE_API_KEY"
+      ],
+      "endpoints": {
+        "openai-chat-completions": "https://dashscope.aliyuncs.com/compatible-mode/v1"
+      }
+    },
+    "dashscope_us": {
+      "secret_id": "dashscope_us",
+      "env": [
+        "DASHSCOPE_API_KEY"
+      ],
+      "endpoints": {
+        "openai-chat-completions": "https://dashscope-us.aliyuncs.com/compatible-mode/v1"
+      }
+    },
+    "dashscope_intl": {
+      "secret_id": "dashscope_intl",
+      "env": [
+        "DASHSCOPE_TEXT_API_KEY",
+        "DASHSCOPE_API_KEY"
+      ],
+      "endpoints": {
+        "openai-chat-completions": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
+      }
+    },
+    "openai": {
+      "secret_id": "openai",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "endpoints": {
+        "openai-chat-completions": "https://api.openai.com/v1",
+        "openai-responses": "https://api.openai.com/v1"
+      }
+    },
+    "deepseek": {
+      "secret_id": "deepseek",
+      "env": [
+        "DEEPSEEK_API_KEY"
+      ],
+      "endpoints": {
+        "openai-chat-completions": "https://api.deepseek.com"
+      }
+    },
+    "gemini": {
+      "secret_id": "gemini",
+      "env": [
+        "GEMINI_API_KEY"
+      ],
+      "endpoints": {
+        "gemini-generate-content": "https://generativelanguage.googleapis.com/v1beta",
+        "openai-chat-completions": "https://generativelanguage.googleapis.com/v1beta/openai"
+      }
+    },
+    "kimi_cn": {
+      "secret_id": "kimi_cn",
+      "env": [
+        "MOONSHOT_API_KEY"
+      ],
+      "endpoints": {
+        "openai-chat-completions": "https://api.moonshot.cn/v1",
+        "anthropic-messages": "https://api.moonshot.cn/anthropic"
+      }
+    },
+    "kimi_intl": {
+      "secret_id": "kimi_intl",
+      "env": [
+        "MOONSHOT_INTL_API_KEY",
+        "MOONSHOT_API_KEY"
+      ],
+      "endpoints": {
+        "openai-chat-completions": "https://api.moonshot.ai/v1",
+        "anthropic-messages": "https://api.moonshot.ai/anthropic"
+      }
+    },
+    "zhipu": {
+      "secret_id": "zhipu",
+      "env": [
+        "ZHIPU_API_KEY"
+      ],
+      "endpoints": {
+        "openai-chat-completions": "https://open.bigmodel.cn/api/paas/v4",
+        "anthropic-messages": "https://open.bigmodel.cn/api/anthropic"
+      }
+    },
+    "minimax_cn": {
+      "secret_id": "minimax_cn",
+      "env": [
+        "MINIMAX_API_KEY"
+      ],
+      "endpoints": {
+        "openai-chat-completions": "https://api.minimaxi.com/v1",
+        "anthropic-messages": "https://api.minimaxi.com/anthropic"
+      }
+    },
+    "minimax_intl": {
+      "secret_id": "minimax_intl",
+      "env": [
+        "MINIMAX_INTL_API_KEY",
+        "MINIMAX_API_KEY"
+      ],
+      "endpoints": {
+        "openai-chat-completions": "https://api.minimax.io/v1",
+        "anthropic-messages": "https://api.minimax.io/anthropic"
+      }
+    },
+    "openrouter": {
+      "secret_id": "openrouter",
+      "env": [
+        "OPENROUTER_API_KEY"
+      ],
+      "endpoints": {
+        "openai-chat-completions": "https://openrouter.ai/api/v1"
+      }
+    },
+    "doubao": {
+      "secret_id": "doubao",
+      "env": [
+        "ARK_API_KEY"
+      ],
+      "endpoints": {
+        "openai-chat-completions": "https://ark.cn-beijing.volces.com/api/v3",
+        "anthropic-messages": "https://ark.cn-beijing.volces.com/api/coding"
+      }
+    },
+    "claude": {
+      "secret_id": "claude",
+      "env": [
+        "ANTHROPIC_API_KEY"
+      ],
+      "endpoints": {
+        "anthropic-messages": "https://api.anthropic.com"
+      }
+    },
+    "ollama": {
+      "secret_id": "ollama",
+      "env": [],
+      "endpoints": {
+        "openai-chat-completions": "http://localhost:11434/v1"
+      }
+    }
+  }
+}

@@ -1,0 +1,735 @@
+{
+  "engine_windows": {
+    "chat_path_rule": {
+      "anthropic": "/messages",
+      "openai_compatible": "/chat/completions",
+      "source": "runtime/llm_provider.py"
+    },
+    "route_ids": [
+      "openai-gpt",
+      "qwen-turbo",
+      "doubao",
+      "claude",
+      "openai-compatible-custom",
+      "ollama"
+    ],
+    "routes": [
+      {
+        "base_urls": [
+          "https://api.openai.com/v1"
+        ],
+        "default_model": "gpt-5-mini",
+        "id": "openai-gpt",
+        "label": "OpenAI GPT",
+        "local": false,
+        "protocol": "openai_compatible",
+        "qualification": {
+          "credential": "openai",
+          "label": "OpenAI GPT",
+          "runtime": null,
+          "support": "supported",
+          "transport": "cloud"
+        },
+        "requires_api_key": true
+      },
+      {
+        "base_urls": [
+          "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          "https://dashscope-us.aliyuncs.com/compatible-mode/v1"
+        ],
+        "default_model": "qwen3.7-plus",
+        "id": "qwen-turbo",
+        "label": "Qwen Bailian",
+        "local": false,
+        "protocol": "openai_compatible",
+        "qualification": {
+          "credential": "dashscope_any",
+          "label": "Qwen Bailian",
+          "runtime": null,
+          "support": "supported",
+          "transport": "cloud"
+        },
+        "requires_api_key": true
+      },
+      {
+        "base_urls": [
+          "https://ark.cn-beijing.volces.com/api/v3"
+        ],
+        "default_model": "doubao-seed-2-0-lite-260215",
+        "id": "doubao",
+        "label": "Doubao ARK",
+        "local": false,
+        "protocol": "openai_compatible",
+        "qualification": {
+          "credential": "doubao",
+          "label": "Doubao ARK",
+          "runtime": null,
+          "support": "supported",
+          "transport": "cloud"
+        },
+        "requires_api_key": true
+      },
+      {
+        "base_urls": [
+          "https://api.anthropic.com/v1"
+        ],
+        "default_model": "claude-sonnet-5",
+        "id": "claude",
+        "label": "Claude",
+        "local": false,
+        "protocol": "anthropic",
+        "qualification": {
+          "credential": "anthropic",
+          "label": "Claude",
+          "runtime": null,
+          "support": "supported",
+          "transport": "cloud"
+        },
+        "requires_api_key": true
+      },
+      {
+        "base_urls": [],
+        "default_model": null,
+        "id": "openai-compatible-custom",
+        "label": "Custom OpenAI-compatible",
+        "local": false,
+        "protocol": "openai_compatible",
+        "qualification": {
+          "credential": "custom_llm",
+          "label": "Custom OpenAI-compatible",
+          "runtime": null,
+          "support": "supported",
+          "transport": "cloud"
+        },
+        "requires_api_key": false,
+        "user_configured_endpoint": true
+      },
+      {
+        "base_urls": [
+          "http://127.0.0.1:11434/v1"
+        ],
+        "default_model": "qwen2.5:7b",
+        "id": "ollama",
+        "label": "Ollama Local",
+        "local": true,
+        "protocol": "openai_compatible",
+        "qualification": {
+          "credential": null,
+          "label": "Ollama Local",
+          "runtime": "ollama",
+          "support": "install_required",
+          "transport": "local"
+        },
+        "requires_api_key": false
+      }
+    ],
+    "sources": [
+      "apps/desktop-tauri/src-tauri/src/contracts.rs",
+      "packages/contracts/src/settings.ts",
+      "runtime/llm_provider.py",
+      "runtime/provider_qualification.py"
+    ]
+  },
+  "inventory_version": "2026-10-18.2",
+  "macos": {
+    "chat_path_rule": {
+      "anthropic": "/messages",
+      "openai_compatible": "/chat/completions",
+      "source": "macos/VoxLog/Translation/SelectedLLMConfigurationResolver.swift",
+      "trailing_slashes_trimmed": true
+    },
+    "display_name_locale": "en",
+    "keychain": {
+      "account_pattern": "tf_llm_<provider id>",
+      "accounts": {
+        "bailian": "tf_llm_bailian",
+        "bailianUS": "tf_llm_bailianUS",
+        "claude": "tf_llm_claude",
+        "deepseek": "tf_llm_deepseek",
+        "doubao": "tf_llm_doubao",
+        "gemini": "tf_llm_gemini",
+        "kimi": "tf_llm_kimi",
+        "minimaxCN": "tf_llm_minimaxCN",
+        "minimaxIntl": "tf_llm_minimaxIntl",
+        "ollama": "tf_llm_ollama",
+        "openai": "tf_llm_openai",
+        "openrouter": "tf_llm_openrouter",
+        "zhipu": "tf_llm_zhipu"
+      },
+      "services": [
+        "com.voxlog.scalar",
+        "com.voxlog.grouped"
+      ],
+      "source": "macos/VoxLog/Services/KeychainService.swift"
+    },
+    "providers": [
+      {
+        "default_base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "display_name": "Bailian CN",
+        "id": "bailian",
+        "is_local": false,
+        "is_openai_compatible": true,
+        "model_options": [
+          {
+            "label": "Qwen3.6-Plus (CN)",
+            "value": "qwen3.6-plus"
+          },
+          {
+            "label": "Qwen3.5-Plus (CN)",
+            "value": "qwen3.5-plus"
+          },
+          {
+            "label": "Qwen3.5-Flash (CN)",
+            "value": "qwen3.5-flash"
+          },
+          {
+            "label": "Qwen3-Max (CN)",
+            "value": "qwen3-max"
+          },
+          {
+            "label": "Qwen-Plus (CN)",
+            "value": "qwen-plus"
+          },
+          {
+            "label": "Qwen-Turbo (CN, 最便宜)",
+            "value": "qwen-turbo"
+          },
+          {
+            "label": "Qwen-Long (CN, 长文本)",
+            "value": "qwen-long"
+          },
+          {
+            "label": "Qwen-Flash (CN, 极速)",
+            "value": "qwen-flash"
+          }
+        ],
+        "needs_reasoning_split": false,
+        "requires_api_key": true,
+        "thinking_disable_field": "enable_thinking",
+        "translation": {
+          "accepts_any_model": false,
+          "supported_beyond_model_options": [
+            "qwen3.8-omni-flash"
+          ],
+          "supported_models": [
+            "qwen-flash",
+            "qwen-long",
+            "qwen-plus",
+            "qwen-turbo",
+            "qwen3-max",
+            "qwen3.5-flash",
+            "qwen3.5-plus",
+            "qwen3.6-plus",
+            "qwen3.8-omni-flash"
+          ]
+        }
+      },
+      {
+        "default_base_url": "https://dashscope-us.aliyuncs.com/compatible-mode/v1",
+        "display_name": "Bailian US",
+        "id": "bailianUS",
+        "is_local": false,
+        "is_openai_compatible": true,
+        "model_options": [
+          {
+            "label": "Qwen3.6-Plus (US)",
+            "value": "qwen3.6-plus"
+          },
+          {
+            "label": "Qwen3.5-Plus (US)",
+            "value": "qwen3.5-plus"
+          },
+          {
+            "label": "Qwen3.5-Flash (US)",
+            "value": "qwen3.5-flash"
+          },
+          {
+            "label": "Qwen3-Max (US)",
+            "value": "qwen3-max"
+          },
+          {
+            "label": "Qwen-Plus (US)",
+            "value": "qwen-plus"
+          },
+          {
+            "label": "Qwen-Turbo (US, 最便宜)",
+            "value": "qwen-turbo"
+          },
+          {
+            "label": "Qwen-Long (US, 长文本)",
+            "value": "qwen-long"
+          },
+          {
+            "label": "Qwen-Flash (US, 极速)",
+            "value": "qwen-flash"
+          }
+        ],
+        "needs_reasoning_split": false,
+        "requires_api_key": true,
+        "thinking_disable_field": "enable_thinking",
+        "translation": {
+          "accepts_any_model": false,
+          "supported_beyond_model_options": [
+            "qwen3.8-omni-flash"
+          ],
+          "supported_models": [
+            "qwen-flash",
+            "qwen-long",
+            "qwen-plus",
+            "qwen-turbo",
+            "qwen3-max",
+            "qwen3.5-flash",
+            "qwen3.5-plus",
+            "qwen3.6-plus",
+            "qwen3.8-omni-flash"
+          ]
+        }
+      },
+      {
+        "default_base_url": "https://api.anthropic.com/v1",
+        "display_name": "Claude (Anthropic)",
+        "id": "claude",
+        "is_local": false,
+        "is_openai_compatible": false,
+        "model_options": [
+          {
+            "label": "claude-sonnet-4-6",
+            "value": "claude-sonnet-4-6"
+          },
+          {
+            "label": "claude-opus-4-6",
+            "value": "claude-opus-4-6"
+          },
+          {
+            "label": "claude-haiku-4-5-20251001",
+            "value": "claude-haiku-4-5-20251001"
+          },
+          {
+            "label": "claude-sonnet-4-5-20250929",
+            "value": "claude-sonnet-4-5-20250929"
+          }
+        ],
+        "needs_reasoning_split": false,
+        "requires_api_key": true,
+        "thinking_disable_field": null,
+        "translation": {
+          "accepts_any_model": false,
+          "supported_beyond_model_options": [],
+          "supported_models": [
+            "claude-haiku-4-5-20251001",
+            "claude-opus-4-6",
+            "claude-sonnet-4-5-20250929",
+            "claude-sonnet-4-6"
+          ]
+        }
+      },
+      {
+        "default_base_url": "https://api.deepseek.com",
+        "display_name": "DeepSeek",
+        "id": "deepseek",
+        "is_local": false,
+        "is_openai_compatible": true,
+        "model_options": [
+          {
+            "label": "deepseek-chat",
+            "value": "deepseek-chat"
+          },
+          {
+            "label": "deepseek-reasoner",
+            "value": "deepseek-reasoner"
+          }
+        ],
+        "needs_reasoning_split": false,
+        "requires_api_key": true,
+        "thinking_disable_field": "thinking",
+        "translation": {
+          "accepts_any_model": false,
+          "supported_beyond_model_options": [
+            "deepseek-flash",
+            "deepseek-v4-pro"
+          ],
+          "supported_models": [
+            "deepseek-chat",
+            "deepseek-flash",
+            "deepseek-reasoner",
+            "deepseek-v4-pro"
+          ]
+        }
+      },
+      {
+        "default_base_url": "https://ark.cn-beijing.volces.com/api/v3",
+        "display_name": "Doubao (ByteDance ARK)",
+        "id": "doubao",
+        "is_local": false,
+        "is_openai_compatible": true,
+        "model_options": [
+          {
+            "label": "doubao-seed-2-0-mini-260215",
+            "value": "doubao-seed-2-0-mini-260215"
+          },
+          {
+            "label": "doubao-seed-2-0-lite-260215",
+            "value": "doubao-seed-2-0-lite-260215"
+          },
+          {
+            "label": "doubao-seed-2-0-pro-260215",
+            "value": "doubao-seed-2-0-pro-260215"
+          },
+          {
+            "label": "doubao-seed-1-6-flash-250828",
+            "value": "doubao-seed-1-6-flash-250828"
+          },
+          {
+            "label": "doubao-1-5-pro-32k-250115",
+            "value": "doubao-1-5-pro-32k-250115"
+          },
+          {
+            "label": "doubao-1-5-lite-32k-250115",
+            "value": "doubao-1-5-lite-32k-250115"
+          }
+        ],
+        "needs_reasoning_split": false,
+        "requires_api_key": true,
+        "thinking_disable_field": "thinking",
+        "translation": {
+          "accepts_any_model": false,
+          "supported_beyond_model_options": [],
+          "supported_models": [
+            "doubao-1-5-lite-32k-250115",
+            "doubao-1-5-pro-32k-250115",
+            "doubao-seed-1-6-flash-250828",
+            "doubao-seed-2-0-lite-260215",
+            "doubao-seed-2-0-mini-260215",
+            "doubao-seed-2-0-pro-260215"
+          ]
+        }
+      },
+      {
+        "default_base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
+        "display_name": "Gemini (Google)",
+        "id": "gemini",
+        "is_local": false,
+        "is_openai_compatible": true,
+        "model_options": [
+          {
+            "label": "gemini-2.5-flash",
+            "value": "gemini-2.5-flash"
+          },
+          {
+            "label": "gemini-2.5-pro",
+            "value": "gemini-2.5-pro"
+          },
+          {
+            "label": "gemini-2.5-flash-lite",
+            "value": "gemini-2.5-flash-lite"
+          },
+          {
+            "label": "gemini-2.0-flash",
+            "value": "gemini-2.0-flash"
+          },
+          {
+            "label": "gemini-3.1-pro-preview",
+            "value": "gemini-3.1-pro-preview"
+          },
+          {
+            "label": "gemini-3.1-flash-lite-preview",
+            "value": "gemini-3.1-flash-lite-preview"
+          }
+        ],
+        "needs_reasoning_split": false,
+        "requires_api_key": true,
+        "thinking_disable_field": null,
+        "translation": {
+          "accepts_any_model": false,
+          "supported_beyond_model_options": [],
+          "supported_models": [
+            "gemini-2.0-flash",
+            "gemini-2.5-flash",
+            "gemini-2.5-flash-lite",
+            "gemini-2.5-pro",
+            "gemini-3.1-flash-lite-preview",
+            "gemini-3.1-pro-preview"
+          ]
+        }
+      },
+      {
+        "default_base_url": "https://api.moonshot.ai/v1",
+        "display_name": "Kimi (Moonshot)",
+        "id": "kimi",
+        "is_local": false,
+        "is_openai_compatible": true,
+        "model_options": [
+          {
+            "label": "kimi-k2.5",
+            "value": "kimi-k2.5"
+          },
+          {
+            "label": "kimi-k2-turbo-preview",
+            "value": "kimi-k2-turbo-preview"
+          },
+          {
+            "label": "moonshot-v1-auto",
+            "value": "moonshot-v1-auto"
+          },
+          {
+            "label": "moonshot-v1-128k",
+            "value": "moonshot-v1-128k"
+          },
+          {
+            "label": "moonshot-v1-32k",
+            "value": "moonshot-v1-32k"
+          }
+        ],
+        "needs_reasoning_split": false,
+        "requires_api_key": true,
+        "thinking_disable_field": "thinking",
+        "translation": {
+          "accepts_any_model": false,
+          "supported_beyond_model_options": [],
+          "supported_models": [
+            "kimi-k2-turbo-preview",
+            "kimi-k2.5",
+            "moonshot-v1-128k",
+            "moonshot-v1-32k",
+            "moonshot-v1-auto"
+          ]
+        }
+      },
+      {
+        "default_base_url": "https://api.minimaxi.com/v1",
+        "display_name": "MiniMax China",
+        "id": "minimaxCN",
+        "is_local": false,
+        "is_openai_compatible": true,
+        "model_options": [
+          {
+            "label": "MiniMax-M2.7",
+            "value": "MiniMax-M2.7"
+          },
+          {
+            "label": "MiniMax-M2.7-highspeed",
+            "value": "MiniMax-M2.7-highspeed"
+          },
+          {
+            "label": "MiniMax-M2.5",
+            "value": "MiniMax-M2.5"
+          },
+          {
+            "label": "MiniMax-M2.5-highspeed",
+            "value": "MiniMax-M2.5-highspeed"
+          },
+          {
+            "label": "MiniMax-M2.1",
+            "value": "MiniMax-M2.1"
+          }
+        ],
+        "needs_reasoning_split": true,
+        "requires_api_key": true,
+        "thinking_disable_field": null,
+        "translation": {
+          "accepts_any_model": false,
+          "supported_beyond_model_options": [],
+          "supported_models": [
+            "MiniMax-M2.1",
+            "MiniMax-M2.5",
+            "MiniMax-M2.5-highspeed",
+            "MiniMax-M2.7",
+            "MiniMax-M2.7-highspeed"
+          ]
+        }
+      },
+      {
+        "default_base_url": "https://api.minimax.io/v1",
+        "display_name": "MiniMax Global",
+        "id": "minimaxIntl",
+        "is_local": false,
+        "is_openai_compatible": true,
+        "model_options": [
+          {
+            "label": "MiniMax-M2.7",
+            "value": "MiniMax-M2.7"
+          },
+          {
+            "label": "MiniMax-M2.7-highspeed",
+            "value": "MiniMax-M2.7-highspeed"
+          },
+          {
+            "label": "MiniMax-M2.5",
+            "value": "MiniMax-M2.5"
+          },
+          {
+            "label": "MiniMax-M2.5-highspeed",
+            "value": "MiniMax-M2.5-highspeed"
+          },
+          {
+            "label": "MiniMax-M2.1",
+            "value": "MiniMax-M2.1"
+          }
+        ],
+        "needs_reasoning_split": true,
+        "requires_api_key": true,
+        "thinking_disable_field": null,
+        "translation": {
+          "accepts_any_model": false,
+          "supported_beyond_model_options": [],
+          "supported_models": [
+            "MiniMax-M2.1",
+            "MiniMax-M2.5",
+            "MiniMax-M2.5-highspeed",
+            "MiniMax-M2.7",
+            "MiniMax-M2.7-highspeed"
+          ]
+        }
+      },
+      {
+        "default_base_url": "http://localhost:11434/v1",
+        "display_name": "Ollama (Local)",
+        "id": "ollama",
+        "is_local": true,
+        "is_openai_compatible": true,
+        "model_options": [],
+        "needs_reasoning_split": false,
+        "requires_api_key": false,
+        "thinking_disable_field": "think",
+        "translation": {
+          "accepts_any_model": true,
+          "supported_beyond_model_options": [],
+          "supported_models": []
+        }
+      },
+      {
+        "default_base_url": "https://api.openai.com/v1",
+        "display_name": "OpenAI",
+        "id": "openai",
+        "is_local": false,
+        "is_openai_compatible": true,
+        "model_options": [
+          {
+            "label": "gpt-5.4-nano",
+            "value": "gpt-5.4-nano"
+          },
+          {
+            "label": "gpt-5.4-mini",
+            "value": "gpt-5.4-mini"
+          },
+          {
+            "label": "gpt-5.4",
+            "value": "gpt-5.4"
+          },
+          {
+            "label": "gpt-4.1-nano",
+            "value": "gpt-4.1-nano"
+          },
+          {
+            "label": "gpt-4.1-mini",
+            "value": "gpt-4.1-mini"
+          },
+          {
+            "label": "gpt-4.1",
+            "value": "gpt-4.1"
+          },
+          {
+            "label": "gpt-4o-mini",
+            "value": "gpt-4o-mini"
+          },
+          {
+            "label": "o4-mini",
+            "value": "o4-mini"
+          }
+        ],
+        "needs_reasoning_split": false,
+        "requires_api_key": true,
+        "thinking_disable_field": null,
+        "translation": {
+          "accepts_any_model": false,
+          "supported_beyond_model_options": [
+            "gpt-4o"
+          ],
+          "supported_models": [
+            "gpt-4.1",
+            "gpt-4.1-mini",
+            "gpt-4.1-nano",
+            "gpt-4o",
+            "gpt-4o-mini",
+            "gpt-5.4",
+            "gpt-5.4-mini",
+            "gpt-5.4-nano",
+            "o4-mini"
+          ]
+        }
+      },
+      {
+        "default_base_url": "https://openrouter.ai/api/v1",
+        "display_name": "OpenRouter",
+        "id": "openrouter",
+        "is_local": false,
+        "is_openai_compatible": true,
+        "model_options": [],
+        "needs_reasoning_split": false,
+        "requires_api_key": true,
+        "thinking_disable_field": null,
+        "translation": {
+          "accepts_any_model": true,
+          "supported_beyond_model_options": [],
+          "supported_models": []
+        }
+      },
+      {
+        "default_base_url": "https://open.bigmodel.cn/api/paas/v4",
+        "display_name": "Zhipu (GLM)",
+        "id": "zhipu",
+        "is_local": false,
+        "is_openai_compatible": true,
+        "model_options": [
+          {
+            "label": "glm-5",
+            "value": "glm-5"
+          },
+          {
+            "label": "glm-5-turbo",
+            "value": "glm-5-turbo"
+          },
+          {
+            "label": "glm-4.7-flash",
+            "value": "glm-4.7-flash"
+          },
+          {
+            "label": "glm-4.5-flash",
+            "value": "glm-4.5-flash"
+          },
+          {
+            "label": "glm-4.5-air",
+            "value": "glm-4.5-air"
+          },
+          {
+            "label": "glm-4-long",
+            "value": "glm-4-long"
+          }
+        ],
+        "needs_reasoning_split": false,
+        "requires_api_key": true,
+        "thinking_disable_field": "reasoning_effort",
+        "translation": {
+          "accepts_any_model": false,
+          "supported_beyond_model_options": [],
+          "supported_models": [
+            "glm-4-long",
+            "glm-4.5-air",
+            "glm-4.5-flash",
+            "glm-4.7-flash",
+            "glm-5",
+            "glm-5-turbo"
+          ]
+        }
+      }
+    ],
+    "sources": [
+      "macos/VoxLog/LLM/LLMProvider.swift",
+      "macos/VoxLog/Translation/TranslationTransport.swift",
+      "macos/VoxLog/Services/KeychainService.swift",
+      "macos/VoxLog/Translation/SelectedLLMConfigurationResolver.swift"
+    ]
+  },
+  "note": "Generated by scripts/export_llm_provider_inventory.py. Do not edit by hand; rerun the exporter and commit the result.",
+  "product": "Vox Agent"
+}

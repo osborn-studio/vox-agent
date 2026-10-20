@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://osbornpa.com/schemas/llm-registry/models@1.json",
+  "title": "osborn-llm-registry models@1",
+  "description": "Model catalog generated from models.dev plus hand-maintained overrides. Units: cost_usd = USD per million tokens (reference price); price_cny_micro = micro-yuan per million tokens (owner-verified official price). Consumer precedence: app owner price > price_cny_micro > round(cost_usd * meta.usd_cny * 1e6) (labelled reference) > null. 0 is a valid price, not a missing one.",
+  "type": "object", "additionalProperties": false, "required": ["schema", "meta", "providers"],
+  "properties": {
+    "schema": { "const": "osborn-llm-registry/models@1" },
+    "meta": { "type": "object", "additionalProperties": false, "required": ["source", "fetched_at", "usd_cny", "generator"],
+      "properties": { "source": { "type": "string", "format": "uri" }, "fetched_at": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" }, "usd_cny": { "type": "number", "exclusiveMinimum": 0, "exclusiveMaximum": 100 }, "generator": { "type": "string" } } },
+    "providers": { "type": "object", "propertyNames": { "pattern": "^[a-z][a-z0-9_]{1,31}$" }, "additionalProperties": { "type": "object", "propertyNames": { "pattern": "^[A-Za-z0-9._:/-]{1,100}$" }, "additionalProperties": { "$ref": "#/$defs/model" } } }
+  },
+  "$defs": {
+    "patch": { "type": "object", "additionalProperties": false, "required": ["path", "value"], "properties": { "path": { "type": "string", "pattern": "^[a-z_]+(\\.[a-z_]+)*$" }, "value": {} } },
+    "model": {
+      "type": "object", "additionalProperties": false,
+      "required": ["source", "context", "output", "structured_output", "reasoning", "cost_usd", "release_date", "price_cny_micro", "response_model", "response_model_verified_at", "hint_zh"],
+      "properties": {
+        "source": { "type": "string", "enum": ["models.dev", "override"] },
+        "context": { "type": "integer", "minimum": 1024, "maximum": 10000000 },
+        "output": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+        "structured_output": { "type": "boolean" },
+        "reasoning": { "type": "boolean" },
+        "cost_usd": { "oneOf": [{ "type": "null" }, { "type": "object", "additionalProperties": false, "required": ["input", "output"], "properties": { "input": { "type": "number", "minimum": 0 }, "output": { "type": "number", "minimum": 0 } } }] },
+        "release_date": { "oneOf": [{ "type": "null" }, { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" }] },
+        "capabilities": { "type": "object", "additionalProperties": false, "properties": { "temperature": { "type": "boolean" }, "reasoning_split": { "type": "boolean" }, "thinking_disable": { "oneOf": [{ "$ref": "#/$defs/patch" }, { "type": "null" }] } } },
+        "price_cny_micro": { "oneOf": [{ "type": "null" }, { "type": "object", "additionalProperties": false, "required": ["input", "output", "as_of"], "properties": { "input": { "type": "integer", "minimum": 0, "maximum": 1000000000000 }, "output": { "type": "integer", "minimum": 0, "maximum": 1000000000000 }, "as_of": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" } } }] },
+        "response_model": { "oneOf": [{ "type": "null" }, { "type": "string", "pattern": "^[A-Za-z0-9._:/-]{1,100}$" }] },
+        "response_model_verified_at": { "oneOf": [{ "type": "null" }, { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" }] },
+        "hint_zh": { "oneOf": [{ "type": "null" }, { "type": "string", "maxLength": 120 }] }
+      }
+    }
+  }
+}
