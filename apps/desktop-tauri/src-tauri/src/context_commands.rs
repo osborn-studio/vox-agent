@@ -129,6 +129,19 @@ impl ContextState {
     pub fn set_journal_label(&self, label: &'static str) {
         *self.journal_label.lock().unwrap_or_else(|p| p.into_inner()) = label;
     }
+    /// Before a reservation or a record step: with a journal open, the
+    /// Context directories must still be owner-only. A widened directory
+    /// turns the label to `unsafe-acl` and blocks delivery from here on
+    /// (the next sign-in refuses the journal outright).
+    fn journal_still_private(&self) -> bool {
+        if self.journal_label() != JournalOpenReport::NotSupported.key_store_label()
+            && self.journal_label() != JournalOpenReport::UnsafeAcl.key_store_label()
+            && !journal_dirs_private(&crate::state::vox_agent_data_dir())
+        {
+            self.set_journal_label(JournalOpenReport::UnsafeAcl.key_store_label());
+        }
+        self.journal_label() != JournalOpenReport::UnsafeAcl.key_store_label()
+    }
     pub fn journal_label(&self) -> &'static str {
         *self.journal_label.lock().unwrap_or_else(|p| p.into_inner())
     }
@@ -438,6 +451,32 @@ pub fn open_journal_with(
     }
 }
 
+/// Whether the Context directories under `data_dir` still pass the checks
+/// `open_journal_with` made. Called before every reservation and record step
+/// while a journal is open, so widening a directory during a session stops
+/// delivery instead of being noticed only at the next sign-in. Always true
+/// where no journal can exist.
+pub fn journal_dirs_private(data_dir: &std::path::Path) -> bool {
+    #[cfg(not(windows))]
+    {
+        let _ = data_dir;
+        true
+    }
+    #[cfg(windows)]
+    {
+        use crate::context_acl::{verify_private_child, verify_private_dir};
+        let root = data_dir.join("context");
+        let journal = root.join("journal");
+        [root.clone(), root.join("keys"), journal.clone()]
+            .iter()
+            .all(|dir| verify_private_dir(dir).is_ok())
+            && [journal.join("db"), journal.join("isolated")]
+                .iter()
+                .filter(|dir| dir.exists())
+                .all(|dir| verify_private_child(dir).is_ok())
+    }
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ProjectInput {
@@ -607,6 +646,9 @@ async fn drive(
         let Some(current) = service.upgrade() else {
             break; // signed out meanwhile
         };
+        if !app.state::<ContextState>().journal_still_private() {
+            break; // a Context directory was widened; delivery stops here
+        }
         let next = current.step(&event_id).await;
         if let Ok(status) = current.status(&event_id) {
             let dto = record_dto(&event_id, &status, next.as_ref().ok());
@@ -634,6 +676,9 @@ pub async fn context_submit_record(
 ) -> Result<RecordDto, CommandError> {
     let payload = parse_submission(input)?;
     let service = state.service()?;
+    if !state.journal_still_private() {
+        return Err(CommandError::JournalUnavailable);
+    }
     service.reserve(&payload)?;
     let event_id = payload.event_id().to_string();
     let status = service.status(&event_id)?;
@@ -1316,6 +1361,19 @@ mod tests {
         state.schedule_renewal(&account, Some(0), true);
         assert!(state.due_renewal().is_none());
         assert!(state.renewal_belongs_to(&account));
+    }
+
+    #[test]
+    fn a_widened_directory_blocks_delivery_only_once_a_journal_was_opened() {
+        let state = ContextState::default();
+        // Not supported here: nothing to check, nothing blocked.
+        assert!(state.journal_still_private());
+        state.set_journal_label(JournalOpenReport::UnsafeAcl.key_store_label());
+        assert!(!state.journal_still_private(), "unsafe stays unsafe");
+        assert_eq!(state.journal_label(), "unsafe-acl");
+        let dir = tempfile::tempdir().unwrap();
+        // On this platform the directories always verify.
+        assert!(journal_dirs_private(dir.path()));
     }
 
     #[test]

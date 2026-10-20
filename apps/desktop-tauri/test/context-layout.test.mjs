@@ -232,7 +232,7 @@ test("a renewal sign-out from Rust refreshes the account view with a known code 
   assert.match(ui, /export const ACCOUNT_EVENT = "vox-agent:\/\/context-account"/);
   const block = ui.slice(ui.indexOf("listen(ACCOUNT_EVENT"), ui.indexOf("doc.defaultView?.addEventListener(\"blur\""));
   assert.match(block, /accountError\(typeof code === "string" \? code : "sign-in-required", l\)/);
-  assert.match(block, /clearPrivateSide\(\)/);
+  assert.match(block, /resetView\(\);[\s\S]*setAccountNote/, "the view is reset before the note is shown");
   assert.match(block, /refreshSummary\(\)/);
 });
 

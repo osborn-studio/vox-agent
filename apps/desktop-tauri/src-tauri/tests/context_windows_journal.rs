@@ -1,7 +1,9 @@
 //! On Windows a signed-in account owns a DPAPI-backed journal under
 //! `<data_dir>/context`; elsewhere it stays `None` (`NotSupported`).
 use std::path::Path;
-use vox_agent_desktop_tauri_lib::context_commands::{open_journal_with, JournalOpenReport};
+use vox_agent_desktop_tauri_lib::context_commands::{
+    journal_dirs_private, open_journal_with, JournalOpenReport,
+};
 use vox_agent_desktop_tauri_lib::context_journal::FileAnchorStore;
 
 /// `open_journal` with anchors in a file store under `root` (outside
@@ -25,16 +27,16 @@ fn open_journal_reports_platform_support() {
         for sub in ["keys", "journal"] {
             verify_private_dir(&root.path().join("context").join(sub)).unwrap();
         }
-        for sub in ["journal\\db", "journal\\isolated"] {
-            let dir = root.path().join("context").join(sub);
-            assert!(dir.is_dir(), "{sub}");
-            verify_private_child(&dir).unwrap();
-            assert_eq!(
-                verify_private_dir(&dir).unwrap_err(),
-                vox_agent_desktop_tauri_lib::context_acl::AclError::TooPermissive,
-                "{sub} inherits, so the strict check refuses it"
-            );
-        }
+        // `isolated/` appears only when an earlier database was archived.
+        let db = root.path().join("context").join("journal").join("db");
+        assert!(db.is_dir());
+        verify_private_child(&db).unwrap();
+        assert_eq!(
+            verify_private_dir(&db).unwrap_err(),
+            vox_agent_desktop_tauri_lib::context_acl::AclError::TooPermissive,
+            "db/ inherits, so the strict check refuses it"
+        );
+        assert!(journal_dirs_private(root.path()));
     } else {
         assert!(matches!(report, JournalOpenReport::NotSupported));
         assert_eq!(report.key_store_label(), "not-available-in-this-build");
@@ -143,4 +145,36 @@ fn open_journal_refuses_a_widened_database_directory() {
         open_journal(root.path()),
         JournalOpenReport::UnsafeAcl
     ));
+}
+
+#[cfg(windows)]
+#[test]
+fn widening_a_directory_while_the_journal_is_open_is_detected() {
+    let root = tempfile::tempdir().unwrap();
+    let opened = open_journal(root.path());
+    assert!(matches!(opened, JournalOpenReport::Opened(_)), "{opened:?}");
+    assert!(journal_dirs_private(root.path()));
+    let db = root.path().join("context").join("journal").join("db");
+    let status = std::process::Command::new("icacls")
+        .arg(&db)
+        .args(["/grant", "*S-1-1-0:(OI)(CI)R"])
+        .status()
+        .unwrap();
+    assert!(status.success());
+    assert!(
+        !journal_dirs_private(root.path()),
+        "the check that gates dispatch sees it"
+    );
+    drop(opened);
+}
+
+#[test]
+fn journal_dirs_private_is_true_where_no_journal_exists() {
+    let root = tempfile::tempdir().unwrap();
+    if !cfg!(windows) {
+        assert!(journal_dirs_private(root.path()));
+    } else {
+        // Nothing created yet: the top-level directories do not verify.
+        assert!(!journal_dirs_private(root.path()));
+    }
 }

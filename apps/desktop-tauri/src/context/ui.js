@@ -647,8 +647,11 @@ export function initContextUi({ document: doc, invoke, listen, storage, onAgentS
   listen(RECORD_EVENT, (event) => refreshRecord(event?.payload?.eventId));
   listen(ACCOUNT_EVENT, (event) => {
     const code = event?.payload?.code;
+    // Same reset as an explicit sign-out: originals, records, conversations
+    // and drafts of the ended account must not stay visible or be refilled
+    // by requests still in flight.
+    resetView();
     setAccountNote((l) => accountError(typeof code === "string" ? code : "sign-in-required", l));
-    clearPrivateSide();
     refreshSummary();
   });
   doc.defaultView?.addEventListener("blur", hideRevealed);
