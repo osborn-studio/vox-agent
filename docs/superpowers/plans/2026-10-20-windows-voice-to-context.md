@@ -109,6 +109,9 @@ spec sections 3.1, 3.2, 3.4, 5) once their inputs exist:
   `SessionAuthority::confirm` (`context_session.rs:325`) and the `/me` route.
 - PR-E needs the merged `polish_status` contract (PR-D) and a reachable bundled
   backend (PR-B) to write end-to-end Node tests against.
+  Owner decision 2026-10-21 (recorded on PR #12): PR-E also decides, in one
+  place, what happens to `should_autopaste` and SendInput injection when inline
+  polish fails; PR-D deliberately left both unchanged.
 - PR-F needs the owner's PC details.
 
 ## Spec coverage map
