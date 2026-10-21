@@ -37,7 +37,7 @@ disjoint files:
 ## Inputs still required from the owner
 
 - Windows PC for PR-F: machine name, CPU/GPU (NVIDIA or not), whether SSH is reachable. Not needed before PR-F.
-- Default local ASR route: decided by the PR-0 measurement rule in the spec (warm latency for a 10-second utterance ≤ 6 s on CPU → Qwen local default; otherwise `sherpa-sensevoice` default with Qwen local opt-in). The owner may override after reading the PR-0 report.
+- Default local ASR route: **decided 2026-10-21 by the owner after the PR-0 report (PR #10): `sherpa-sensevoice` is the default for the first Windows candidate; Qwen3-ASR-0.6B local is opt-in in Settings.** PR-F's measurement on the owner's PC may reopen the default; until then PR-B and PR-C build to this decision.
 
 ## Standard Codex audit procedure (every PR)
 
