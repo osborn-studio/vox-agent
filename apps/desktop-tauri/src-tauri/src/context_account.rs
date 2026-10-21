@@ -7,9 +7,10 @@
 //! * Refusals become codes. Server bodies are never shown or kept.
 //! * Only server-issued conversation ids (`fc_…`) are accepted; raw Feishu
 //!   chat ids never reach the WebView.
-use crate::context_login::{refusal_code, LoginError, SignedIn};
+use crate::context_journal::Journal;
+use crate::context_login::{refusal_code, LoginError, RenewOutcome, SignedIn};
 use crate::context_service::{ContextService, ServiceError};
-use crate::context_session::{SessionAuthority, TokenStore};
+use crate::context_session::{SessionAuthority, SessionError, SessionLease, TokenStore};
 use crate::context_transport::read_bounded;
 use crate::context_wire::ContextEndpoint;
 use serde::{Deserialize, Serialize};
@@ -214,7 +215,7 @@ fn discovery_refusal(status: u16, code: Option<&str>) -> DiscoveryError {
     }
 }
 
-fn join(endpoint: &ContextEndpoint, path: &str) -> Option<reqwest::Url> {
+pub(crate) fn join(endpoint: &ContextEndpoint, path: &str) -> Option<reqwest::Url> {
     reqwest::Url::parse(endpoint.canonical())
         .ok()?
         .join(path)
@@ -390,12 +391,16 @@ impl<S: TokenStore> AccountSlot<S> {
 
     /// Store the session and make it current, unless a sign-out happened
     /// since `begin_sign_in` or another account is active.
+    ///
+    /// `journal` is the encrypted journal this session may deliver from
+    /// (`context_commands::open_journal`); `None` keeps delivery blocked.
     pub fn publish(
         &self,
         ticket: &SignInTicket<'_>,
         endpoint: ContextEndpoint,
         signed: SignedIn,
         store: S,
+        journal: Option<Journal>,
     ) -> Result<Option<String>, AccountError> {
         let mut inner = self.lock();
         if !self.gate.current(ticket) {
@@ -408,12 +413,22 @@ impl<S: TokenStore> AccountSlot<S> {
         session
             .sign_in(signed.principal.clone(), signed.token.to_string())
             .map_err(|_| AccountError::StoreUnavailable)?;
+        // The refresh token lives beside the session; a server without one
+        // leaves no stale entry behind. A store that cannot hold it signs
+        // the session out again rather than keeping a half-stored session.
+        if session
+            .set_refresh_token(signed.refresh_token.as_deref().map(String::as_str))
+            .is_err()
+        {
+            let _ = session.sign_out();
+            return Err(AccountError::StoreUnavailable);
+        }
         let name = (!signed.display_name.trim().is_empty()).then(|| signed.display_name.clone());
         inner.service = Some(Arc::new(ContextService::new(
             endpoint,
             signed.destinations,
             session,
-            None,
+            journal,
         )));
         inner.display_name = name.clone();
         Ok(name)
@@ -447,19 +462,74 @@ impl<S: TokenStore> AccountSlot<S> {
     }
 
     /// End the account only if `service` is still current: a late refusal
-    /// for an old session never signs out a newer one.
-    pub fn end_if(&self, service: &Arc<ContextService<S>>) {
+    /// for an old session never signs out a newer one. Returns whether this
+    /// call ended it, decided under the slot lock, so callers can tie their
+    /// own follow-up (views, schedules, events) to the real transition.
+    pub fn end_if(&self, service: &Arc<ContextService<S>>) -> bool {
         let mut inner = self.lock();
-        if inner
+        let current = inner
             .service
             .as_ref()
-            .is_some_and(|current| Arc::ptr_eq(current, service))
-        {
+            .is_some_and(|current| Arc::ptr_eq(current, service));
+        if current {
             self.gate.end();
             inner.service = None;
             inner.display_name = None;
             let _ = service.with_session(|s| s.sign_out());
         }
+        current
+    }
+}
+
+/// What applying a `RenewOutcome` did to the session.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RenewalApplied {
+    /// The access token was rotated; schedule the next renewal.
+    /// `refresh_stored` is false when the credential store refused the
+    /// refresh token the server returned (the old one stays stored).
+    Renewed {
+        expires_in: u64,
+        refresh_stored: bool,
+    },
+    /// A newer sign-in or renewal happened meanwhile; nothing changed.
+    Stale,
+    /// The caller must end the account (the session itself is already
+    /// signed out for `IDENTITY_CHANGED`; the server ended it otherwise).
+    SignOut(&'static str),
+    /// Nothing changed; try again at the next tick.
+    RetryLater(&'static str),
+}
+
+/// Apply a renewal result under the lease captured before the request. The
+/// principal the server reports must match the session's; a different one
+/// signs the session out. A stale lease (sign-out, sign-in or another
+/// renewal meanwhile) is dropped silently.
+pub fn apply_renewal<S: TokenStore>(
+    service: &ContextService<S>,
+    lease: &SessionLease,
+    outcome: RenewOutcome,
+) -> RenewalApplied {
+    match outcome {
+        RenewOutcome::Renewed {
+            token,
+            refresh_token,
+            expires_in,
+            principal,
+        } => service.with_session(|session| {
+            match session.refresh(lease, &principal, token.to_string()) {
+                Ok(()) => RenewalApplied::Renewed {
+                    expires_in,
+                    // The old refresh token stays stored on failure; if the
+                    // server rotated it, the next renewal fails closed (401).
+                    refresh_stored: session.set_refresh_token(Some(&refresh_token)).is_ok(),
+                },
+                Err(SessionError::IdentityChanged) => RenewalApplied::SignOut("IDENTITY_CHANGED"),
+                Err(SessionError::StaleLease | SessionError::NotSignedIn) => RenewalApplied::Stale,
+                Err(_) => RenewalApplied::RetryLater("SESSION"),
+            }
+        }),
+        RenewOutcome::SignedOut(code) => RenewalApplied::SignOut(code),
+        RenewOutcome::RetryLater(code) => RenewalApplied::RetryLater(code),
     }
 }
 

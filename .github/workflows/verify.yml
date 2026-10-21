@@ -228,6 +228,9 @@ jobs:
         run: |
           cargo fmt --manifest-path apps/desktop-tauri/src-tauri/Cargo.toml --all -- --check
           cargo test --manifest-path apps/desktop-tauri/src-tauri/Cargo.toml --locked
+          # Release profile: `cfg(debug_assertions)`-only test helpers must not
+          # be reachable from production paths (Windows journal, PR-A).
+          cargo check --manifest-path apps/desktop-tauri/src-tauri/Cargo.toml --locked --release
 
   rust-advisory-audit:
     name: RustSec advisory audit (pinned)
