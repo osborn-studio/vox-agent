@@ -1,7 +1,11 @@
 """Personal journal/revision gate: isolated synthetic DBs, no tenant or model calls."""
+from contextlib import closing
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 import json
+import sqlite3
+import threading
+import time
 
 from fastapi.testclient import TestClient
 import pytest
@@ -490,6 +494,85 @@ def test_private_http_scope_checks_never_use_org_shared_user_reader(private, mon
             assert reads == [200,200]
     assert client.post('/v1/context-private-search',headers=headers,json=window(q='parser')).status_code == 200
     assert check(client,headers,own['id'],1).json()['valid'] is True
+
+
+class _CompetingWriter:
+    """Holds the journal's single WAL write lock from another connection.
+
+    Mirrors a concurrent editor whose commit (WAL fsync on a slow runner) keeps
+    the lock longer than the old 200 ms busy timeout and 250 ms work budget.
+    """
+
+    def __init__(self, journal, identifier, *, hold, bump_revision):
+        self.locked = threading.Event()
+        self.error = None
+
+        def run():
+            try:
+                with closing(sqlite3.connect(journal.path.as_uri() + '?mode=rw', uri=True, timeout=5)) as db:
+                    db.execute('BEGIN IMMEDIATE')
+                    if bump_revision:
+                        db.execute('INSERT INTO private_context_revisions_v1 VALUES(?,2,?,?,NULL,?)',
+                                   (identifier, 'rival edit', '[]', time.time()))
+                        db.execute('UPDATE private_context_v1 SET revision=2 WHERE id=?', (identifier,))
+                    self.locked.set()
+                    time.sleep(hold)
+                    db.commit()
+            except BaseException as error:  # surfaced by the test, never swallowed
+                self.error = error
+                self.locked.set()
+
+        self.thread = threading.Thread(target=run, daemon=True)
+
+    def __enter__(self):
+        self.thread.start()
+        assert self.locked.wait(timeout=5)
+        assert self.error is None, self.error
+        return self
+
+    def __exit__(self, *_):
+        self.thread.join(timeout=10)
+        assert not self.thread.is_alive()
+        assert self.error is None, self.error
+
+
+def test_concurrent_edit_waits_for_slow_writer_and_reports_revision_conflict(private):
+    # Regression for the CI flake: the loser must observe the rival revision
+    # (409), not give up on the write lock (503) while the winner is committing.
+    client, _, headers, _, context = private
+    event = create(client, headers).json()
+    with _CompetingWriter(context.private_context_store, event['id'], hold=0.5, bump_revision=True):
+        response = client.put('/v1/context-private/' + event['id'], headers=headers,
+                              json={'expectedRevision': 1, 'text': 'late edit'})
+    assert response.status_code == 409
+    assert response.json()['detail'] == 'PRIVATE_CONTEXT_REVISION_CONFLICT'
+    current = client.get('/v1/context-private/' + event['id'], headers=headers).json()
+    assert (current['revision'], current['text']) == (2, 'rival edit')
+
+
+def test_concurrent_edit_waits_for_slow_writer_then_wins(private):
+    # A lock wait alone is not a storage failure and must not consume the work budget.
+    client, _, headers, _, context = private
+    event = create(client, headers).json()
+    with _CompetingWriter(context.private_context_store, event['id'], hold=0.5, bump_revision=False):
+        response = client.put('/v1/context-private/' + event['id'], headers=headers,
+                              json={'expectedRevision': 1, 'text': 'late edit'})
+    assert response.status_code == 200
+    assert (response.json()['revision'], response.json()['text']) == (2, 'late edit')
+
+
+def test_write_lock_wait_is_bounded_and_stays_unavailable(private, monkeypatch):
+    # A lock held past the bounded busy timeout is a genuine storage failure: 503, never 409.
+    client, _, headers, _, context = private
+    journal = context.private_context_store
+    event = create(client, headers).json()
+    monkeypatch.setattr(journal, 'write_busy_timeout', 0.05)
+    with _CompetingWriter(journal, event['id'], hold=0.5, bump_revision=True):
+        response = client.put('/v1/context-private/' + event['id'], headers=headers,
+                              json={'expectedRevision': 1, 'text': 'late edit'})
+    assert response.status_code == 503
+    assert response.json()['detail'] == 'PRIVATE_CONTEXT_UNAVAILABLE'
+    assert client.get('/v1/context-private/' + event['id'], headers=headers).json()['revision'] == 2
 
 
 def test_project_identifier_matches_shared_eighty_character_boundary(private):
