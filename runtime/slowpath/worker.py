@@ -78,8 +78,25 @@ async def _process_event(event: VoiceEvent, config, archive, polisher):
         logger.error("slowpath.archive_fail", id=event.id, error=str(e)[:100])
         return  # Don't proceed if archive fails
 
-    # Step 2: Optional LLM polish (only for normal mode)
-    if event.recording_mode == RecordingMode.NORMAL and polisher and event.raw_text:
+    # Step 2a: Persist an inline polish result so history sees it. The fast
+    # path sets polished_text when the caller asked for polish=1 and the
+    # provider answered; the worker must not call the provider again.
+    if event.polished_text:
+        try:
+            await archive.update_polish(event.id, event.polished_text)
+            event.archive_status = ArchiveStatus.POLISHED
+            logger.debug("slowpath.polished_inline", id=event.id)
+        except Exception as e:
+            logger.warning("slowpath.polish_persist_fail", id=event.id, error=str(e)[:100])
+
+    # Step 2b: Optional LLM polish (only for normal mode, and only when
+    # inline polish did not already run for this event)
+    if (
+        event.recording_mode == RecordingMode.NORMAL
+        and polisher
+        and event.raw_text
+        and not event.polished_text  # inline polish already ran for this event
+    ):
         try:
             polished = await asyncio.wait_for(
                 polisher.polish(event.raw_text, config),
