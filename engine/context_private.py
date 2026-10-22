@@ -129,6 +129,12 @@ class ReferenceCheck(BaseModel):
 
 class PrivateContextJournal:
     """Owned by BackupAppContext; same private DB/file backup, separate tables."""
+    # WAL readers never wait on writers; a writer waits (bounded, like BackupStore's
+    # own busy_timeout) for the single WAL write slot instead of reporting a
+    # transient lock as PRIVATE_CONTEXT_UNAVAILABLE. Expiry stays a 503.
+    read_busy_timeout = 0.2
+    write_busy_timeout = 5.0
+
     def __init__(self, path):
         self.path = path.resolve()
         self.auth_lock = threading.RLock()
@@ -178,23 +184,27 @@ class PrivateContextJournal:
     def connection(self, *, write=False):
         # BackupStore created this file privately. mode=rw never creates a new file.
         try:
-            db = sqlite3.connect(self.path.as_uri() + ("?mode=rw" if write else "?mode=ro"), uri=True, timeout=0.2)
+            db = sqlite3.connect(self.path.as_uri() + ("?mode=rw" if write else "?mode=ro"), uri=True,
+                                 timeout=self.write_busy_timeout if write else self.read_busy_timeout)
         except sqlite3.DatabaseError:
             raise HTTPException(503, "PRIVATE_CONTEXT_UNAVAILABLE") from None
         db.row_factory = sqlite3.Row
-        deadline = time.monotonic() + 0.25
-        steps = 0
-
-        def budget():
-            nonlocal steps
-            steps += 1000
-            return steps >= 200000 or time.monotonic() >= deadline
-
-        db.set_progress_handler(budget, 1000)
         try:
             if not write:
                 db.execute("PRAGMA query_only=ON")
+            # BEGIN IMMEDIATE may wait up to the busy timeout for a committing
+            # writer; the work budget starts once this transaction holds its lock
+            # so the wait is not charged against the statements that follow.
             db.execute("BEGIN IMMEDIATE" if write else "BEGIN")
+            deadline = time.monotonic() + 0.25
+            steps = 0
+
+            def budget():
+                nonlocal steps
+                steps += 1000
+                return steps >= 200000 or time.monotonic() >= deadline
+
+            db.set_progress_handler(budget, 1000)
             yield db
             db.commit()
         except sqlite3.DatabaseError:
