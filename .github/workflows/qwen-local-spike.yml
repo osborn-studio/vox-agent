@@ -1,0 +1,143 @@
+# Feasibility spike for Qwen3-ASR-0.6B frozen on Windows CPU (plan PR-0,
+# docs/superpowers/plans/2026-10-20-win-pr0-qwen-local-spike.md).
+# Manual only, GitHub-hosted windows-latest only. Produces a JSON report
+# artifact with hashes, sizes and timings; never transcript text, never a
+# release artifact.
+name: Qwen local spike
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Record the runner image
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force "${{ runner.temp }}\spike" | Out-Null
+          $info = [ordered]@{
+            image_os = $env:ImageOS
+            image_version = $env:ImageVersion
+            os_version = [System.Environment]::OSVersion.VersionString
+            processor = (Get-CimInstance Win32_Processor | Select-Object -First 1).Name
+            logical_processors = [System.Environment]::ProcessorCount
+            total_memory_mb = [math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1MB)
+            python = (python --version)
+          }
+          $info | ConvertTo-Json | Out-File -Encoding utf8 "${{ runner.temp }}\spike\runner.json"
+          Get-Content "${{ runner.temp }}\spike\runner.json"
+
+      - name: Install qwen-asr, CPU torch and PyInstaller
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install qwen-asr torch --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple
+          python -m pip install pyinstaller psutil
+          python -m pip show qwen-asr
+          python -m pip freeze > "${{ runner.temp }}\spike\pip-freeze.txt"
+
+      - name: Restore pinned model files
+        id: model-cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}\qwen3-asr-0.6b
+          key: qwen3-asr-0.6b-fa38dbb84faec2dc363a2761fbc628d1380ef0b5088e4d5836bc1be03984a0dc
+
+      - name: Download and verify model files (host Python, network allowed here only)
+        run: >-
+          python scripts/spike_qwen_local_probe.py
+          --manifest engine/model_manifests/qwen3-asr-0.6b.json
+          --model-dir "${{ runner.temp }}\qwen3-asr-0.6b"
+          --download --verify-only --report "${{ runner.temp }}\spike\verify-only.json"
+
+      # Windows PowerShell 5.1 on purpose: System.Speech is a .NET Framework
+      # assembly and is not loadable from PowerShell 7.
+      - name: Synthesize the test utterance with Windows SAPI
+        id: utterance
+        shell: powershell
+        run: |
+          Add-Type -AssemblyName System.Speech
+          $s = New-Object System.Speech.Synthesis.SpeechSynthesizer
+          $voices = $s.GetInstalledVoices() | ForEach-Object { $_.VoiceInfo.Name + " (" + $_.VoiceInfo.Culture.Name + ")" }
+          "Installed voices: $($voices -join ', ')"
+          $voice = $s.GetInstalledVoices() | Where-Object { $_.VoiceInfo.Culture.Name -eq 'zh-CN' } | Select-Object -First 1
+          # About ten seconds of speech, so the latency rule in the spec applies without scaling.
+          if ($voice) {
+            $s.SelectVoice($voice.VoiceInfo.Name)
+            $lang = 'zh-CN'
+            $text = [System.IO.File]::ReadAllText("scripts\spike_utterance_zh.txt", [System.Text.Encoding]::UTF8).Trim()
+          } else {
+            $lang = $s.Voice.Culture.Name
+            $text = [System.IO.File]::ReadAllText("scripts\spike_utterance_en.txt", [System.Text.Encoding]::UTF8).Trim()
+          }
+          "Voice: $($s.Voice.Name) ($lang)"
+          $fmt = New-Object System.Speech.AudioFormat.SpeechAudioFormatInfo(16000, [System.Speech.AudioFormat.AudioBitsPerSample]::Sixteen, [System.Speech.AudioFormat.AudioChannel]::Mono)
+          $s.SetOutputToWaveFile("${{ runner.temp }}\utterance.wav", $fmt)
+          $s.Speak($text)
+          $s.Dispose()
+          $wav = Get-Item "${{ runner.temp }}\utterance.wav"
+          "WAV bytes: $($wav.Length) (about $([math]::Round(($wav.Length - 44) / 32000, 1)) s)"
+          "lang=$lang" | Out-File -Append -Encoding ascii $env:GITHUB_OUTPUT
+          "voice=$($s.Voice.Name)" | Out-File -Append -Encoding ascii $env:GITHUB_OUTPUT
+          [System.IO.File]::WriteAllText("${{ runner.temp }}\spike\expected.txt", $text, (New-Object System.Text.UTF8Encoding $false))
+
+      - name: Freeze the probe
+        working-directory: scripts
+        run: pyinstaller --noconfirm --distpath "${{ runner.temp }}\dist" --workpath "${{ runner.temp }}\build" qwen_local_probe.spec
+
+      - name: Measure frozen size
+        shell: pwsh
+        run: |
+          $root = "${{ runner.temp }}\dist\qwen-local-probe"
+          $bytes = (Get-ChildItem -Recurse -File $root | Measure-Object -Property Length -Sum).Sum
+          "Frozen directory: $([math]::Round($bytes / 1MB)) MB ($bytes bytes)" | Tee-Object -Append $env:GITHUB_STEP_SUMMARY
+          $rows = Get-ChildItem "$root\_internal" | ForEach-Object {
+            $size = if ($_.PSIsContainer) { (Get-ChildItem -Recurse -File $_.FullName | Measure-Object -Property Length -Sum).Sum } else { $_.Length }
+            [pscustomobject]@{ name = $_.Name; mb = [math]::Round($size / 1MB, 1) }
+          } | Sort-Object mb -Descending | Select-Object -First 20
+          $rows | Format-Table -AutoSize | Out-String | Tee-Object -Append $env:GITHUB_STEP_SUMMARY
+          $rows | ConvertTo-Json | Out-File -Encoding utf8 "${{ runner.temp }}\spike\frozen-size.json"
+
+      # PATH is reduced to the OS directories so the frozen build cannot pick up
+      # the runner's Python; offline flags make any hub access fail loudly.
+      - name: Run the frozen probe offline (no PATH Python)
+        shell: pwsh
+        env:
+          HF_HUB_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
+          HF_HUB_DISABLE_TELEMETRY: "1"
+        run: |
+          $env:PATH = "C:\Windows\System32;C:\Windows"
+          $expected = [System.IO.File]::ReadAllText("${{ runner.temp }}\spike\expected.txt", [System.Text.Encoding]::UTF8)
+          & "${{ runner.temp }}\dist\qwen-local-probe\qwen-local-probe.exe" `
+            --manifest "$PWD\engine\model_manifests\qwen3-asr-0.6b.json" `
+            --model-dir "${{ runner.temp }}\qwen3-asr-0.6b" `
+            --wav "${{ runner.temp }}\utterance.wav" `
+            --expected $expected `
+            --frozen-dir "${{ runner.temp }}\dist\qwen-local-probe" `
+            --report "${{ runner.temp }}\spike\qwen-local-spike-report.json"
+          $code = $LASTEXITCODE
+          "Probe exit code: $code" | Tee-Object -Append $env:GITHUB_STEP_SUMMARY
+          if (Test-Path "${{ runner.temp }}\spike\qwen-local-spike-report.json") {
+            Get-Content "${{ runner.temp }}\spike\qwen-local-spike-report.json" | Tee-Object -Append $env:GITHUB_STEP_SUMMARY
+          }
+          exit $code
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qwen-local-spike-report
+          path: ${{ runner.temp }}\spike
+          if-no-files-found: warn
