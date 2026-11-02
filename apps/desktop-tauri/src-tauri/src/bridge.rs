@@ -72,6 +72,7 @@ pub async fn post_voice_upload<T: DeserializeOwned>(
     target_app: &str,
     session_id: &str,
     mode: &str,
+    polish: bool,
 ) -> Result<T, BridgeError> {
     let audio = base64::engine::general_purpose::STANDARD.decode(audio_base64)?;
 
@@ -91,7 +92,9 @@ pub async fn post_voice_upload<T: DeserializeOwned>(
         .text("source", source.to_string())
         .text("target_app", target_app.to_string())
         .text("session_id", session_id.to_string())
-        .text("mode", mode.to_string());
+        .text("mode", mode.to_string())
+        // PR-D: "1" polishes inline and reports `polish_status`.
+        .text("polish", if polish { "1" } else { "0" });
 
     let route = voice_backend::route(config)?;
     let mut req = client()
