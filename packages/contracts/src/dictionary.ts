@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const dictionarySchema = z.object({
   version: z.number().int().optional(),
-  corrections: z.record(z.string()),
+  corrections: z.record(z.string(), z.string()),
   preserve: z.array(z.string()),
   format_rules: z
     .object({

@@ -30,7 +30,7 @@
     {
       "file": ".github/source-workflows/test-engine.yml.txt",
       "bytes": 11956,
-      "sha256": "74f4ceafcb61b7abf0598dc78e3b122ac3491ea00cb583da67b84f841580eaf8"
+      "sha256": "d2c101e87d6e5db39ab98d9129f7c0317ba585f42311cd62c360b029586d8a23"
     },
     {
       "file": ".gitignore",
@@ -3840,12 +3840,12 @@
     {
       "file": "mobile/voxagent-companion/package-lock.json",
       "bytes": 339644,
-      "sha256": "8ed12bcada900570bb962d7b69dab341445878a9ddb7b4c50566c4aa544342b6"
+      "sha256": "151d546bff2bf9b6e9f2c857042d3f21a6c5491b1a928810f9ba10f853bd1c9f"
     },
     {
       "file": "mobile/voxagent-companion/package.json",
       "bytes": 2047,
-      "sha256": "a28f1dcbd81940311a56be3b0ba9cfaa1bb8ce8a1be95b2c0f3a620ef475ba11"
+      "sha256": "96ff38d01ae841dac5e5152c74f1d69eb4d9e22c943eb4255a7fddb54dde1ad0"
     },
     {
       "file": "mobile/voxagent-companion/src/api/client.test.ts",
@@ -4705,7 +4705,7 @@
     {
       "file": "scripts/prepare_mobile_delivery_fixture.py",
       "bytes": 4308,
-      "sha256": "84ee16387b24771d2e749c44f3e5746ce580bc0321c416ba754e477e9500dbf6"
+      "sha256": "11d27f44ceda873f870f67f09cc08a0b7700bdbb0de5060a22ec14ce8ff6f6dc"
     },
     {
       "file": "scripts/record.py",
@@ -5000,7 +5000,7 @@
     {
       "file": "scripts/verify_mobile_candidate_provenance.cjs",
       "bytes": 514,
-      "sha256": "31ec9ce1dd6e198ed7f8dd629ee9d18359dba618603062d2a8a4cae2373490b0"
+      "sha256": "747228c7f7de33c8a194b1276d33f591349ad931e6310bcb13a9be3d6282a772"
     },
     {
       "file": "scripts/verify_mobile_candidate_provenance_tests.cjs",
@@ -5010,7 +5010,7 @@
     {
       "file": "scripts/verify_mobile_candidate_safety.cjs",
       "bytes": 4460,
-      "sha256": "c204cafd467f4d3aaf966126e77b4d3f69f2561263b056151036ee5afa7c9722"
+      "sha256": "d2b1f78d7e54872b78f1e3c6df0999d76354449ce5d6d993fb85682ac505556f"
     },
     {
       "file": "scripts/verify_mobile_canonical_ci.py",
@@ -5025,7 +5025,7 @@
     {
       "file": "scripts/verify_mobile_delivery_install.cjs",
       "bytes": 1496,
-      "sha256": "aef9e911b35d601b473abc494861ad63d316aba5d251adcb865e79003ed08e94"
+      "sha256": "bc8f14afecea4a95b7650d02f2b2635d43c9c4b74e45d8cfd15ca3165fb966d9"
     },
     {
       "file": "scripts/verify_mobile_dependency_defenses.cjs",
@@ -5260,22 +5260,22 @@
     {
       "file": "security/mobile-candidate/delivery/ci-step-proposal.yml",
       "bytes": 800,
-      "sha256": "c616e0ab7978a90e3bf2453f5542adc5b172b07e064f664012f7efd2df1c00be"
+      "sha256": "dc3002c1c61f019b06e7b6da2004942bff778627df53fd00b8f6b84bb4b686ed"
     },
     {
       "file": "security/mobile-candidate/delivery/inventory.json",
       "bytes": 2017,
-      "sha256": "012a127bd1beed8e065ed5b583d353a1fdac34f90c1b6be0045d65d0eb2ba3e7"
+      "sha256": "e26d1607619c4c5047ca032c6b8bf9cdde367c5acbe14491baa15641ba12c323"
     },
     {
       "file": "security/mobile-candidate/delivery/package-lock.template.json",
       "bytes": 339644,
-      "sha256": "8ed12bcada900570bb962d7b69dab341445878a9ddb7b4c50566c4aa544342b6"
+      "sha256": "151d546bff2bf9b6e9f2c857042d3f21a6c5491b1a928810f9ba10f853bd1c9f"
     },
     {
       "file": "security/mobile-candidate/delivery/package.template.json",
       "bytes": 2047,
-      "sha256": "a28f1dcbd81940311a56be3b0ba9cfaa1bb8ce8a1be95b2c0f3a620ef475ba11"
+      "sha256": "96ff38d01ae841dac5e5152c74f1d69eb4d9e22c943eb4255a7fddb54dde1ad0"
     },
     {
       "file": "security/mobile-candidate/expected-artifacts.json",
@@ -5295,7 +5295,7 @@
     {
       "file": "security/mobile-candidate/frozen-manifest.json",
       "bytes": 390937,
-      "sha256": "fc1d7329d444f79c899eaeb3abd2fca25bd26cf678f3e86f89ed5b3752703a0c"
+      "sha256": "f39d7ea35feab6cf0581b890e8628b60aa822dd74624e73149c19a5436e802b8"
     },
     {
       "file": "security/mobile-candidate/legacy-oracle-dispatch.patch",
@@ -5320,7 +5320,7 @@
     {
       "file": "security/mobile-candidate/safety-verifiers.json",
       "bytes": 6151,
-      "sha256": "8c1267ce8bc55d27b42ee7fd29fb68c929f0807cc670a32a93f67399b1d7340f"
+      "sha256": "4b4dd16bb132123523e4cea0b306cb3bd824e8d98f4d13c03ff7edb7b9512dab"
     },
     {
       "file": "security/mobile-candidate/source-patches.json",
