@@ -159,8 +159,10 @@ persisted initiating principal fail closed. Personal edition retains a
 single-local-principal compatibility path for legacy requests. Pending payloads
 contain bounded operational scope only; prompt, transcript/content, credential,
 token, password, and secret fields are omitted, and sensitive command/URL
-values are redacted. See
-[`docs/security/tfi12-principal-scoped-approvals.md`](security/tfi12-principal-scoped-approvals.md).
+values are redacted. The behavior is implemented in
+[`engine/permissions.py`](../engine/permissions.py) and
+[`engine/api/permissions.py`](../engine/api/permissions.py), and covered by
+[`tests/test_engine_permission_principal_flow.py`](../tests/test_engine_permission_principal_flow.py).
 
 ## WebSocket
 

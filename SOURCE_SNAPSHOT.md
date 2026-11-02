@@ -60,3 +60,16 @@ rules have not been weakened or copied as live public automation.
 Future public updates must be reviewed source patches/snapshots on this clean
 root. Do not merge private ancestry, copy run evidence/secrets, enable runner
 access or add public installation packages without their own applicable review.
+
+## Later changes
+
+This file records the 2026-10-16 publication and is not rewritten. Since then:
+
+- 2026-10-18: Hosted CI was restored on GitHub-hosted runners only.
+  [`verify.yml`](.github/workflows/verify.yml) runs on pull requests and `main`;
+  [`release-dmg.yml`](.github/workflows/release-dmg.yml) is a manual,
+  artifact-only DMG build. A manual Windows ASR probe,
+  [`qwen-local-spike.yml`](.github/workflows/qwen-local-spike.yml), followed on
+  2026-10-20. The archived `.yml.txt` definitions remain the test references.
+- `SOURCE_MANIFEST.json` still describes the exported bytes and is not updated
+  as the source evolves.
