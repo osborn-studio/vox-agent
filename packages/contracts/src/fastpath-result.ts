@@ -12,12 +12,18 @@ export const dictionaryReplacementSchema = z.object({
   to: z.string()
 });
 
+export const polishStatusSchema = z.enum(["ok", "skipped", "failed"]);
+
 export const fastPathResponseSchema = z.object({
   id: z.string(),
   status: fastPathStatusSchema,
   raw_text: z.string(),
   display_text: z.string(),
   polished_text: z.string(),
+  // Additive, optional (PR-D): set when the caller asked for inline polish.
+  // Clients key on polish_status, never on polished_text === display_text.
+  polish_status: polishStatusSchema.optional(),
+  polish_error: z.string().max(200).optional(),
   stt_provider: z.string(),
   stt_model: z.string(),
   target_app: z.string(),
@@ -37,3 +43,19 @@ export const fastPathResponseSchema = z.object({
 
 export type FastPathResponse = z.infer<typeof fastPathResponseSchema>;
 export type DictionaryReplacement = z.infer<typeof dictionaryReplacementSchema>;
+
+export const polishTextRequestSchema = z
+  .object({
+    text: z.string().min(1).max(8192)
+  })
+  .strict();
+
+export const polishTextResponseSchema = z.object({
+  polish_status: polishStatusSchema,
+  polished_text: z.string(),
+  polish_error: z.string().max(200).optional()
+});
+
+export type PolishStatus = z.infer<typeof polishStatusSchema>;
+export type PolishTextRequest = z.infer<typeof polishTextRequestSchema>;
+export type PolishTextResponse = z.infer<typeof polishTextResponseSchema>;

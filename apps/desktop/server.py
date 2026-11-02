@@ -4,7 +4,9 @@ Fast path: STT + correction → return immediately
 Slow path: polish + archive + index (background)
 
 Endpoints:
-  POST /v1/voice       — fast path: audio → display_text (immediate)
+  POST /v1/voice       — fast path: audio → display_text (immediate; polish=1 polishes inline)
+  POST /v1/voice/text  — fast path for typed text (same polish flag)
+  POST /v1/text/polish — polish a typed draft; never persists or enqueues
   POST /v1/save        — save pasted text directly
   GET  /v1/history     — search/list by agent
   GET/POST /v1/migration/* — bounded portable history/dictionary transfer
@@ -66,7 +68,7 @@ from runtime.models.events import (
     TargetRiskLevel,
     VoiceEvent,
 )
-from runtime.slowpath.polisher import Polisher
+from runtime.slowpath.polisher import PolishOutcome, Polisher
 from runtime.slowpath.digester import DailyDigester, ProjectDigester, SessionDigester
 from runtime.slowpath.enhancer import DigestEnhancer
 from runtime.slowpath.worker import enqueue, start_worker
@@ -233,6 +235,37 @@ def _fastpath_response_payload(result: FastPathResult, event: VoiceEvent, *, age
         "role": role,
         "created_at": event.created_at.isoformat(),
     }
+
+
+POLISH_TEXT_LIMIT = 8_192
+
+
+def _apply_polish(payload: dict, outcome: PolishOutcome | None) -> dict:
+    """Set the explicit polish fields. Clients key on polish_status, never on text equality."""
+    payload["polished_text"] = payload["display_text"]
+    payload.pop("polish_error", None)
+    if outcome is None:
+        payload["polish_status"] = "skipped"
+        return payload
+    payload["polish_status"] = outcome.status
+    if outcome.status == "ok" and outcome.text:
+        payload["polished_text"] = outcome.text
+    if outcome.error:
+        payload["polish_error"] = outcome.error
+    return payload
+
+
+def _polish_requested(value: object) -> bool:
+    if isinstance(value, bool):
+        return value
+    return str(value).strip().lower() in {"1", "true", "yes"}
+
+
+async def _maybe_polish(text: str, requested: bool) -> PolishOutcome | None:
+    if not requested or _polisher is None:
+        return None
+    assert _config
+    return await _polisher.polish_outcome(text, _config)
 
 
 def _provider_connectivity_payload() -> dict:
@@ -469,6 +502,7 @@ async def voice_endpoint(
     target_app: str = Form(""),
     session_id: str = Form(""),
     mode: str = Form("normal"),
+    polish: str = Form("0"),
     _auth: None = Depends(verify_token),
 ):
     assert _config and _corrector and _store
@@ -497,11 +531,18 @@ async def voice_endpoint(
     except STTError as e:
         raise HTTPException(502, str(e))
 
+    # Opt-in inline polish runs before enqueue so the slow-path worker
+    # does not call the provider a second time for the same event.
+    outcome = await _maybe_polish(result.display_text, _polish_requested(polish))
+    if outcome is not None and outcome.status == "ok" and outcome.text:
+        event.polished_text = outcome.text
+
     # Enqueue for slow path (non-blocking)
     enqueue(event)
     _recent.put(result, event, audio_bytes)
 
-    return _fastpath_response_payload(result, event, agent=agent, role="me")
+    payload = _fastpath_response_payload(result, event, agent=agent, role="me")
+    return _apply_polish(payload, outcome)
 
 
 @app.post("/v1/voice/text")
@@ -564,9 +605,36 @@ async def text_voice_endpoint(request: Request, _auth: None = Depends(verify_tok
         role=role,
     )
     result.id = event.id
+    outcome = await _maybe_polish(display_text, _polish_requested(body.get("polish", False)))
+    if outcome is not None and outcome.status == "ok" and outcome.text:
+        event.polished_text = outcome.text
     enqueue(event)
     _recent.put(result, event, b"")
-    return _fastpath_response_payload(result, event, agent=agent, role=role)
+    payload = _fastpath_response_payload(result, event, agent=agent, role=role)
+    return _apply_polish(payload, outcome)
+
+
+@app.post("/v1/text/polish")
+async def polish_text_endpoint(request: Request, _auth: None = Depends(verify_token)):
+    """Polish a typed draft ("Polish, then send"). Never persists or enqueues."""
+    assert _config
+    body = await request.json()
+    text = body.get("text") if isinstance(body, dict) else None
+    if not isinstance(text, str) or not text.strip():
+        raise HTTPException(422, "text required")
+    if len(text) > POLISH_TEXT_LIMIT:
+        raise HTTPException(413, f"text exceeds {POLISH_TEXT_LIMIT} characters")
+    outcome = await _maybe_polish(text, True)
+    payload: dict = {"polish_status": "skipped", "polished_text": text}
+    if outcome is None:
+        payload["polish_error"] = "polisher unavailable"
+        return payload
+    payload["polish_status"] = outcome.status
+    if outcome.status == "ok" and outcome.text:
+        payload["polished_text"] = outcome.text
+    if outcome.error:
+        payload["polish_error"] = outcome.error
+    return payload
 
 
 # === SAVE TEXT ===

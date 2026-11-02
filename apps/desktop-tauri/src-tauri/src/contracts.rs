@@ -95,6 +95,15 @@ pub struct FastPathResponse {
     pub status: FastPathStatus,
     pub raw_text: String,
     pub display_text: String,
+    // Additive, optional (PR-D). `polish_status` stays a String rather than an
+    // enum so an unknown future value reaches the WebView as text instead of
+    // failing deserialization. Clients key on it, never on text equality.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub polished_text: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub polish_status: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub polish_error: Option<String>,
     pub stt_provider: String,
     pub stt_model: String,
     pub target_app: String,
@@ -994,6 +1003,31 @@ pub struct AIMateMemoryExportResponse {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn fast_path_response_accepts_optional_polish_fields() {
+        const WITHOUT: &str = r#"{"id":"u1","status":"ok","raw_text":"嗯 测试","display_text":"嗯 测试","stt_provider":"qwen-local","stt_model":"Qwen/Qwen3-ASR-0.6B","target_app":"cockpit","target_risk_level":"low","should_autopaste":true,"needs_review":false,"confidence":0.9,"dictionary_applied":[],"latency_ms":120,"session_id":"s1","utterance_id":"u1","output_id":"o1","output_mode":"paste","archive_status":"queued","created_at":"2026-10-20T00:00:00Z"}"#;
+        let without: FastPathResponse = serde_json::from_str(WITHOUT).unwrap();
+        assert_eq!(without.polished_text, None);
+        assert_eq!(without.polish_status, None);
+        assert_eq!(without.polish_error, None);
+        let serialized = serde_json::to_value(&without).unwrap();
+        assert!(serialized.get("polish_status").is_none());
+        assert!(serialized.get("polish_error").is_none());
+        assert!(serialized.get("polished_text").is_none());
+
+        let with = WITHOUT.replacen(
+            "\"created_at\"",
+            "\"polished_text\":\"测试\",\"polish_status\":\"failed\",\"polish_error\":\"Qwen Bailian: HTTP 429\",\"created_at\"",
+            1,
+        );
+        let with: FastPathResponse = serde_json::from_str(&with).unwrap();
+        assert_eq!(with.polished_text.as_deref(), Some("测试"));
+        assert_eq!(with.polish_status.as_deref(), Some("failed"));
+        assert_eq!(with.polish_error.as_deref(), Some("Qwen Bailian: HTTP 429"));
+        let serialized = serde_json::to_value(&with).unwrap();
+        assert_eq!(serialized["polish_status"], "failed");
+    }
 
     #[test]
     fn desktop_contract_requires_matching_version_product_and_agent_query() {

@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import type { MultipartFile } from "@fastify/multipart";
-import { fastPathResponseSchema } from "@voxlog/contracts";
+import { fastPathResponseSchema, polishTextRequestSchema, polishTextResponseSchema } from "@voxlog/contracts";
 
 import { pythonBackendClient, type BackendClient } from "../lib/backend-client.js";
 
@@ -30,7 +30,8 @@ export async function registerVoiceRoutes(
       agent: "",
       target_app: "",
       session_id: "",
-      mode: "normal"
+      mode: "normal",
+      polish: "0"
     };
 
     for (const [key, value] of Object.entries(file.fields as Record<string, unknown>)) {
@@ -58,5 +59,17 @@ export async function registerVoiceRoutes(
     const body = request.body as Record<string, unknown>;
     const json = await client.postJsonToPython("/v1/voice/text", body);
     return fastPathResponseSchema.parse(json);
+  });
+
+  app.post("/v1/text/polish", async (request, reply) => {
+    const parsed = polishTextRequestSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.code(400).send({
+        error: "invalid_polish_request",
+        details: parsed.error.flatten()
+      });
+    }
+    const json = await client.postJsonToPython("/v1/text/polish", parsed.data);
+    return polishTextResponseSchema.parse(json);
   });
 }
