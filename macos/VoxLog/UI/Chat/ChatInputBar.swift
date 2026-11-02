@@ -378,7 +378,7 @@ struct ChatInputBar: View {
 
     private var sendHelp: String {
         if isPolishing { return L("润色中", "Polishing") }
-        if hasPolished || voiceState.stage == .finalized { return L("发送", "Send") }
+        if hasPolished { return L("发送", "Send") }
         return L("润色后发送", "Polish, then send")
     }
 
@@ -469,8 +469,10 @@ struct ChatInputBar: View {
             guard !Task.isCancelled,
                   inputGeneration == generation,
                   isCapturing else { return }
+            // Plain ASR plus dictionary fixes; the composer polishes the turn
+            // itself (`polishVoiceTurn`), whatever mode the global hotkey left.
             await delegate.session.startRecording(
-                mode: appState.currentMode,
+                mode: .direct,
                 outputDestination: .composer
             )
             if Task.isCancelled || inputGeneration != generation {
@@ -522,7 +524,7 @@ struct ChatInputBar: View {
 
         guard hasText else { return }
         guard !isTranslating, !isPolishing else { return }
-        if voiceState.stage == .finalized || hasPolished {
+        if hasPolished {
             sendCurrentText()
             return
         }
@@ -668,10 +670,9 @@ struct ChatInputBar: View {
                 ownsVoiceSession = false
                 return
             }
-            applyFinalTranscript(finalText)
-            voiceState.finalize()
-            hasPolished = true
             ownsVoiceSession = false
+            applyFinalTranscript(finalText)
+            polishVoiceTurn()
         case .error:
             voiceError = appState.feedbackMessage
             voiceState.reset()
@@ -690,8 +691,45 @@ struct ChatInputBar: View {
         fixedWordCount = rawTranscript.isEmpty
             ? 0
             : VoiceTranscriptDiff.changedWordCount(raw: rawTranscript, final: finalText)
-        let update = {
+        crossfadeDraft {
             textInput = composedInput(prefix: voiceInputPrefix, voiceText: finalText)
+        }
+    }
+
+    /// Polishes a finished voice turn while the stage still reads Processing,
+    /// with the same model and prompt as a typed draft, so Finalized shows the
+    /// text Send delivers. A failure finalizes the transcript with the inline
+    /// reason; Send then retries Polish and only "Send as typed" skips it.
+    private func polishVoiceTurn() {
+        voiceState.beginProcessing()
+        let generation = inputGeneration
+        let transcript = textInput
+        isPolishing = true
+        polishFailure = nil
+        Task { @MainActor in
+            defer { isPolishing = false }
+            let outcome = await polishInPlace()
+            guard !Task.isCancelled, inputGeneration == generation else { return }
+            switch outcome {
+            case .ready:
+                if textInput != transcript {
+                    let rawDraft = composedInput(prefix: voiceInputPrefix, voiceText: rawTranscript)
+                    fixedWordCount = VoiceTranscriptDiff.changedWordCount(raw: rawDraft, final: textInput)
+                    crossfadeDraft {}
+                }
+            case .failed(let reason):
+                polishFailure = reason
+            case .stale:
+                break
+            }
+            voiceState.finalize()
+        }
+    }
+
+    /// Re-renders the draft with the 150ms raw→final crossfade.
+    private func crossfadeDraft(_ change: @escaping () -> Void) {
+        let update = {
+            change()
             inputRenderID = UUID()
         }
         if accessibilityReduceMotion {
