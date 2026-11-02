@@ -1,71 +1,140 @@
 # Vox Agent
 
-**Voice-first desktop workspace, transcription tools, and an agent execution engine.**
+**A voice-first AI agent cockpit: speak a task, watch agents execute it under
+scoped permissions, and review grounded results.**
 
-[中文](README.en.md#中文说明) · [Source snapshot](SOURCE_SNAPSHOT.md)
+[English](README.md) · [简体中文](README.zh-CN.md)
 
-This repository publishes a reviewed **source snapshot**, not an installer or a
-qualified product release. It starts with a new root commit and does not inherit
-private development history, pull requests, release assets, credentials, models,
-operator audit reports, or backups. Product/module identifiers such as `VoxLog`
-and the development version at snapshot time (`4.2.9`) were kept unchanged
-for compatibility; the current version is in `docs/RELEASE.md`.
+Vox Agent combines a native macOS cockpit, a Windows-capable desktop shell, a
+Python agent engine, a TypeScript gateway with shared wire contracts, a web
+console and a mobile companion. Voice is the primary input: dictation streams
+into the composer, is polished by your configured LLM, and is dispatched to
+agents whose permission requests stay inline, scope-visible and audited.
 
-## Source layout
+> This repository publishes **source code**, not an installer or a qualified
+> release. See [Source provenance](#source-provenance) and
+> [Limitations](#limitations) before building or deploying anything.
 
-- `engine/`, `runtime/`: Python execution, permissions, memory, speech, and APIs.
-- `macos/`: SwiftUI desktop application and local ASR helper source.
-- `apps/desktop-tauri/`: Windows-capable desktop shell.
-- `packages/contracts/`, `services/api-ts/`: shared contracts and gateway.
-- `apps/web-console/`, `mobile/voxagent-companion/`: web/mobile source.
-- `tests/`, `scripts/`, `security/`: tests, build tools and dependency defenses.
+## Components
 
-## Local development
+| Path | What it is |
+|---|---|
+| `engine/`, `runtime/` | Python 3.11+ engine: scheduler, agent execution, permissions, memory, org policy, retention, streaming speech, tools, plugins and FastAPI routers (`engine/api/`). |
+| `macos/` | Primary native macOS cockpit (SwiftUI, Swift 6.2, Swift Package Manager). Module and persistence identifiers keep the legacy `VoxLog` name for compatibility. |
+| `apps/desktop-tauri/` | The single Windows-capable desktop shell (Tauri + Rust). |
+| `packages/contracts/` | Shared Zod wire contracts for events and desktop/mobile interfaces. |
+| `services/api-ts/` | TypeScript gateway for the desktop and mobile clients. |
+| `apps/web-console/` | Administrative and operational web console. |
+| `mobile/voxagent-companion/` | iOS/Android companion (Expo) with a hash-pinned dependency supply chain. |
+| `crates/` | Native helpers for input/output and whisper.cpp speech recognition. |
+| `tests/`, `scripts/`, `security/` | Test suites, build/verification tools and dependency defenses. |
+| `docs/` | API reference, design decisions, security notes and contracts. |
 
-Python requires 3.11+. Work in a disposable virtual environment and provide your
-own service configuration when needed:
+Design rules for every UI surface are in [DESIGN.md](DESIGN.md). Contributor
+and agent instructions are in [CLAUDE.md](CLAUDE.md) (bootstrapped for other
+agents by [AGENTS.md](AGENTS.md)).
+
+## Getting started
+
+Clone the repository and work in a disposable virtual environment. No service,
+model, microphone or paid provider starts just by cloning.
 
 ```sh
 python3 -m venv .venv
 .venv/bin/python -m pip install -e '.[dev,mcp]'
-.venv/bin/python -m pytest tests --ignore=tests/test_engine_e2e_claude.py -q
-.venv/bin/ruff check .
+npm ci
 ```
 
-The external Claude CLI end-to-end test is opt-in and needs separate credentials.
-ASR models, native dependencies, provider authentication, signing/notarization,
-platform SDKs and deployment services are not supplied. Sample server addresses
-and legacy update URLs in source are not a grant of access to a hosted service.
-Do not run deployment scripts against infrastructure you do not own.
+### Checks
 
-Other local checks are documented in `CLAUDE.md`. Commands can download build
-dependencies; they do not establish a device/release qualification. No service,
-model, microphone or paid provider is started by cloning this repository.
+Run the narrowest relevant checks while iterating, then the whole affected
+surface before committing.
 
-## Automation and maintenance
+```sh
+# Python (the external Claude CLI end-to-end test is opt-in)
+.venv/bin/python -m pytest -q
+.venv/bin/ruff check .
 
-**GitHub Actions is disabled for this repository.** Original CI definitions are
-retained as non-executable `.yml.txt` reference files in `.github/source-workflows/`.
-There are no active workflows, automatic PR jobs, self-hosted runner requests,
-release uploads or credential-copy steps. Tests that inspect workflow source
-read those reference copies; their assertions are retained. Enabling future CI
-requires a separate review of runner access, permissions, fork PRs and costs.
+# TypeScript contracts, gateway, web and mobile
+npm run check --workspace packages/contracts
+npm run check --workspace services/api-ts
+npm test --workspace services/api-ts
+npm run typecheck --workspace apps/web-console
+npm test --workspace apps/web-console
+(cd mobile/voxagent-companion && npm ci && npm run typecheck && npm test)
 
-Private development continues separately. Public updates are reviewed source
-snapshots or patches applied to this repository's own root; do not merge private
-Git ancestry or copy operator evidence, private assets or secrets here. Existing
-private releases are not releases of this repository.
+# Windows-capable desktop shell (Rust)
+cargo fmt --manifest-path apps/desktop-tauri/src-tauri/Cargo.toml --all -- --check
+cargo test --manifest-path apps/desktop-tauri/src-tauri/Cargo.toml --locked
 
-## Licenses and omitted resources
+# Native macOS (needs Xcode 26 / Swift 6.2)
+cd macos && swift build && swift test
+```
 
-Repository-owned code retains [MIT](LICENSE). Third-party source packages,
-patches, notices and component-specific licenses remain under their own terms;
-MIT does not replace those licenses. Build-required npm source archives are
-retained with their notices; these are dependency source packages, not Vox Agent
-installation binaries.
+## Continuous integration
 
-Recorded/test audio arrays and optional bundled sound files are omitted. The
-sample generator remains available for local use; the existing macOS sound
-code falls back to a synthesized chime when a bundled cue is absent. Model
-weights and application binaries are not included. See [SOURCE_SNAPSHOT.md](SOURCE_SNAPSHOT.md)
-for the exact source binding and export boundaries.
+GitHub Actions runs on GitHub-hosted runners only; no self-hosted runner is
+reachable from pull requests.
+
+- [`verify.yml`](.github/workflows/verify.yml) runs on every pull request and
+  on pushes to `main`: `swift-build`, `python-test` (3.11 and 3.12),
+  `python-lint`, `typescript-test`, `mobile-test`, `windows-tauri-test` and the
+  pinned RustSec advisory audit.
+- [`release-dmg.yml`](.github/workflows/release-dmg.yml) is a manual,
+  ad-hoc-signed macOS DMG build. The DMG is a workflow artifact only; nothing
+  is published as a release.
+- [`qwen-local-spike.yml`](.github/workflows/qwen-local-spike.yml) is a manual
+  Windows CPU feasibility probe for local Qwen ASR that reports hashes, sizes
+  and timings only.
+
+The RustSec job checks against a pinned advisory database with a 14-day age
+limit. Refresh it as described in
+[docs/security/rust-advisory-audit.md](docs/security/rust-advisory-audit.md).
+Mobile dependency pins are described in
+[docs/security/mobile-dependency-defenses.md](docs/security/mobile-dependency-defenses.md).
+The original private workflow definitions are kept, inactive, in
+[`.github/source-workflows/`](.github/source-workflows/README.md) because some
+tests inspect them.
+
+## Security boundaries
+
+- Admin and organization operations take identity from the authenticated
+  principal, never from a request body.
+- Secrets belong in Keychain, Credential Manager or keyring-backed storage, never
+  in committed files, URLs, logs or event payloads.
+- Permission requests show their exact scope and remain actor-bearing audit
+  records after approval or denial. There is no blind approval action.
+- Raw audio and transcript content never enter security audit logs.
+- Retention and deletion need dry-run evidence, bounded targets, idempotency and
+  an audit record.
+
+The HTTP and WebSocket surface is documented in [docs/API.md](docs/API.md);
+architecture decisions are in [docs/decisions/](docs/decisions/).
+
+## Source provenance
+
+This public repository started from a reviewed snapshot of the maintained
+source tree on 2026-10-16, with a new root commit and no private history, pull
+requests, release assets, credentials, models, audit reports or backups. Details
+are in [SOURCE_SNAPSHOT.md](SOURCE_SNAPSHOT.md). Development has continued here
+through reviewed pull requests since then. The development version is recorded
+in [docs/RELEASE.md](docs/RELEASE.md).
+
+## Limitations
+
+- ASR models, native dependencies, provider credentials, signing/notarization,
+  platform SDKs and hosted services are not supplied.
+- Sample server addresses and legacy update URLs in the source do not grant
+  access to any hosted service. Do not run deployment scripts against
+  infrastructure you do not own.
+- Passing checks, a simulator run or a macOS build is not a device or release
+  qualification. Physical iOS, Android and Windows claims need named-device
+  evidence.
+- Recorded test audio and optional bundled sound cues are omitted; the macOS
+  app falls back to a synthesized chime.
+
+## License
+
+Repository-owned code is under the [MIT License](LICENSE). Third-party source
+packages, patches and notices keep their own licenses; MIT does not replace
+them.

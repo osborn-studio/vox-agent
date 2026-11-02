@@ -1,0 +1,35 @@
+version: 1
+
+# The bilingual README pair is a maintained surface: both files must exist,
+# and a change to one should be reviewed against the other.
+required_surfaces:
+  - id: readme-en
+    path: README.md
+    kind: file
+    severity: error
+  - id: readme-zh-cn
+    path: README.zh-CN.md
+    kind: file
+    severity: error
+
+contracts:
+  - id: readme-translation-pair
+    when:
+      any_path: [README.md]
+    review:
+      any_path: [README.zh-CN.md]
+    enforcement: advisory
+  - id: readme-translation-pair-reverse
+    when:
+      any_path: [README.zh-CN.md]
+    review:
+      any_path: [README.md]
+    enforcement: advisory
+
+ignore:
+  - rule_id: instruction.mirror_drift
+    paths: [CLAUDE.md]
+    reason: >-
+      CLAUDE.md is the detailed instruction source and AGENTS.md is a small
+      bootstrap pointing to it; they are deliberately not a mirror. See
+      docs/decisions/2026-07-18-agent-instruction-authority.md.
