@@ -11,7 +11,8 @@ console and a mobile companion. Voice is the primary input: dictation streams
 into the composer, is polished by your configured LLM, and is dispatched to
 agents whose permission requests stay inline, scope-visible and audited.
 
-> This repository publishes **source code**, not an installer or a qualified
+> This repository publishes **source code** plus unsigned CI test builds
+> (see [Install a desktop build](#install-a-desktop-build)), not a qualified
 > release. See [Source provenance](#source-provenance) and
 > [Limitations](#limitations) before building or deploying anything.
 
@@ -33,6 +34,38 @@ agents whose permission requests stay inline, scope-visible and audited.
 Design rules for every UI surface are in [DESIGN.md](DESIGN.md). Contributor
 and agent instructions are in [CLAUDE.md](CLAUDE.md) (bootstrapped for other
 agents by [AGENTS.md](AGENTS.md)).
+
+## Install a desktop build
+
+Unsigned test builds of both desktop apps are produced on GitHub-hosted runners
+by two manual workflows. They are CI builds, not qualified releases: a CI build
+is not a device pass.
+
+1. Open the repository's **Actions** tab and pick **Release DMG** (macOS) or
+   **Release Windows**. Choose a successful run on `main`; a maintainer can
+   start a new one with **Run workflow**.
+2. On the run's summary page, download the artifact under **Artifacts**. You
+   must be signed in to GitHub, and artifacts expire after 30 days.
+   - `vox-agent-v<version>-dmg`: `VoxAgent-v<version>-cloud.dmg` and
+     `SHA256SUMS.txt`
+   - `vox-agent-v<version>-windows`: `VoxAgent-v<version>-windows-x64-setup.exe`
+     (NSIS, per-user), `VoxAgent-v<version>-windows-x64.msi` and
+     `SHA256SUMS.txt`
+3. Check the download against `SHA256SUMS.txt`:
+   `shasum -a 256 -c SHA256SUMS.txt` on macOS, or
+   `Get-FileHash .\VoxAgent-v<version>-windows-x64-setup.exe -Algorithm SHA256`
+   in PowerShell, compared with the matching line.
+
+**macOS.** Open the DMG and drag **Vox Agent** to Applications. The app is
+ad-hoc signed and not notarized, so on first launch right-click it and choose
+**Open**, then confirm.
+
+**Windows 10/11 (x64).** Run the `setup.exe` (or the MSI). The installers are
+not Authenticode-signed, so SmartScreen shows *Windows protected your PC*:
+choose **More info**, then **Run anyway**. If the Microsoft Edge WebView2
+runtime is missing, the installer downloads and installs it. The app starts its bundled engine and
+voice backend itself; add a speech (ASR) key and an LLM key under **Settings**
+before dictating. Local ASR models are not bundled yet.
 
 ## Getting started
 

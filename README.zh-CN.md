@@ -9,8 +9,9 @@ Vox Agent 由原生 macOS 驾驶舱、可运行于 Windows 的桌面外壳、Pyt
 输入方式：听写内容实时流入输入框，由你配置的 LLM 润色后派发给 Agent；Agent 的
 权限请求始终内嵌显示、范围可见，并留有审计记录。
 
-> 本仓库发布的是**源代码**，不是安装包，也不是经过验收的正式版本。构建或部署前请先
-> 阅读[源码来源](#源码来源)和[限制说明](#限制说明)。
+> 本仓库发布的是**源代码**和未签名的 CI 测试版（见[安装桌面版](#安装桌面版)），
+> 不是经过验收的正式版本。构建或部署前请先阅读[源码来源](#源码来源)和
+> [限制说明](#限制说明)。
 
 ## 组成部分
 
@@ -29,6 +30,34 @@ Vox Agent 由原生 macOS 驾驶舱、可运行于 Windows 的桌面外壳、Pyt
 
 所有界面的设计规则见 [DESIGN.md](DESIGN.md)。贡献者与 Agent 的工作说明见
 [CLAUDE.md](CLAUDE.md)（其他 Agent 经由 [AGENTS.md](AGENTS.md) 引导到该文件）。
+
+## 安装桌面版
+
+两个桌面应用的未签名测试版由两个手动触发的工作流在 GitHub 托管的 runner 上构建。
+它们是 CI 构建，不是经过验收的正式版本：CI 构建不等于真机验证通过。
+
+1. 打开仓库的 **Actions** 页面，选择 **Release DMG**（macOS）或
+   **Release Windows**，找一次在 `main` 上成功的运行；维护者可以用
+   **Run workflow** 重新构建。
+2. 在该次运行的摘要页面，从 **Artifacts** 下载构件。需要登录 GitHub，构件 30 天后
+   过期。
+   - `vox-agent-v<版本>-dmg`：`VoxAgent-v<版本>-cloud.dmg` 和 `SHA256SUMS.txt`
+   - `vox-agent-v<版本>-windows`：`VoxAgent-v<版本>-windows-x64-setup.exe`
+     （NSIS，按用户安装）、`VoxAgent-v<版本>-windows-x64.msi` 和
+     `SHA256SUMS.txt`
+3. 用 `SHA256SUMS.txt` 校验下载的文件：macOS 上运行
+   `shasum -a 256 -c SHA256SUMS.txt`；Windows 上在 PowerShell 中运行
+   `Get-FileHash .\VoxAgent-v<版本>-windows-x64-setup.exe -Algorithm SHA256`，
+   与对应行比对。
+
+**macOS。** 打开 DMG，把 **Vox Agent** 拖进“应用程序”。应用只做了临时（ad-hoc）
+签名，未经公证，首次启动时请右键点击应用并选择**打开**，再确认。
+
+**Windows 10/11（x64）。** 运行 `setup.exe`（或 MSI）。安装包没有 Authenticode
+签名，SmartScreen 会提示“Windows 已保护你的电脑”：点击**更多信息**，再点
+**仍要运行**。如缺少 Microsoft Edge WebView2 运行时，安装程序会自动下载并安装。应用会自行
+启动内置的引擎和语音后端；听写前请先在**设置**中填写语音识别（ASR）密钥和 LLM
+密钥。本地 ASR 模型暂未内置。
 
 ## 快速开始
 
