@@ -114,13 +114,22 @@ jobs:
           VERSION: ${{ steps.release.outputs.version }}
         run: python scripts/verify_windows_release_preflight.py --version "$VERSION" --sku full
 
+      # apps/desktop-tauri is an npm workspace, and the root lockfile records
+      # only the macOS native binary of @tauri-apps/cli. The app's own
+      # lockfile pins every platform binary with an integrity hash, so the CLI
+      # is installed from it in a directory outside the workspace.
       - name: Install Tauri CLI
-        working-directory: apps/desktop-tauri
-        run: npm ci
+        run: |
+          set -euo pipefail
+          cli="$RUNNER_TEMP/tauri-cli"
+          mkdir -p "$cli"
+          cp apps/desktop-tauri/package.json apps/desktop-tauri/package-lock.json "$cli/"
+          npm ci --prefix "$cli"
+          echo "TAURI_CLI=$cli/node_modules/@tauri-apps/cli/tauri.js" >> "$GITHUB_ENV"
 
       - name: Build installers
         working-directory: apps/desktop-tauri
-        run: npx tauri build --config src-tauri/tauri.release-engine.conf.json --bundles nsis msi
+        run: node "$TAURI_CLI" build --config src-tauri/tauri.release-engine.conf.json --bundles nsis msi
 
       - name: Collect installers and checksums
         id: collect

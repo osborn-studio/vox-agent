@@ -40,7 +40,8 @@ def test_engine_is_frozen_and_checked_before_packaging_and_upload():
         "--stage source --stage host",
         "scripts/build_windows_engine.py --target x86_64-pc-windows-msvc --verify",
         "--sku full",
-        "npx tauri build --config src-tauri/tauri.release-engine.conf.json --bundles nsis msi",
+        "npm ci --prefix",
+        'node "$TAURI_CLI" build --config src-tauri/tauri.release-engine.conf.json --bundles nsis msi',
         "sha256sum",
         "uses: actions/upload-artifact",
     ]
