@@ -28,7 +28,7 @@
       "bytes": 1285133
     }
   },
-  "runnerSHA256": "c204cafd467f4d3aaf966126e77b4d3f69f2561263b056151036ee5afa7c9722",
+  "runnerSHA256": "ca34dca7dea65514cd9a191fa4235de744c6948dddfaae5734a071a86d0b528f",
   "targets": {
     "package.template.json": "mobile/voxagent-companion/package.json",
     "package-lock.template.json": "mobile/voxagent-companion/package-lock.json"
@@ -38,5 +38,5 @@
     "protected workflow review",
     "branch-specific review and budget-eligible final CI"
   ],
-  "preparerSHA256": "84ee16387b24771d2e749c44f3e5746ce580bc0321c416ba754e477e9500dbf6"
+  "preparerSHA256": "8d62729f27ff4f0e2afe7d67acf5b98f0a40e0749d8c3a0b23f19913ef2db503"
 }
