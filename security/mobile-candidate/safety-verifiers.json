@@ -25,7 +25,7 @@
   "scripts/verify_mobile_canonical_signature_contract.cjs": "654e6897810a1b83cda4527dbf2d670578d04f004c1912a6c28679fac90c2b96",
   "security/mobile-candidate/canonical-contract.json": "8dace77e63dc6948ab0b0062fd8ae0d1308c053edf9913b8c7c8348d5672ae71",
   "security/mobile-candidate/MAINTENANCE.md": "e1619c13b94def49b66bf5ec3b18f11f88b3ffd52435d37e4fee21aa7b2051a8",
-  "scripts/verify_mobile_delivery_install.cjs": "168f00de702a98d9bd61b2b452aee57701667293327b2748070d5eae09cfd8f2",
+  "scripts/verify_mobile_delivery_install.cjs": "bc8f14afecea4a95b7650d02f2b2635d43c9c4b74e45d8cfd15ca3165fb966d9",
   "scripts/test_mobile_delivery_install.cjs": "b91e74ce3b82448fce097232f8b110b9348fbdcfd2fb9c0afa373424cdaa0c2c",
   "scripts/verify_mobile_canonical_ci.py": "05fdbf710d235143229ec4afabaa912d5580fcd5ca0c27a89f1cc3d30a692a3a",
   "scripts/test_mobile_canonical_ci.py": "da04d967307344278a0c8e770f7d92f03f44838dcc4d8b3341b09342d48a6723",
