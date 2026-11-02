@@ -55,12 +55,14 @@ windows-core = "=0.61.2"
 # Context journal on Windows (PR-A): DPAPI key wrapping (Security_Cryptography),
 # owner-only directory DACLs (Security, Security_Authorization, SystemServices
 # for the ACE type constants) and the process token (System_Threading).
+# Bundled sidecars run in kill-on-close job objects (System_JobObjects, PR-B).
 windows-sys = { version = "0.61.2", features = [
     "Win32_UI_Input_KeyboardAndMouse",
     "Win32_Foundation",
     "Win32_Security",
     "Win32_Security_Authorization",
     "Win32_Security_Cryptography",
+    "Win32_System_JobObjects",
     "Win32_System_SystemServices",
     "Win32_System_Threading",
 ] }

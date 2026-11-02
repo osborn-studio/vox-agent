@@ -7,6 +7,7 @@ use std::sync::Mutex;
 use std::time::Duration;
 
 use crate::engine_local;
+use crate::sidecar_job::SidecarJob;
 use zeroize::Zeroizing;
 
 const ENGINE_HOST: &str = "127.0.0.1";
@@ -129,6 +130,8 @@ pub struct ManagedEngineHealth {
 
 struct SupervisorInner {
     child: Option<Child>,
+    /// Owns the engine's process tree on Windows (see `sidecar_job`).
+    job: Option<SidecarJob>,
     status: EngineProcessStatus,
 }
 
@@ -142,6 +145,7 @@ impl Default for EngineSupervisor {
         Self {
             inner: Mutex::new(SupervisorInner {
                 child: None,
+                job: None,
                 status: EngineProcessStatus {
                     state: "stopped".to_string(),
                     pid: None,
@@ -228,6 +232,7 @@ impl EngineSupervisor {
             inner.status.last_error = Some(message.clone());
             message
         })?;
+        let job = SidecarJob::attach(&child);
         let delivered = child.stdin.take().map(|mut pipe| {
             use std::io::Write;
             let line = Zeroizing::new(format!("{}\n", token.as_str()));
@@ -253,6 +258,7 @@ impl EngineSupervisor {
             last_error: None,
         };
         inner.child = Some(child);
+        inner.job = job;
         Ok(inner.status.clone())
     }
 
@@ -277,6 +283,7 @@ impl EngineSupervisor {
             return Ok(inner.status.clone());
         };
         forget_launch();
+        inner.job = None;
         child
             .kill()
             .map_err(|error| format!("failed to stop Vox Agent engine: {error}"))?;
@@ -373,6 +380,7 @@ impl EngineSupervisor {
 impl Drop for EngineSupervisor {
     fn drop(&mut self) {
         if let Ok(mut inner) = self.inner.lock() {
+            inner.job = None;
             if let Some(mut child) = inner.child.take() {
                 let _ = child.kill();
                 let _ = child.wait();
@@ -404,6 +412,7 @@ fn refresh_process(inner: &mut SupervisorInner) -> Result<(), String> {
         }
         Some(exit) => {
             inner.child = None;
+            inner.job = None;
             forget_launch();
             inner.status.state = "exited".to_string();
             inner.status.pid = None;

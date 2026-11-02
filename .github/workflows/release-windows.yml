@@ -13,10 +13,11 @@
 # Self-hosted runners are deliberately not referenced: this is a public
 # repository.
 #
-# The job freezes the Python engine with scripts/build_windows_engine.py,
-# checks it on loopback, runs the read-only release preflight, and packages
-# the canonical Tauri shell (apps/desktop-tauri) as NSIS and MSI installers
-# with the engine installed beside `Vox Agent.exe`. Both installers and their
+# The job freezes the Python engine (scripts/build_windows_engine.py) and the
+# voice backend (scripts/build_windows_backend.py), checks both on loopback,
+# runs the read-only release preflight, and packages the canonical Tauri shell
+# (apps/desktop-tauri) as NSIS and MSI installers with both sidecars installed
+# beside `Vox Agent.exe`. Both installers and their
 # SHA256SUMS.txt are uploaded as a workflow artifact named
 # vox-agent-v<version>-windows on the run's summary page
 # (Actions > Release Windows). A CI build is not a device pass: installed
@@ -36,7 +37,9 @@ on:
     paths:
       - .github/workflows/release-windows.yml
       - scripts/build_windows_engine.py
+      - scripts/build_windows_backend.py
       - scripts/frozen_engine.py
+      - scripts/frozen_backend.py
       - scripts/verify_windows_release_preflight.py
       - apps/desktop-tauri/package-lock.json
       - apps/desktop-tauri/src-tauri/Cargo.lock
@@ -109,7 +112,10 @@ jobs:
       - name: Freeze and loopback-check the engine
         run: python scripts/build_windows_engine.py --target x86_64-pc-windows-msvc --verify
 
-      - name: Preflight bundled engine
+      - name: Freeze and loopback-check the voice backend
+        run: python scripts/build_windows_backend.py --target x86_64-pc-windows-msvc --verify
+
+      - name: Preflight bundled engine and voice backend
         env:
           VERSION: ${{ steps.release.outputs.version }}
         run: python scripts/verify_windows_release_preflight.py --version "$VERSION" --sku full
