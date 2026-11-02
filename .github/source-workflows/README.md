@@ -11,3 +11,8 @@ No private secrets, repository variables, runners or release/signing credentials
 are copied. The source tests that inspect these definitions read this directory;
 this archival move does not remove their original assertions or change the
 private repository's workflows/protections.
+
+Update 2026-10-18: Actions is now enabled for this repository. The active
+workflows in [`../workflows/`](../workflows/) were restored from these
+references for GitHub-hosted runners only; each one's header lists what was
+reduced. These archived copies stay unchanged as test references.
