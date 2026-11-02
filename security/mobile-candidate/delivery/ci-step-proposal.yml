@@ -5,7 +5,7 @@
 - name: Verify explicit canonical contract and retained historical break
   run: >-
     python3 scripts/verify_mobile_canonical_ci.py
-    --runner-sha256 c204cafd467f4d3aaf966126e77b4d3f69f2561263b056151036ee5afa7c9722
+    --runner-sha256 d2b1f78d7e54872b78f1e3c6df0999d76354449ce5d6d993fb85682ac505556f
     --node-bin "$(command -v node)"
     --app-root build/qualified-mobile-delivery/mobile/voxagent-companion
     --upstream-dir build/qualified-upstream-materials
