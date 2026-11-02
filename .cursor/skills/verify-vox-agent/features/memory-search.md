@@ -20,7 +20,7 @@ Preconditions:
 
 - Doctor healthy; the Capture pipeline journey has produced `SES` and its summary node `mem_…` in this run (console steps need `--console`).
 
-- **CLI search.** `$V cli search -- memory search "Japan launch" --pretty`. Exit `0`; one line `[mem_<10 hex>] Summary: <SES>  (score=…)`.
+- **CLI search.** `$V cli search -- memory search "Japan launch" --pretty`. Exit `0`; one line `[mem_<8 hex>] Summary: <SES>  (score=…)` (id truncated to 12 chars).
 - **CLI no match.** `$V cli search-none -- memory search "zzqqxx" --pretty`. Exit `0`; stdout `No matches.`.
 - **CLI recent.** `$V cli recent -- memory recent --pretty`. Lists the same node with today's `createdAt`.
 - **Console search.** `$V ui memory '[{"click":"Memory"},{"fill":{"placeholder":"Search memory (e.g. Japan launch)","value":"Japan launch"}},{"submit":"Search memory (e.g. Japan launch)"},{"waitText":"Search results for \"Japan launch\""}]'`. Exit `0`; `ui/memory.text.txt` has `SEARCH RESULTS FOR "JAPAN LAUNCH"`, group `SUMMARY`, `Summary: <SES>`; `network.json` has `GET /v1/memory/search?q=Japan%20launch&limit=20` → 200.
