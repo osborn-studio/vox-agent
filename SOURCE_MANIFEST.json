@@ -3839,12 +3839,12 @@
     },
     {
       "file": "mobile/voxagent-companion/package-lock.json",
-      "bytes": 339644,
+      "bytes": 339640,
       "sha256": "151d546bff2bf9b6e9f2c857042d3f21a6c5491b1a928810f9ba10f853bd1c9f"
     },
     {
       "file": "mobile/voxagent-companion/package.json",
-      "bytes": 2047,
+      "bytes": 2067,
       "sha256": "96ff38d01ae841dac5e5152c74f1d69eb4d9e22c943eb4255a7fddb54dde1ad0"
     },
     {
@@ -5269,12 +5269,12 @@
     },
     {
       "file": "security/mobile-candidate/delivery/package-lock.template.json",
-      "bytes": 339644,
+      "bytes": 339640,
       "sha256": "151d546bff2bf9b6e9f2c857042d3f21a6c5491b1a928810f9ba10f853bd1c9f"
     },
     {
       "file": "security/mobile-candidate/delivery/package.template.json",
-      "bytes": 2047,
+      "bytes": 2067,
       "sha256": "96ff38d01ae841dac5e5152c74f1d69eb4d9e22c943eb4255a7fddb54dde1ad0"
     },
     {
