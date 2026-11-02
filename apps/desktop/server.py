@@ -22,18 +22,22 @@ Endpoints:
 
 from __future__ import annotations
 
+import argparse
 import asyncio
+import hmac
 import json
 import sqlite3
+import sys
 import time
 from contextlib import asynccontextmanager
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
 import structlog
 import uvicorn
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Header, Query, Request, UploadFile
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 
 from engine import __version__
 from engine.legacy_migration import (
@@ -140,7 +144,54 @@ app.add_middleware(
 )
 
 
+@dataclass(frozen=True)
+class BundledLaunch:
+    """Secrets the desktop shell hands a bundled backend on stdin.
+
+    ``token`` authenticates every request; ``launch_id`` is echoed by
+    ``/health`` so the shell can tell its own process from anything else
+    answering on the port. Neither is ever read from argv, the environment or
+    a file.
+    """
+
+    token: str
+    launch_id: str
+
+
+_bundled: BundledLaunch | None = None
+
+
+def read_bundled_launch(stream) -> BundledLaunch:
+    token = stream.readline().strip()
+    launch_id = stream.readline().strip()
+    if len(token) < 32 or len(launch_id) < 16:
+        raise SystemExit("bundled mode requires a launch token and launch id on stdin")
+    return BundledLaunch(token=token, launch_id=launch_id)
+
+
+@app.middleware("http")
+async def bundled_launch_guard(request: Request, call_next):
+    """In bundled mode every route, /health included, needs the launch token.
+
+    Browser-originated requests are refused outright: only the desktop shell's
+    Rust process calls a bundled backend, and it never sends an Origin header,
+    so the permissive CORS policy above is never usable in this mode.
+    """
+    launch = _bundled
+    if launch is None:
+        return await call_next(request)
+    if request.headers.get("origin") is not None:
+        return JSONResponse({"detail": "Forbidden"}, status_code=403)
+    supplied = request.headers.get("authorization", "")
+    expected = f"Bearer {launch.token}"
+    if not hmac.compare_digest(supplied.encode(), expected.encode()):
+        return JSONResponse({"detail": "Missing or invalid auth"}, status_code=401)
+    return await call_next(request)
+
+
 def verify_token(authorization: str | None = Header(None)) -> None:
+    if _bundled is not None:
+        return  # bundled_launch_guard already authenticated this request
     if not _config or not _config.api_token:
         return
     if not authorization:
@@ -488,6 +539,7 @@ async def health():
         "service": "vox-agent-desktop",
         "version": __version__,
         "profile": _config.active_profile if _config else "unknown",
+        **({"launch_id": _bundled.launch_id} if _bundled is not None else {}),
     }
 
 
@@ -1324,16 +1376,42 @@ async def output_undo_endpoint(
 
 # === MAIN ===
 
-def main():
+LOOPBACK_HOSTS = ("127.0.0.1", "::1")
+
+
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Run the Vox Agent desktop compatibility backend")
+    parser.add_argument("--host", choices=LOOPBACK_HOSTS)
+    parser.add_argument("--port", type=int)
+    parser.add_argument(
+        "--require-auth",
+        action="store_true",
+        help="bundled mode: read the launch token and launch id from stdin and authenticate every request",
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None):
+    global _bundled
+    args = parse_args(argv)
     config = get_config()
+    if args.require_auth:
+        _bundled = read_bundled_launch(sys.stdin)
+        sys.stdin.close()
+    host = args.host or config.host
+    if _bundled is not None and host not in LOOPBACK_HOSTS:
+        raise SystemExit("bundled mode listens on loopback only")
+    port = args.port if args.port is not None else config.port
+    if not 1 <= port <= 65535:
+        raise SystemExit("port must be 1-65535")
     structlog.configure(processors=[
         structlog.processors.TimeStamper(fmt="iso"),
         structlog.processors.JSONRenderer(),
     ])
     uvicorn.run(
         app,
-        host=config.host,
-        port=config.port,
+        host=host,
+        port=port,
         log_level="info",
         access_log=False,
     )

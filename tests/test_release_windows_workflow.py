@@ -39,6 +39,7 @@ def test_engine_is_frozen_and_checked_before_packaging_and_upload():
     order = [
         "--stage source --stage host",
         "scripts/build_windows_engine.py --target x86_64-pc-windows-msvc --verify",
+        "scripts/build_windows_backend.py --target x86_64-pc-windows-msvc --verify",
         "--sku full",
         "npx tauri build --config src-tauri/tauri.release-engine.conf.json --bundles nsis msi",
         "sha256sum",
@@ -52,7 +53,7 @@ def test_release_config_bundles_the_engine():
     config = json.loads(
         (ROOT / "apps/desktop-tauri/src-tauri/tauri.release-engine.conf.json").read_text(encoding="utf-8")
     )
-    assert config["bundle"]["externalBin"] == ["binaries/voxagent-engine"]
+    assert config["bundle"]["externalBin"] == ["binaries/voxagent-engine", "binaries/voxagent-backend"]
 
 
 def test_smartscreen_warning_is_documented_in_the_run_summary():
