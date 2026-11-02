@@ -145,11 +145,11 @@ jobs:
         run: |
           sha256sum --check <<'PINS'
           30e090a3b656c05ab42028bffd941532fe3b811c145e3afd6fa84a2a5a5ae7de  scripts/prepare_mobile_ci_inputs.py
-          8d62729f27ff4f0e2afe7d67acf5b98f0a40e0749d8c3a0b23f19913ef2db503  scripts/prepare_mobile_delivery_fixture.py
+          11d27f44ceda873f870f67f09cc08a0b7700bdbb0de5060a22ec14ce8ff6f6dc  scripts/prepare_mobile_delivery_fixture.py
           05fdbf710d235143229ec4afabaa912d5580fcd5ca0c27a89f1cc3d30a692a3a  scripts/verify_mobile_canonical_ci.py
-          168f00de702a98d9bd61b2b452aee57701667293327b2748070d5eae09cfd8f2  scripts/verify_mobile_delivery_install.cjs
+          bc8f14afecea4a95b7650d02f2b2635d43c9c4b74e45d8cfd15ca3165fb966d9  scripts/verify_mobile_delivery_install.cjs
           e3e0e6cdecbbc3e9e4b56d5f910e7867cea56f629f895772aa8370952e24438a  security/mobile-candidate/provenance.cjs
-          f482fbdb520bb8081b216fbc597e4ea9da441b8d9a9a84aaef402781d82dd146  security/mobile-candidate/safety-verifiers.json
+          4b4dd16bb132123523e4cea0b306cb3bd824e8d98f4d13c03ff7edb7b9512dab  security/mobile-candidate/safety-verifiers.json
           PINS
 
       - name: Test canonical report acceptance and refusal
@@ -180,7 +180,7 @@ jobs:
         working-directory: .
         run: >-
           python3 scripts/prepare_mobile_ci_inputs.py
-          --table-sha256 f482fbdb520bb8081b216fbc597e4ea9da441b8d9a9a84aaef402781d82dd146
+          --table-sha256 4b4dd16bb132123523e4cea0b306cb3bd824e8d98f4d13c03ff7edb7b9512dab
           --output build/qualified-mobile-inputs
 
       - name: Prepare exact committed target-layout fixture
@@ -198,7 +198,7 @@ jobs:
         working-directory: .
         run: >-
           python3 scripts/verify_mobile_canonical_ci.py
-          --runner-sha256 ca34dca7dea65514cd9a191fa4235de744c6948dddfaae5734a071a86d0b528f
+          --runner-sha256 d2b1f78d7e54872b78f1e3c6df0999d76354449ce5d6d993fb85682ac505556f
           --node-bin "$(command -v node)"
           --app-root build/qualified-mobile-delivery/mobile/voxagent-companion
           --upstream-dir build/qualified-mobile-inputs
