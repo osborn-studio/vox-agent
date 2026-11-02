@@ -19,6 +19,7 @@ APP_NAME="Vox Agent"
 APP_BUNDLE="$BUILD_DIR/$APP_NAME.app"
 PYINSTALLER_DIST_DIR="$BUILD_DIR/python-dist"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
+QWEN_PYTHON="${QWEN_PYTHON:-$PYTHON_BIN}"
 
 VERSION="${VERSION:-}"
 if [ -z "$VERSION" ]; then
@@ -63,6 +64,9 @@ if ! "$PYTHON_BIN" -c 'import PyInstaller' >/dev/null 2>&1; then
   echo "run: $PYTHON_BIN -m pip install . pyinstaller" >&2
   exit 1
 fi
+
+# Fail before replacing build outputs if the Qwen build environment is incomplete.
+"$QWEN_PYTHON" -c 'import PyInstaller, mlx.core, mlx_qwen3_asr, llama_cpp, soundfile, fastapi, uvicorn, websockets, numpy'
 
 rm -rf "$BUILD_DIR" "$DMG_PATH"
 mkdir -p "$APP_BUNDLE/Contents/MacOS" "$APP_BUNDLE/Contents/Resources" "$DIST_DIR"
@@ -124,9 +128,16 @@ if [ -f "$MACOS_DIR/VoxLog/Resources/THIRD_PARTY_LICENSES.txt" ]; then
   cp "$MACOS_DIR/VoxLog/Resources/THIRD_PARTY_LICENSES.txt" "$APP_BUNDLE/Contents/Resources/"
 fi
 
+# Every standard upgrade must retain local ASR capability, even without bundled weights.
+QWEN_PYTHON="$QWEN_PYTHON" QWEN_BUILD_DIR="$BUILD_DIR/qwen-runtime" \
+  bash "$ROOT_DIR/scripts/build_qwen_runtime.sh"
+cp "$BUILD_DIR/qwen-runtime/dist/qwen3-asr-server" "$APP_BUNDLE/Contents/MacOS/"
+cp "$BUILD_DIR/qwen-runtime/QWEN_RUNTIME_VERSIONS.txt" "$APP_BUNDLE/Contents/Resources/"
+cp -R "$BUILD_DIR/qwen-runtime/QwenRuntimeLicenses" "$APP_BUNDLE/Contents/Resources/"
+
 # Standard updates retain external model caches; fail rather than silently strip weights.
 "$PYTHON_BIN" "$ROOT_DIR/scripts/write_app_model_catalog.py" --catalog-source "$MACOS_DIR/VoxLog/Services/QwenModelCatalog.swift" --app "$APP_BUNDLE"
-"$PYTHON_BIN" "$ROOT_DIR/scripts/verify_small_app_bundle.py" --app "$APP_BUNDLE"
+"$PYTHON_BIN" "$ROOT_DIR/scripts/verify_small_app_bundle.py" --app "$APP_BUNDLE" --require-qwen-runtime
 
 codesign --force --deep --sign "${CODESIGN_IDENTITY:--}" "$APP_BUNDLE"
 codesign --verify --deep --strict "$APP_BUNDLE"
@@ -142,6 +153,8 @@ hdiutil create \
   -ov \
   -format UDZO \
   "$DMG_PATH" >/dev/null
+
+"$PYTHON_BIN" "$ROOT_DIR/scripts/verify_release_dmg.py" --dmg "$DMG_PATH"
 
 # A legacy manifest can route old in-place installers to a small App and
 # discard bundled model data. Never generate it for new releases.

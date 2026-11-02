@@ -80,7 +80,7 @@ jobs:
           -q --tb=short
 
       - name: Verify standalone model archive and small App boundaries
-        run: python -m pytest scripts/test_package_model_media.py scripts/test_small_app_bundle.py scripts/test_app_equivalence.py scripts/test_split_model_media.py scripts/test_render_split_media_dmg.py scripts/test_write_app_model_catalog.py scripts/test_prepare_common_asr_app.py -q --tb=short
+        run: python -m pytest scripts/test_package_model_media.py scripts/test_small_app_bundle.py scripts/test_release_runtime.py scripts/test_app_equivalence.py scripts/test_split_model_media.py scripts/test_render_split_media_dmg.py scripts/test_write_app_model_catalog.py scripts/test_prepare_common_asr_app.py -q --tb=short
 
   typescript-test:
     runs-on: ubuntu-latest

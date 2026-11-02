@@ -78,6 +78,12 @@ jobs:
       - name: Install engine build dependencies
         run: python -m pip install . pyinstaller
 
+      - name: Install Qwen runtime build dependencies
+        run: |
+          python -m venv "$RUNNER_TEMP/qwen-build"
+          "$RUNNER_TEMP/qwen-build/bin/python" -m pip install -r macos/qwen3-asr-server/requirements.txt pyinstaller
+          echo "QWEN_PYTHON=$RUNNER_TEMP/qwen-build/bin/python" >> "$GITHUB_ENV"
+
       - name: Build DMG
         env:
           VERSION: ${{ steps.release.outputs.version }}
@@ -103,6 +109,11 @@ jobs:
         env:
           VERSION: ${{ steps.release.outputs.version }}
         run: python scripts/verify_update_assets.py --dist dist --version "$VERSION"
+
+      - name: Verify runtime in final DMG before upload
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: python scripts/verify_release_dmg.py --dmg "dist/VoxAgent-v${VERSION}-cloud.dmg"
 
       - name: Record signature and checksum
         env:
