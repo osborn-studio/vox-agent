@@ -256,12 +256,17 @@ impl LoopbackReceiver {
     }
 }
 
-/// The result of a sign-in. `Debug` never shows the token.
+/// The result of a sign-in. `Debug` never shows the tokens.
 pub struct SignedIn {
     pub token: Zeroizing<String>,
     pub principal: PrincipalKey,
     pub destinations: Vec<DestinationKey>,
     pub display_name: String,
+    /// `vox_refresh_…` for `renew`; `None` on servers that do not offer
+    /// renewal, which then simply does not happen.
+    pub refresh_token: Option<Zeroizing<String>>,
+    /// Access-token lifetime the server reported, in seconds.
+    pub expires_in: Option<u64>,
 }
 
 impl std::fmt::Debug for SignedIn {
@@ -270,6 +275,8 @@ impl std::fmt::Debug for SignedIn {
             .field("principal", &self.principal)
             .field("destinations", &self.destinations)
             .field("token", &"<redacted>")
+            .field("refresh_token", &"<redacted>")
+            .field("expires_in", &self.expires_in)
             .finish_non_exhaustive()
     }
 }
@@ -291,6 +298,7 @@ struct Profile {
     name: String,
 }
 
+/// `redeem` and `renew` answer with the same shape.
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct Redeemed {
@@ -298,7 +306,36 @@ struct Redeemed {
     profile: Profile,
     #[serde(default)]
     target_ids: Vec<String>,
+    #[serde(default)]
+    refresh_token: Option<String>,
+    /// The server may send a fraction of a second; whole seconds are kept.
+    #[serde(default)]
+    expires_in: Option<f64>,
 }
+
+impl Redeemed {
+    /// The refresh token, only in the server's documented shape
+    /// (`vox_refresh_` + 32-128 URL-safe characters).
+    fn refresh_token(&self) -> Option<Zeroizing<String>> {
+        self.refresh_token
+            .as_deref()
+            .filter(|t| t.strip_prefix("vox_refresh_").is_some_and(valid_token))
+            .map(|t| Zeroizing::new(t.to_string()))
+    }
+    /// Whole seconds, never negative, never above the server's one hour.
+    fn expires_in(&self) -> Option<u64> {
+        self.expires_in
+            .filter(|v| v.is_finite())
+            .map(|v| v.max(0.0).floor() as u64)
+            .map(|v| v.min(MAX_ACCESS_SECONDS))
+    }
+}
+
+/// The server's access-token lifetime (`engine/feishu_login.py`); a longer
+/// claim is capped so renewal is always scheduled within the hour.
+const MAX_ACCESS_SECONDS: u64 = 3600;
+/// Renew this long before the access token expires.
+const RENEWAL_MARGIN_SECONDS: u64 = 300;
 
 /// Exactly `<endpoint>/v1/auth/feishu/browser?state=<request_id>`.
 fn expected_browser_url(
@@ -412,6 +449,8 @@ pub async fn sign_in(
         .await?,
     )
     .map_err(|_| LoginError::InvalidResponse)?;
+    let refresh_token = redeemed.refresh_token();
+    let expires_in = redeemed.expires_in();
     let token = Zeroizing::new(redeemed.token);
     // Server contract: vox_sso_ followed by 32-128 URL-safe characters.
     if !token.strip_prefix("vox_sso_").is_some_and(valid_token) {
@@ -441,5 +480,112 @@ pub async fn sign_in(
         principal,
         destinations,
         display_name,
+        refresh_token,
+        expires_in,
     })
+}
+
+/// What `renew` found. `Debug` never shows the tokens.
+pub enum RenewOutcome {
+    /// A new access token for the same principal (the server also returns
+    /// the refresh token, so a future rotation is picked up).
+    Renewed {
+        token: Zeroizing<String>,
+        refresh_token: Zeroizing<String>,
+        expires_in: u64,
+        principal: PrincipalKey,
+    },
+    /// The server ended the session (`SESSION_EXPIRED`, `ACCOUNT_DISABLED`).
+    SignedOut(&'static str),
+    /// Try again at the next tick (`MEMBERSHIP_CHECK_UNAVAILABLE`,
+    /// `RENEWAL_RATE_LIMIT`, `RENEWAL_IN_PROGRESS`, `NETWORK`, ...).
+    RetryLater(&'static str),
+}
+
+impl std::fmt::Debug for RenewOutcome {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Renewed {
+                expires_in,
+                principal,
+                ..
+            } => f
+                .debug_struct("Renewed")
+                .field("expires_in", expires_in)
+                .field("principal", principal)
+                .field("token", &"<redacted>")
+                .finish_non_exhaustive(),
+            Self::SignedOut(code) => f.debug_tuple("SignedOut").field(code).finish(),
+            Self::RetryLater(code) => f.debug_tuple("RetryLater").field(code).finish(),
+        }
+    }
+}
+
+/// Whether an access token issued `elapsed_secs` ago with lifetime
+/// `expires_in_secs` should be renewed now (five minutes before expiry).
+pub fn renewal_due(expires_in_secs: u64, elapsed_secs: u64) -> bool {
+    elapsed_secs.saturating_add(RENEWAL_MARGIN_SECONDS) >= expires_in_secs
+}
+
+/// `POST /v1/auth/feishu/renew` with the refresh token as Bearer. Same
+/// client policy as sign-in: no redirects, no proxy, bounded body.
+pub async fn renew(endpoint: &ContextEndpoint, refresh_token: &str) -> RenewOutcome {
+    let Ok(client) = endpoint.transport_client() else {
+        return RenewOutcome::RetryLater("NETWORK");
+    };
+    let Some(url) = crate::context_account::join(endpoint, "/v1/auth/feishu/renew") else {
+        return RenewOutcome::RetryLater("ENDPOINT");
+    };
+    let response = match client.post(url).bearer_auth(refresh_token).send().await {
+        Ok(response) => response,
+        Err(_) => return RenewOutcome::RetryLater("NETWORK"),
+    };
+    let status = response.status().as_u16();
+    let limit = if status == 200 {
+        MAX_RESPONSE_BYTES
+    } else {
+        MAX_ERROR_BYTES
+    };
+    let body = match read_bounded(response, limit).await {
+        Ok(body) => body,
+        Err(_) => return RenewOutcome::RetryLater("INVALID_RESPONSE"),
+    };
+    if status != 200 {
+        let code = refusal_code(&body);
+        return match (status, code.as_deref()) {
+            (401, Some("ACCOUNT_DISABLED")) => RenewOutcome::SignedOut("ACCOUNT_DISABLED"),
+            (401, _) => RenewOutcome::SignedOut("SESSION_EXPIRED"),
+            (409, _) => RenewOutcome::RetryLater("RENEWAL_IN_PROGRESS"),
+            (429, _) => RenewOutcome::RetryLater("RENEWAL_RATE_LIMIT"),
+            (503, _) => RenewOutcome::RetryLater("MEMBERSHIP_CHECK_UNAVAILABLE"),
+            _ => RenewOutcome::RetryLater("UNEXPECTED_STATUS"),
+        };
+    }
+    let Ok(renewed) = serde_json::from_slice::<Redeemed>(&body) else {
+        return RenewOutcome::RetryLater("INVALID_RESPONSE");
+    };
+    if !renewed
+        .token
+        .strip_prefix("vox_sso_")
+        .is_some_and(valid_token)
+    {
+        return RenewOutcome::RetryLater("INVALID_RESPONSE");
+    }
+    let Some(refresh_token) = renewed.refresh_token() else {
+        return RenewOutcome::RetryLater("INVALID_RESPONSE");
+    };
+    let Ok(principal) = PrincipalKey::new(
+        endpoint,
+        &renewed.profile.org_id,
+        &renewed.profile.user_id,
+        1,
+    ) else {
+        return RenewOutcome::RetryLater("INVALID_RESPONSE");
+    };
+    RenewOutcome::Renewed {
+        expires_in: renewed.expires_in().unwrap_or(MAX_ACCESS_SECONDS),
+        token: Zeroizing::new(renewed.token),
+        refresh_token,
+        principal,
+    }
 }

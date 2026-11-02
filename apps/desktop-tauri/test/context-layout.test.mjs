@@ -216,6 +216,38 @@ test("Context settings show diagnostics and a language choice", () => {
   assert.match(ui, /invoke\("context_diagnostics"\)/);
 });
 
+test("diagnostics map every Rust key_store label to fixed copy (PR-A)", () => {
+  const block = ui.slice(ui.indexOf("const KEY_STORE_COPY"), ui.indexOf("function renderDiagnostics"));
+  for (const label of ["dpapi-user", "unsafe-acl", "unavailable", "not-available-in-this-build"]) {
+    assert.ok(block.includes(`"${label}"`) || block.includes(`${label}:`), label);
+  }
+  assert.match(block, /"unsafe-acl": "diagnostics\.unsafeAcl"/);
+  assert.match(block, /"dpapi-user": "diagnostics\.ready"/);
+  assert.match(ui, /KEY_STORE_COPY\[d\.keyStore\] \?\? "diagnostics\.notAvailable"/);
+  const i18n = read("../src/context/i18n.js");
+  assert.match(i18n, /"diagnostics\.unsafeAcl": L\(\s*"Local encrypted directory permissions are unsafe; delivery disabled",\s*"本机加密目录权限不安全，已停用投递",/);
+});
+
+test("a renewal sign-out from Rust refreshes the account view with a known code (PR-A)", () => {
+  assert.match(ui, /export const ACCOUNT_EVENT = "vox-agent:\/\/context-account"/);
+  const block = ui.slice(ui.indexOf("listen(ACCOUNT_EVENT"), ui.indexOf("doc.defaultView?.addEventListener(\"blur\""));
+  assert.match(block, /accountError\(typeof code === "string" \? code : "sign-in-required", l\)/);
+  assert.match(block, /resetView\(\);[\s\S]*setAccountNote/, "the view is reset before the note is shown");
+  assert.match(block, /refreshSummary\(\)/);
+});
+
+test("diagnostics render the renewal status as fixed copy with the server code only (PR-A)", () => {
+  const fn = ui.slice(ui.indexOf("function renewalCopy"), ui.indexOf("function renderDiagnostics"));
+  for (const label of ["none", "scheduled", "renewed", "not-offered", "renewal-unavailable", "signed-out"]) {
+    assert.ok(fn.includes(label), label);
+  }
+  assert.match(ui, /\["diagnostics\.renewal", renewalCopy\(d\.renewal\)\]/);
+  const i18n = read("../src/context/i18n.js");
+  for (const key of ["renewal", "renewalNone", "renewalScheduled", "renewalRenewed", "renewalNotOffered", "renewalUnavailable", "renewalSignedOut"]) {
+    assert.match(i18n, new RegExp(`"diagnostics\\.${key}": L\\(`), key);
+  }
+});
+
 test("Windows high contrast keeps status edges, badges and focus visible (T40b)", () => {
   const block = css.slice(css.indexOf("@media (forced-colors: active)"));
   assert.ok(block.length > 0, "forced-colors block");

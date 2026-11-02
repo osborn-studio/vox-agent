@@ -21,6 +21,8 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use zeroize::Zeroizing;
 
+#[cfg(windows)]
+pub mod dpapi;
 #[cfg(any(test, debug_assertions))]
 pub mod fake;
 

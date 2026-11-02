@@ -20,6 +20,8 @@ import {
 } from "./timeline.js";
 
 export const RECORD_EVENT = "vox-agent://context-record";
+/** Rust ended the account on its own (session renewal refused); payload is a code only. */
+export const ACCOUNT_EVENT = "vox-agent://context-account";
 
 const byId = (doc, id) => doc.getElementById(id);
 const EVENT_ID = /^[A-Za-z0-9_-]{1,128}$/;
@@ -643,6 +645,15 @@ export function initContextUi({ document: doc, invoke, listen, storage, onAgentS
     }
   });
   listen(RECORD_EVENT, (event) => refreshRecord(event?.payload?.eventId));
+  listen(ACCOUNT_EVENT, (event) => {
+    const code = event?.payload?.code;
+    // Same reset as an explicit sign-out: originals, records, conversations
+    // and drafts of the ended account must not stay visible or be refilled
+    // by requests still in flight.
+    resetView();
+    setAccountNote((l) => accountError(typeof code === "string" ? code : "sign-in-required", l));
+    refreshSummary();
+  });
   doc.defaultView?.addEventListener("blur", hideRevealed);
   doc.addEventListener?.("visibilitychange", () => {
     if (doc.visibilityState === "hidden") {
@@ -661,6 +672,29 @@ export function initContextUi({ document: doc, invoke, listen, storage, onAgentS
     renderDiagnostics();
   }
 
+  // `key_store` labels from Rust (context_commands::JournalOpenReport).
+  const KEY_STORE_COPY = Object.freeze({
+    "dpapi-user": "diagnostics.ready",
+    "unsafe-acl": "diagnostics.unsafeAcl",
+    unavailable: "diagnostics.unavailable",
+    "not-available-in-this-build": "diagnostics.notAvailable",
+  });
+
+  /** Fixed renewal status line from Rust (`renewal`): a word, never a token. */
+  function renewalCopy(value) {
+    const fixed = {
+      none: "diagnostics.renewalNone",
+      scheduled: "diagnostics.renewalScheduled",
+      renewed: "diagnostics.renewalRenewed",
+      "not-offered": "diagnostics.renewalNotOffered",
+    };
+    if (fixed[value]) return t(fixed[value], lang);
+    const [kind, code] = String(value ?? "").split(":");
+    if (kind === "renewal-unavailable" && code) return `${t("diagnostics.renewalUnavailable", lang)} (${code})`;
+    if (kind === "signed-out" && code) return `${t("diagnostics.renewalSignedOut", lang)} (${code})`;
+    return t("diagnostics.renewalNone", lang);
+  }
+
   function renderDiagnostics() {
     if (!diagnostics) {
       el.diagnostics.replaceChildren();
@@ -673,11 +707,12 @@ export function initContextUi({ document: doc, invoke, listen, storage, onAgentS
       ["diagnostics.platform", `${d.os} · ${d.arch}`],
       ["diagnostics.setup", t(d.configured ? "diagnostics.ready" : "diagnostics.notSetUp", lang)],
       ["diagnostics.signIn", t(d.signedIn ? "diagnostics.yes" : "diagnostics.no", lang)],
-      ["diagnostics.keyStore", t(d.keyStore === "available" ? "diagnostics.ready" : "diagnostics.notAvailable", lang)],
+      ["diagnostics.keyStore", t(KEY_STORE_COPY[d.keyStore] ?? "diagnostics.notAvailable", lang)],
       [
         "diagnostics.journal",
         t({ normal: "diagnostics.normal", "verify-only": "diagnostics.verifyOnly" }[d.journal] ?? "diagnostics.unavailable", lang),
       ],
+      ["diagnostics.renewal", renewalCopy(d.renewal)],
       ["diagnostics.records", d.activeRecords ?? t("diagnostics.none", lang)],
     ];
     el.diagnostics.replaceChildren(
