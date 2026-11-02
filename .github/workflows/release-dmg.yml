@@ -26,6 +26,13 @@ on:
           macos/VoxLog/Resources/Info.plist; leave empty to use it.
         required: false
         type: string
+  # Called by publish-release.yml so one run builds both platforms.
+  workflow_call:
+    inputs:
+      version:
+        description: App version (X.Y.Z); must equal Info.plist.
+        required: false
+        type: string
 
 permissions:
   contents: read
