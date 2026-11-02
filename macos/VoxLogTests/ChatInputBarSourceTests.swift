@@ -118,4 +118,21 @@ final class ChatInputBarSourceTests: XCTestCase {
         XCTAssertNotNil(escape)
         XCTAssertTrue(source[escape!.upperBound...].contains("hasPolished = false"))
     }
+
+    /// A composer voice turn is captured as plain ASR plus dictionary fixes and
+    /// polished by the composer before it finalizes, with the same model and
+    /// prompt as a typed draft. The global hotkey mode (Quick Mode by default)
+    /// must not decide whether it is polished, and a finalized turn is never
+    /// assumed polished.
+    func testVoiceTurnIsPolishedBeforeFinalizeIndependentOfHotkeyMode() throws {
+        let source = try source()
+
+        XCTAssertTrue(source.contains("mode: .direct,\n                outputDestination: .composer"))
+        XCTAssertFalse(source.contains("mode: appState.currentMode"))
+        XCTAssertTrue(source.contains("applyFinalTranscript(finalText)\n            polishVoiceTurn()"))
+        XCTAssertTrue(source.contains("private func polishVoiceTurn()"))
+        XCTAssertFalse(source.contains("voiceState.finalize()\n            hasPolished = true"))
+        XCTAssertFalse(source.contains("voiceState.stage == .finalized || hasPolished"))
+        XCTAssertTrue(source.contains("if hasPolished {\n            sendCurrentText()"))
+    }
 }
