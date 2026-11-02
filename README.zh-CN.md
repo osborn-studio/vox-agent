@@ -36,6 +36,12 @@ Vox Agent 由原生 macOS 驾驶舱、可运行于 Windows 的桌面外壳、Pyt
 两个桌面应用的未签名测试版由两个手动触发的工作流在 GitHub 托管的 runner 上构建。
 它们是 CI 构建，不是经过验收的正式版本：CI 构建不等于真机验证通过。
 
+正式发布的构建会附在仓库的
+[**Releases**](https://github.com/osborn-studio/vox-agent/releases) 页面上，并带有
+合并的 `SHA256SUMS.txt`；从这里下载最方便，也无需登录。维护者先用
+**Publish Release (draft)** 工作流创建草稿，审阅后再发布。两次发布之间，每次运行的
+构建以工作流构件形式提供：
+
 1. 打开仓库的 **Actions** 页面，选择 **Release DMG**（macOS）或
    **Release Windows**，找一次在 `main` 上成功的运行；维护者可以用
    **Run workflow** 重新构建。

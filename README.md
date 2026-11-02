@@ -41,6 +41,13 @@ Unsigned test builds of both desktop apps are produced on GitHub-hosted runners
 by two manual workflows. They are CI builds, not qualified releases: a CI build
 is not a device pass.
 
+Published builds are attached to the repository's
+[**Releases**](https://github.com/osborn-studio/vox-agent/releases) page with a
+combined `SHA256SUMS.txt`; that is the easiest place to download, and needs no
+sign-in. A maintainer creates them as drafts with the **Publish Release
+(draft)** workflow and publishes them after review. Between releases, the
+per-run builds are available as workflow artifacts:
+
 1. Open the repository's **Actions** tab and pick **Release DMG** (macOS) or
    **Release Windows**. Choose a successful run on `main`; a maintainer can
    start a new one with **Run workflow**.
