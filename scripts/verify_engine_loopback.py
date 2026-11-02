@@ -84,12 +84,31 @@ EXPECTED_CHECKS = ("handshake_proof", "health_without_auth_401", "tasks_without_
                    "bad_secret_refuses_to_start")
 
 
+def stop_tree(process: subprocess.Popen, timeout: float = 15) -> None:
+    """Stop the engine and anything it spawned.
+
+    A PyInstaller one-file executable is a bootloader that runs the real
+    interpreter as a child. On Windows, TerminateProcess on the bootloader
+    leaves that child holding the engine's database files, so the whole tree
+    is killed there.
+    """
+    if os.name == "nt":
+        subprocess.run(["taskkill", "/PID", str(process.pid), "/T", "/F"], capture_output=True)
+    else:
+        process.terminate()
+    try:
+        process.wait(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        process.wait()
+
+
 def run(engine: list[str], timeout: float = 60, token: str | None = None) -> dict:
     """Run the checks. `token` is for tests; normally a fresh one is generated."""
     checks: dict[str, bool] = {}
     report: dict = {"engine": [Path(engine[0]).name] + [Path(a).name for a in engine[1:]], "checks": checks}
     token = token or secrets.token_urlsafe(32)
-    with tempfile.TemporaryDirectory() as temp:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as temp:
         temp_path = Path(temp)
         port = _free_port()
         base = f"http://127.0.0.1:{port}"
@@ -133,12 +152,7 @@ def run(engine: list[str], timeout: float = 60, token: str | None = None) -> dic
                 "HTTP/1.1 101")
             checks["secret_not_in_responses"] = all(token not in r for r in responses)
         finally:
-            process.terminate()
-            try:
-                process.wait(timeout=15)
-            except subprocess.TimeoutExpired:
-                process.kill()
-                process.wait()
+            stop_tree(process)
             log.close()
         checks["stopped"] = process.poll() is not None
 
