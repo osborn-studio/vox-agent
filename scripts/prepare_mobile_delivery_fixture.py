@@ -7,7 +7,7 @@ import pathlib
 import subprocess
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-TABLE_PIN = '8c1267ce8bc55d27b42ee7fd29fb68c929f0807cc670a32a93f67399b1d7340f'
+TABLE_PIN = 'f482fbdb520bb8081b216fbc597e4ea9da441b8d9a9a84aaef402781d82dd146'
 
 
 def main():

@@ -9,8 +9,8 @@
   },
   "advisoryDatabase": {
     "url": "https://github.com/RustSec/advisory-db.git",
-    "commit": "999ec89d5d3f10f20be14750ec8c2d8b44e0ac9b",
-    "publishedAt": "2026-10-17"
+    "commit": "263a4d951a0867d4bddc29dddd6d59427c78f9a7",
+    "publishedAt": "2026-11-02"
   },
   "maxDatabaseAgeDays": 14,
   "lockfiles": [
