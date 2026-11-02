@@ -1596,7 +1596,7 @@
       }
     }
   ],
-  "lockSHA256": "8ed12bcada900570bb962d7b69dab341445878a9ddb7b4c50566c4aa544342b6",
+  "lockSHA256": "151d546bff2bf9b6e9f2c857042d3f21a6c5491b1a928810f9ba10f853bd1c9f",
   "criticalDependencies": [
     {
       "path": "node_modules/@peculiar/asn1-asym-key",
