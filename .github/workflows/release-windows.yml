@@ -1,0 +1,172 @@
+# Manual Windows installer build on a GitHub-hosted runner.
+#
+# The Windows counterpart of release-dmg.yml, held to the same limits:
+#   - workflow_dispatch builds an installer on demand. Pull requests that
+#     touch the packaging inputs listed below also build one, so a packaging
+#     change is proven before it merges (a new workflow cannot be dispatched
+#     until it exists on main). There is no tag trigger and no GitHub Release
+#     publication until that gets its own permissions review.
+#   - the token stays read-only (`contents: read`); nothing is published.
+#   - no secrets are read. The installers are unsigned (no Authenticode
+#     certificate exists in this repository), so Windows SmartScreen shows
+#     "Windows protected your PC" on first run: choose More info > Run anyway.
+# Self-hosted runners are deliberately not referenced: this is a public
+# repository.
+#
+# The job freezes the Python engine with scripts/build_windows_engine.py,
+# checks it on loopback, runs the read-only release preflight, and packages
+# the canonical Tauri shell (apps/desktop-tauri) as NSIS and MSI installers
+# with the engine installed beside `Vox Agent.exe`. Both installers and their
+# SHA256SUMS.txt are uploaded as a workflow artifact named
+# vox-agent-v<version>-windows on the run's summary page
+# (Actions > Release Windows). A CI build is not a device pass: installed
+# behaviour still needs named-device evidence (docs/windows-port-feature-parity.md).
+name: Release Windows
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: >-
+          App version (X.Y.Z). Must equal the version in
+          apps/desktop-tauri/src-tauri/tauri.conf.json; leave empty to use it.
+        required: false
+        type: string
+  pull_request:
+    paths:
+      - .github/workflows/release-windows.yml
+      - scripts/build_windows_engine.py
+      - scripts/frozen_engine.py
+      - scripts/verify_windows_release_preflight.py
+      - apps/desktop-tauri/package-lock.json
+      - apps/desktop-tauri/src-tauri/Cargo.lock
+      - apps/desktop-tauri/src-tauri/tauri.conf.json
+      - apps/desktop-tauri/src-tauri/tauri.release-engine.conf.json
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-windows-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build-windows:
+    name: Build Vox Agent installers (unsigned)
+    runs-on: windows-latest
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Toolchain
+        run: |
+          python --version
+          node --version
+          rustc -vV
+
+      - name: Resolve version
+        id: release
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          source_version="$(python -c "import json; print(json.load(open('apps/desktop-tauri/src-tauri/tauri.conf.json'))['version'])")"
+          version="${INPUT_VERSION:-$source_version}"
+          if [ "$version" != "$source_version" ]; then
+            echo "Requested version $version differs from tauri.conf.json version $source_version; bump the source first." >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Preflight source versions
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: python scripts/verify_windows_release_preflight.py --version "$VERSION" --stage source --stage host
+
+      - name: Install engine build dependencies
+        run: python -m pip install . pyinstaller
+
+      - name: Freeze and loopback-check the engine
+        run: python scripts/build_windows_engine.py --target x86_64-pc-windows-msvc --verify
+
+      - name: Preflight bundled engine
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: python scripts/verify_windows_release_preflight.py --version "$VERSION" --sku full
+
+      # apps/desktop-tauri is an npm workspace, and the root lockfile records
+      # only the macOS native binary of @tauri-apps/cli. The app's own
+      # lockfile pins every platform binary with an integrity hash, so the CLI
+      # is installed from it in a directory outside the workspace.
+      - name: Install Tauri CLI
+        run: |
+          set -euo pipefail
+          cli="$RUNNER_TEMP/tauri-cli"
+          mkdir -p "$cli"
+          cp apps/desktop-tauri/package.json apps/desktop-tauri/package-lock.json "$cli/"
+          npm ci --prefix "$cli"
+          echo "TAURI_CLI=$cli/node_modules/@tauri-apps/cli/tauri.js" >> "$GITHUB_ENV"
+
+      - name: Build installers
+        working-directory: apps/desktop-tauri
+        run: node "$TAURI_CLI" build --config src-tauri/tauri.release-engine.conf.json --bundles nsis msi
+
+      - name: Collect installers and checksums
+        id: collect
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          set -euo pipefail
+          bundle=apps/desktop-tauri/src-tauri/target/release/bundle
+          mkdir -p dist
+          nsis=( "$bundle"/nsis/*.exe )
+          msi=( "$bundle"/msi/*.msi )
+          if [ "${#nsis[@]}" -ne 1 ] || [ ! -f "${nsis[0]}" ] || [ "${#msi[@]}" -ne 1 ] || [ ! -f "${msi[0]}" ]; then
+            echo "Expected exactly one NSIS and one MSI installer" >&2
+            ls -R "$bundle" >&2 || true
+            exit 1
+          fi
+          cp "${nsis[0]}" "dist/VoxAgent-v${VERSION}-windows-x64-setup.exe"
+          cp "${msi[0]}" "dist/VoxAgent-v${VERSION}-windows-x64.msi"
+          (cd dist && sha256sum "VoxAgent-v${VERSION}-windows-x64-setup.exe" "VoxAgent-v${VERSION}-windows-x64.msi" > SHA256SUMS.txt)
+          {
+            echo "## Vox Agent ${VERSION} Windows installers (unsigned)"
+            echo
+            echo 'Not Authenticode-signed: SmartScreen shows "Windows protected your PC" on first run. Choose More info > Run anyway.'
+            echo 'This is a CI build, not a device pass.'
+            echo
+            echo '```'
+            cat dist/SHA256SUMS.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: vox-agent-v${{ steps.release.outputs.version }}-windows
+          path: |
+            dist/VoxAgent-v${{ steps.release.outputs.version }}-windows-x64-setup.exe
+            dist/VoxAgent-v${{ steps.release.outputs.version }}-windows-x64.msi
+            dist/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 30
