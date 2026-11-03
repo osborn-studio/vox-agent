@@ -1,4 +1,5 @@
 import { createCaptureController } from "./capture/controller.js";
+import { insertVoiceDraft, voiceDraftFromResponse } from "./capture/voice-draft.js";
 import { initContextUi } from "./context/ui.js";
 import { providerBadge } from "./settings/provider-badge.js";
 
@@ -97,6 +98,7 @@ const elements = {
   refreshHealth: document.querySelector("#refresh-health"),
   askAgent: document.querySelector("#ask-agent"),
   agentQuery: document.querySelector("#agent-query"),
+  composerVoiceNote: document.querySelector("#composer-voice-note"),
   refreshDigest: document.querySelector("#refresh-digest"),
   refreshHistory: document.querySelector("#refresh-history"),
   exportHistoryMarkdown: document.querySelector("#export-history-markdown"),
@@ -3227,6 +3229,13 @@ async function routeCapturedAudio({ audioBase64, mimeType, source, injectAfterUp
   await sendVoicePayload(payload);
 }
 
+/** Inline, in-place note under the composer (no toast, DESIGN.md). */
+function setComposerVoiceNote(note) {
+  if (!elements.composerVoiceNote) return;
+  elements.composerVoiceNote.textContent = note || "";
+  elements.composerVoiceNote.hidden = !note;
+}
+
 async function uploadRecordedChunks({ chunks, mimeType, injectAfterUpload = false }) {
   if (!chunks.length) {
     log("No audio captured; skipping upload.");
@@ -3247,10 +3256,14 @@ async function uploadRecordedChunks({ chunks, mimeType, injectAfterUpload = fals
 
 async function sendVoicePayload(payload) {
   clearVoiceHudHideTimer();
-  setRecordingState("Uploading", "warn");
+  // A capture for the composer is polished before it becomes the draft (the
+  // macOS ChatInputBar flow); hotkey output to another app is unchanged.
+  const forComposer = !payload.injectAfterUpload;
+  setRecordingState(forComposer ? "Polishing" : "Uploading", "warn");
+  setComposerVoiceNote(null);
   void updateVoiceHud({
     phase: "processing",
-    instruction: "Transcribing and routing your command…",
+    instruction: forComposer ? "Transcribing and polishing your draft…" : "Transcribing and routing your command…",
     elapsedMs: Date.now() - recordingStartedAt,
   });
 
@@ -3261,6 +3274,7 @@ async function sendVoicePayload(payload) {
     targetApp: payload.targetApp,
     sessionId: payload.sessionId,
     mode: payload.mode,
+    polish: !payload.injectAfterUpload,
   });
 
   log("Uploaded utterance to backend.", {
@@ -3275,6 +3289,13 @@ async function sendVoicePayload(payload) {
   elements.finalTranscript.textContent = response.display_text || "(empty)";
   elements.transcriptProvider.textContent = response.stt_provider || "unknown";
   elements.transcriptModel.textContent = response.stt_model || "unknown";
+  if (forComposer) {
+    const draft = voiceDraftFromResponse(response);
+    if (insertVoiceDraft(elements.agentQuery, draft.text)) {
+      setRecordingState(draft.polished ? "Polished draft ready" : "Draft ready", "live");
+    }
+    setComposerVoiceNote(draft.note);
+  }
   if (
     payload.injectAfterUpload &&
     response.should_autopaste &&

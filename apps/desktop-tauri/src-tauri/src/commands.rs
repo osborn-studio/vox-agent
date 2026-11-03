@@ -1935,6 +1935,7 @@ pub async fn upload_voice(
     target_app: String,
     session_id: String,
     mode: String,
+    polish: Option<bool>,
     state: State<'_, AppState>,
 ) -> Result<FastPathResponse, String> {
     let config = state
@@ -1950,6 +1951,7 @@ pub async fn upload_voice(
         &target_app,
         &session_id,
         &mode,
+        polish.unwrap_or(false),
     )
     .await
     .map_err(|err| err.to_string())
