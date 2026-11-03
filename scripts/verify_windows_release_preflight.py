@@ -140,17 +140,24 @@ ENGINE_BIN = 'voxagent-engine'
 RELEASE_CONFIG = 'tauri.release-engine.conf.json'
 
 
-def _engine_manifest(path: Path, artifact: dict) -> list:
-    """The frozen engine must carry the manifest build_windows_engine.py wrote,
-    naming this exact file, target and digest (T02/T29)."""
-    manifest = path.with_name(f'{ENGINE_BIN}.manifest.json')
+BACKEND_BIN = 'voxagent-backend'
+# Frozen sidecars and the blocker prefix used when their manifest is wrong.
+SIDECARS = {ENGINE_BIN: 'engine', BACKEND_BIN: 'backend'}
+
+
+def _engine_manifest(path: Path, artifact: dict, name: str = ENGINE_BIN) -> list:
+    """A frozen sidecar must carry the manifest its build script wrote
+    (build_windows_engine.py / build_windows_backend.py), naming this exact
+    file, target and digest (T02/T29, PR-B)."""
+    kind = SIDECARS[name]
+    manifest = path.with_name(f'{name}.manifest.json')
     try:
         data = json.loads(manifest.read_text(encoding='utf-8'))
     except (OSError, ValueError):
-        return [f'bundled_engine_manifest_missing:{path.name}']
+        return [f'bundled_{kind}_manifest_missing:{path.name}']
     if not (isinstance(data, dict) and data.get('file') == path.name
             and data.get('target') == WINDOWS_TRIPLE and data.get('sha256') == artifact.get('sha256')):
-        return [f'bundled_engine_manifest_mismatch:{path.name}']
+        return [f'bundled_{kind}_manifest_mismatch:{path.name}']
     return []
 
 
@@ -201,8 +208,8 @@ def check_sku(repo: Path, tauri: Path, bundle: dict, sku: str):
         else:
             artifact = _artifact(tauri, path, blockers)
             artifacts.append(artifact)
-            if Path(entry).name == ENGINE_BIN:
-                blockers.extend(_engine_manifest(path, artifact))
+            if Path(entry).name in SIDECARS:
+                blockers.extend(_engine_manifest(path, artifact, Path(entry).name))
     for pattern in resources:
         files, outside = _resolve_pattern(tauri, repo, pattern)
         if outside:
@@ -266,6 +273,10 @@ def qualify(repo: Path, version: str, host: str, sku: str = 'full', stages=STAGE
                            and Path(e).name == ENGINE_BIN]
                 if not engines:
                     found.append('bundled_engine_not_declared')
+                # ...and the voice backend the installed shell routes ASR to (PR-B).
+                if not any(isinstance(e, str) and Path(e).name == BACKEND_BIN
+                           for e in packaged.get('externalBin') or []):
+                    found.append('bundled_backend_not_declared')
         else:
             found, artifacts = ['invalid_bundle_configuration'], []
         stage_status['sku'] = 'BLOCKED' if found else 'PASS'

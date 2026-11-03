@@ -90,7 +90,8 @@ class BuildPlanTest(unittest.TestCase):
 
     def test_release_config_bundles_the_engine_and_default_config_does_not(self):
         release = json.loads((ROOT / "apps/desktop-tauri/src-tauri/tauri.release-engine.conf.json").read_text())
-        self.assertEqual(release["bundle"]["externalBin"], ["binaries/voxagent-engine"])
+        self.assertEqual(release["bundle"]["externalBin"],
+                         ["binaries/voxagent-engine", "binaries/voxagent-backend"])
         default = json.loads((ROOT / "apps/desktop-tauri/src-tauri/tauri.conf.json").read_text())
         self.assertNotIn("externalBin", default.get("bundle", {}))
         ignore = (ROOT / "apps/desktop-tauri/src-tauri/.gitignore").read_text()

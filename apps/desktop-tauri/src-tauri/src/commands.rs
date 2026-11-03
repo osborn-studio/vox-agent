@@ -482,7 +482,7 @@ fn settings_snapshot(
 
 /// `Err` means provider keys could not be read from the credential store, so
 /// hydration was skipped; `Ok(None)` means the engine was not reachable.
-async fn hydrate_provider_settings(
+pub(crate) async fn hydrate_provider_settings(
     config: &crate::state::AppConfig,
     stored: &StoredSettings,
 ) -> Result<Option<ProviderSettingsResponse>, crate::secrets::SecretError> {
@@ -2148,4 +2148,36 @@ mod credential_snapshot_tests {
             Some("credential store locked or access denied")
         );
     }
+}
+
+/// Start the bundled voice backend, wait for it to prove its launch, then push
+/// provider settings and keys so the first capture already has credentials.
+pub fn spawn_voice_backend(app: AppHandle) {
+    use tauri::Manager;
+    match crate::voice_backend::start() {
+        Ok(false) => return,
+        Ok(true) => {}
+        Err(error) => {
+            eprintln!("voice backend not started: {error}");
+            return;
+        }
+    }
+    tauri::async_runtime::spawn(async move {
+        if let Err(error) =
+            crate::voice_backend::wait_until_verified(std::time::Duration::from_secs(120)).await
+        {
+            eprintln!("voice backend unavailable: {error}");
+            return;
+        }
+        let state = app.state::<AppState>();
+        let config = state.config.lock().ok().map(|config| config.clone());
+        let stored = state
+            .stored_settings
+            .lock()
+            .ok()
+            .map(|stored| stored.clone());
+        if let (Some(config), Some(stored)) = (config, stored) {
+            let _ = hydrate_provider_settings(&config, &stored).await;
+        }
+    });
 }

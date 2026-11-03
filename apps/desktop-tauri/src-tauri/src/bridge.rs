@@ -6,6 +6,7 @@ use serde::Serialize;
 use thiserror::Error;
 
 use crate::state::AppConfig;
+use crate::voice_backend;
 
 #[derive(Debug, Error)]
 pub enum BridgeError {
@@ -13,6 +14,8 @@ pub enum BridgeError {
     Request(#[from] reqwest::Error),
     #[error("invalid base64 audio payload: {0}")]
     Decode(#[from] base64::DecodeError),
+    #[error("{0}")]
+    Route(#[from] crate::voice_backend::RouteError),
 }
 
 fn client() -> Client {
@@ -23,8 +26,9 @@ pub async fn get_json<T: DeserializeOwned>(
     config: &AppConfig,
     path: &str,
 ) -> Result<T, BridgeError> {
-    let mut req = client().get(format!("{}{}", config.backend_base_url, path));
-    if let Some(token) = &config.api_token {
+    let route = voice_backend::route(config)?;
+    let mut req = client().get(format!("{}{}", route.base_url, path));
+    if let Some(token) = &route.token {
         req = req.bearer_auth(token);
     }
     Ok(req.send().await?.error_for_status()?.json::<T>().await?)
@@ -35,10 +39,11 @@ pub async fn post_form<T: DeserializeOwned>(
     path: &str,
     form: &[(&str, String)],
 ) -> Result<T, BridgeError> {
+    let route = voice_backend::route(config)?;
     let mut req = client()
-        .post(format!("{}{}", config.backend_base_url, path))
+        .post(format!("{}{}", route.base_url, path))
         .form(form);
-    if let Some(token) = &config.api_token {
+    if let Some(token) = &route.token {
         req = req.bearer_auth(token);
     }
     Ok(req.send().await?.error_for_status()?.json::<T>().await?)
@@ -49,10 +54,11 @@ pub async fn post_json<T: DeserializeOwned, B: Serialize>(
     path: &str,
     body: &B,
 ) -> Result<T, BridgeError> {
+    let route = voice_backend::route(config)?;
     let mut req = client()
-        .post(format!("{}{}", config.backend_base_url, path))
+        .post(format!("{}{}", route.base_url, path))
         .json(body);
-    if let Some(token) = &config.api_token {
+    if let Some(token) = &route.token {
         req = req.bearer_auth(token);
     }
     Ok(req.send().await?.error_for_status()?.json::<T>().await?)
@@ -87,10 +93,11 @@ pub async fn post_voice_upload<T: DeserializeOwned>(
         .text("session_id", session_id.to_string())
         .text("mode", mode.to_string());
 
+    let route = voice_backend::route(config)?;
     let mut req = client()
-        .post(format!("{}{}", config.backend_base_url, "/v1/voice"))
+        .post(format!("{}{}", route.base_url, "/v1/voice"))
         .multipart(form);
-    if let Some(token) = &config.api_token {
+    if let Some(token) = &route.token {
         req = req.bearer_auth(token);
     }
     Ok(req.send().await?.error_for_status()?.json::<T>().await?)

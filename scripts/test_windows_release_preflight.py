@@ -63,6 +63,7 @@ class PreflightTests(unittest.TestCase):
                 'cargo_version_mismatch', 'cargo_lock_version_mismatch',
                 'npm_lock_version_mismatch', 'root_npm_lock_version_mismatch',
                 'bundled_runtime_not_declared', 'release_config_missing', 'bundled_engine_not_declared',
+                'bundled_backend_not_declared',
             })
 
     def test_static_pass_still_has_no_installation_or_parity_claim(self):

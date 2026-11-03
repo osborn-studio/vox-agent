@@ -31,10 +31,12 @@ mod history_export;
 mod migration_bundle;
 mod notion_sync;
 pub mod secrets;
+mod sidecar_job;
 mod state;
 mod system_integration;
 mod text_input;
 pub mod updater_manifest;
+mod voice_backend;
 mod voice_hud;
 
 use contracts::GlobalHotkeyEvent;
@@ -190,6 +192,9 @@ pub fn run() {
             setup_tray(app)?;
             // Renews the Feishu access token before it expires (spec §3.6).
             context_commands::spawn_session_maintenance(app.handle().clone());
+            // Installed builds ship the voice backend beside the executable
+            // (PR-B, spec §3.1); development builds keep the configured gateway.
+            commands::spawn_voice_backend(app.handle().clone());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -289,6 +294,11 @@ pub fn run() {
             context_weekly_commands::context_weekly_copy,
             context_weekly_commands::context_weekly_clear,
         ])
-        .run(tauri::generate_context!())
-        .expect("failed to run Vox Agent Desktop Tauri shell");
+        .build(tauri::generate_context!())
+        .expect("failed to build Vox Agent Desktop Tauri shell")
+        .run(|_, event| {
+            if let tauri::RunEvent::Exit = event {
+                voice_backend::stop();
+            }
+        });
 }

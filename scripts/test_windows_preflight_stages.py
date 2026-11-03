@@ -24,19 +24,33 @@ def pe_bytes(machine: int, magic: int = 0x20B) -> bytes:
     return bytes(dos) + b'PE\0\0' + coff + optional + b'\0' * 40
 
 
-def add_release_engine(tauri: Path) -> str:
-    """Give a fixture the engine the full SKU requires: the release config,
-    an x64 PE engine named for Tauri externalBin, and its matching manifest."""
+RELEASE_BINS = ['binaries/voxagent-engine', 'binaries/voxagent-backend']
+BACKEND = f'binaries/voxagent-backend-{TRIPLE}.exe'
+
+
+def add_sidecar(tauri: Path, stem: str, manifest=None) -> str:
+    """An x64 PE sidecar named for Tauri externalBin with its matching
+    manifest; `manifest` overrides fields, and None for the whole argument
+    writes a valid one."""
     import hashlib
-    (tauri / 'tauri.release-engine.conf.json').write_text(
-        json.dumps({'bundle': {'externalBin': ['binaries/voxagent-engine']}}))
-    name = f'voxagent-engine-{TRIPLE}.exe'
+    name = f'{stem}-{TRIPLE}.exe'
     (tauri / 'binaries').mkdir(exist_ok=True)
     (tauri / f'binaries/{name}').write_bytes(pe_bytes(0x8664))
     digest = hashlib.sha256((tauri / f'binaries/{name}').read_bytes()).hexdigest()
-    (tauri / 'binaries/voxagent-engine.manifest.json').write_text(json.dumps(
-        {'file': name, 'target': TRIPLE, 'sha256': digest, 'source_commit': 'a' * 40}))
+    data = {'file': name, 'target': TRIPLE, 'sha256': digest, 'source_commit': 'a' * 40}
+    data.update(manifest or {})
+    (tauri / f'binaries/{stem}.manifest.json').write_text(json.dumps(data))
     return f'binaries/{name}'
+
+
+def add_release_engine(tauri: Path) -> str:
+    """Give a fixture the sidecars the full SKU requires: the release config,
+    the x64 PE engine and voice backend named for Tauri externalBin, and their
+    matching manifests."""
+    (tauri / 'tauri.release-engine.conf.json').write_text(
+        json.dumps({'bundle': {'externalBin': RELEASE_BINS}}))
+    add_sidecar(tauri, 'voxagent-backend')
+    return add_sidecar(tauri, 'voxagent-engine')
 
 
 def make_repo(root: Path, version='4.2.8', bundle=None):
@@ -119,7 +133,7 @@ class StageTests(unittest.TestCase):
             result = qualify(Path(temp), '4.2.8', 'Windows', sku='full', stages=('source', 'host', 'sku'))
             self.assertEqual(result['status'], 'PASS', result['blockers'])
             paths = {item['path']: item for item in result['bundled_artifacts']}
-            self.assertEqual(set(paths), {engine, 'runtime/lib/helper.dll', 'runtime/lib/data.bin'})
+            self.assertEqual(set(paths), {engine, BACKEND, 'runtime/lib/helper.dll', 'runtime/lib/data.bin'})
             self.assertEqual(len(paths['runtime/lib/data.bin']['sha256']), 64)
             self.assertEqual(paths['runtime/lib/helper.dll']['machine'], 'x64')
 
@@ -128,10 +142,11 @@ class StageTests(unittest.TestCase):
     def release_engine(self, root: Path, manifest=None, binary=True):
         tauri = make_repo(root, version='4.2.9')
         (tauri / 'tauri.release-engine.conf.json').write_text(
-            json.dumps({'bundle': {'externalBin': ['binaries/voxagent-engine']}}))
+            json.dumps({'bundle': {'externalBin': RELEASE_BINS}}))
+        add_sidecar(tauri, 'voxagent-backend')
         name = f'voxagent-engine-{TRIPLE}.exe'
         if binary:
-            (tauri / 'binaries').mkdir()
+            (tauri / 'binaries').mkdir(exist_ok=True)
             (tauri / f'binaries/{name}').write_bytes(pe_bytes(0x8664))
         if manifest is not None:
             import hashlib
@@ -148,6 +163,20 @@ class StageTests(unittest.TestCase):
             self.assertNotIn('bundled_runtime_not_declared', result['blockers'])
             self.assertIn(f'bundled_file_missing:binaries/voxagent-engine-{TRIPLE}.exe', result['blockers'])
             self.assertEqual(result['release_config'], 'tauri.release-engine.conf.json')
+
+    def test_the_full_sku_requires_the_voice_backend_and_its_manifest(self):
+        name = f'voxagent-backend-{TRIPLE}.exe'
+        with tempfile.TemporaryDirectory() as temp:
+            tauri = self.release_engine(Path(temp), manifest={})
+            (tauri / 'tauri.release-engine.conf.json').write_text(
+                json.dumps({'bundle': {'externalBin': ['binaries/voxagent-engine']}}))
+            result = qualify(Path(temp), '4.2.9', 'Windows', sku='full', stages=('sku',))
+            self.assertIn('bundled_backend_not_declared', result['blockers'])
+        with tempfile.TemporaryDirectory() as temp:
+            tauri = self.release_engine(Path(temp), manifest={})
+            add_sidecar(tauri, 'voxagent-backend', {'sha256': '0' * 64})
+            result = qualify(Path(temp), '4.2.9', 'Windows', sku='full', stages=('sku',))
+            self.assertIn(f'bundled_backend_manifest_mismatch:{name}', result['blockers'])
 
     def test_the_bundled_engine_needs_a_matching_manifest(self):
         name = f'voxagent-engine-{TRIPLE}.exe'
@@ -217,7 +246,7 @@ class StageTests(unittest.TestCase):
             result = qualify(root, '4.2.8', 'Windows', sku='full', stages=('sku',))
             self.assertEqual(result['status'], 'PASS', result['blockers'])
             self.assertEqual([a['path'] for a in result['bundled_artifacts']],
-                             [engine, '../../../dist/engine/engine.dll'])
+                             [engine, BACKEND, '../../../dist/engine/engine.dll'])
 
     def test_truncated_or_incomplete_pe_images_are_rejected(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -258,7 +287,7 @@ class StageTests(unittest.TestCase):
             result = qualify(Path(temp), '4.2.8', 'Windows', sku='full', stages=('sku',))
             self.assertEqual(result['status'], 'PASS', result['blockers'])
             self.assertEqual(sorted(a['path'] for a in result['bundled_artifacts']),
-                             sorted([engine, 'engine/lib/nested.bin', 'engine/top.bin']))
+                             sorted([engine, BACKEND, 'engine/lib/nested.bin', 'engine/top.bin']))
 
     def test_resource_map_destinations_must_be_relative_strings(self):
         with tempfile.TemporaryDirectory() as temp:
