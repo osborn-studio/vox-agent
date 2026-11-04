@@ -71,5 +71,10 @@ This file records the 2026-10-16 publication and is not rewritten. Since then:
   artifact-only DMG build. A manual Windows ASR probe,
   [`qwen-local-spike.yml`](.github/workflows/qwen-local-spike.yml), followed on
   2026-10-20. The archived `.yml.txt` definitions remain the test references.
+- 2026-11-02 to 2026-11-04: a manual unsigned Windows installer build,
+  [`release-windows.yml`](.github/workflows/release-windows.yml), and a manual
+  draft-release workflow,
+  [`publish-release.yml`](.github/workflows/publish-release.yml), were added.
+  Both use GitHub-hosted runners; only a maintainer publishes a draft release.
 - `SOURCE_MANIFEST.json` still describes the exported bytes and is not updated
   as the source evolves.
