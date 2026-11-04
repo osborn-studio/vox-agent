@@ -1,0 +1,157 @@
+# Manual draft GitHub Release with both desktop installers.
+#
+# Approved by the owner on 2026-11-02 as the publication path for the macOS
+# DMG and the Windows installers. Limits:
+#   - workflow_dispatch only, from main only. There is no tag-push trigger, so
+#     preview/candidate tags still cannot start a release (T47q).
+#   - the two build jobs call release-dmg.yml and release-windows.yml with a
+#     read-only token; only the final `publish` job gets `contents: write`,
+#     and it runs no repository code: it downloads the two artifacts and calls
+#     `gh release create`.
+#   - the release is created as a **draft** whose tag is created at the built
+#     commit only when the owner publishes it by hand. Nothing is published
+#     automatically, and an existing release or tag for the version is never
+#     replaced.
+#   - no secrets beyond the job's GITHUB_TOKEN. The builds are ad-hoc signed
+#     (macOS) and unsigned (Windows); the release notes say so.
+# Self-hosted runners are deliberately not referenced: this is a public
+# repository.
+name: Publish Release (draft)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: >-
+          Release version (X.Y.Z). Must equal the macOS Info.plist and the
+          Tauri app versions.
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-release
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Check version and target
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.check.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Versions must agree and the release must be new
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_VERSION: ${{ inputs.version }}
+          REF: ${{ github.ref }}
+        run: |
+          set -euo pipefail
+          if [ "$REF" != "refs/heads/main" ]; then
+            echo "Releases are published from main only (got $REF)." >&2
+            exit 1
+          fi
+          if ! [[ "$INPUT_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Version must be X.Y.Z (got $INPUT_VERSION)." >&2
+            exit 1
+          fi
+          mac="$(python3 -c "import plistlib; print(plistlib.load(open('macos/VoxLog/Resources/Info.plist','rb'))['CFBundleShortVersionString'])")"
+          win="$(python3 -c "import json; print(json.load(open('apps/desktop-tauri/src-tauri/tauri.conf.json'))['version'])")"
+          if [ "$mac" != "$INPUT_VERSION" ] || [ "$win" != "$INPUT_VERSION" ]; then
+            echo "Version $INPUT_VERSION differs from Info.plist ($mac) or tauri.conf.json ($win)." >&2
+            exit 1
+          fi
+          if gh release view "v$INPUT_VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "A release for v$INPUT_VERSION already exists; it is never replaced." >&2
+            exit 1
+          fi
+          if git ls-remote --exit-code --tags "https://github.com/$GITHUB_REPOSITORY.git" "refs/tags/v$INPUT_VERSION" >/dev/null; then
+            echo "Tag v$INPUT_VERSION already exists; it is never moved." >&2
+            exit 1
+          fi
+          echo "version=$INPUT_VERSION" >> "$GITHUB_OUTPUT"
+
+  build-macos:
+    name: macOS DMG
+    needs: prepare
+    permissions:
+      contents: read
+    uses: ./.github/workflows/release-dmg.yml
+    with:
+      version: ${{ needs.prepare.outputs.version }}
+
+  build-windows:
+    name: Windows installers
+    needs: prepare
+    permissions:
+      contents: read
+    uses: ./.github/workflows/release-windows.yml
+    with:
+      version: ${{ needs.prepare.outputs.version }}
+
+  publish:
+    name: Create draft release
+    needs: [prepare, build-macos, build-windows]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      - name: Download the macOS artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: vox-agent-v${{ needs.prepare.outputs.version }}-dmg
+          path: dist/macos
+
+      - name: Download the Windows artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: vox-agent-v${{ needs.prepare.outputs.version }}-windows
+          path: dist/windows
+
+      - name: Check every asset against its build checksums
+        run: |
+          set -euo pipefail
+          (cd dist/macos && sha256sum --check --strict SHA256SUMS.txt)
+          (cd dist/windows && sha256sum --check --strict SHA256SUMS.txt)
+          mkdir -p dist/release
+          cp "dist/macos/VoxAgent-v${VERSION}-cloud.dmg" \
+             "dist/windows/VoxAgent-v${VERSION}-windows-x64-setup.exe" \
+             "dist/windows/VoxAgent-v${VERSION}-windows-x64.msi" dist/release/
+          (cd dist/release && sha256sum VoxAgent-v"${VERSION}"-* > SHA256SUMS.txt && cat SHA256SUMS.txt)
+
+      - name: Create the draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          cat > notes.md <<NOTES
+          Vox Agent ${VERSION} desktop test builds from \`${TARGET}\`, built on GitHub-hosted runners.
+
+          These are CI builds, not a device-qualified release.
+
+          - **macOS**: \`VoxAgent-v${VERSION}-cloud.dmg\` is ad-hoc signed and not notarized. On first launch, right-click the app and choose **Open**.
+          - **Windows 10/11 x64**: \`VoxAgent-v${VERSION}-windows-x64-setup.exe\` (per-user) or the \`.msi\`. Not Authenticode-signed: SmartScreen shows *Windows protected your PC*; choose **More info > Run anyway**.
+
+          Verify downloads against \`SHA256SUMS.txt\`. Install steps: README, "Install a desktop build".
+          NOTES
+          gh release create "v${VERSION}" \
+            --repo "$GITHUB_REPOSITORY" \
+            --draft \
+            --target "$TARGET" \
+            --title "Vox Agent ${VERSION}" \
+            --notes-file notes.md \
+            dist/release/*
+          echo "Draft release v${VERSION} created; publish it from the Releases page after review." >> "$GITHUB_STEP_SUMMARY"
